@@ -1,40 +1,28 @@
-// Temporary MOCK data until live API integration
+export const MOCK_ADMIN_STATS = {
+  users: 124,
+  ticketsSent: 392,
+  yield: 14.5,
+};
 
-import { Match } from './types';
+export const MOCK_LOGS = [
+  { date: "2025-11-22", event: "Connexion admin" },
+  { date: "2025-11-21", event: "Mise à jour configuration Telegram" },
+  { date: "2025-11-20", event: "Ajout matchs mock" },
+];
 
-export const MOCK_MATCHES: Match[] = [
+export const MOCK_MATCHES = [
   {
     id: "1",
-    status: "LIVE",
-    tournament: "ATP Bâle",
-    player1: { name: "A. Rublev" },
-    player2: { name: "F. Auger-Aliassime" },
-    odds: { p1: 1.65, p2: 2.25 },
-    ai: {
-      winner: "A. Rublev",
-      confidence: 78,
-      riskLevel: "Safe",
-      recommendedBet: "Rublev gagne",
-      fairOdds: { p1: 1.55, p2: 2.40 },
-      totalGamesProjection: 23,
-      monteCarlo: { setDistribution: { "2-0": 0.48, "2-1": 0.36 } }
-    }
+    player1: { name: "A. Rublev", rank: 5 },
+    player2: { name: "F. Auger-Aliassime", rank: 12 },
+    status: "TODAY",
+    odds: { p1: 1.65, p2: 2.30 },
   },
   {
     id: "2",
+    player1: { name: "N. Osaka", rank: 17 },
+    player2: { name: "E. Rybakina", rank: 4 },
     status: "TODAY",
-    tournament: "WTA Tokyo",
-    player1: { name: "N. Osaka" },
-    player2: { name: "E. Rybakina" },
-    odds: { p1: 2.10, p2: 1.70 },
-    ai: {
-      winner: "E. Rybakina",
-      confidence: 72,
-      riskLevel: "Balanced",
-      recommendedBet: "Rybakina gagne",
-      fairOdds: { p1: 2.40, p2: 1.60 },
-      totalGamesProjection: 21,
-      monteCarlo: { setDistribution: { "2-0": 0.40, "2-1": 0.42 } }
-    }
-  }
+    odds: { p1: 1.70, p2: 2.10 },
+  },
 ];
