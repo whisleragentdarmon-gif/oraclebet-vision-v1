@@ -73,3 +73,6 @@ const SidebarButton = ({ to, label }: any) => {
     </Link>
   );
 };
+
+//
+export default App;
