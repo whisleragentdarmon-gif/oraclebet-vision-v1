@@ -69,5 +69,3 @@ const SidebarButton = ({ to, label }: any) => {
 };
 
 
-//
-export default App;
