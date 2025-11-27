@@ -1,5 +1,5 @@
 import React from 'react';
-import { MOCK_MATCHES } from '../engine/constants';
+import { MOCK_MATCHES } from '../constants';   // ✅ FIX ICI
 import { MatchCard } from '../components/MatchCard';
 import { MatchStatus } from '../types';
 
@@ -37,3 +37,4 @@ export const LivePage: React.FC<LivePageProps> = ({ filter, title }) => {
     </div>
   );
 };
+
