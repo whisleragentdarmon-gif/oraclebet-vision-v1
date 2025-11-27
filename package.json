@@ -11,9 +11,10 @@
   "dependencies": {
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "react-router-dom": "6.22.3",
+    "react-router-dom": "^6.22.3",
     "lucide-react": "latest",
-    "jspdf": "latest"
+    "jspdf": "latest",
+    "recharts": "2.12.2"       // 🔥 LA LIGNE QUI MANQUAIT !
   },
   "devDependencies": {
     "@types/node": "^18.0.0",
@@ -22,5 +23,6 @@
     "vite": "4.5.0"
   }
 }
+
 
 
