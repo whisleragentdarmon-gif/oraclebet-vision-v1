@@ -1,11 +1,5 @@
 import React from "react";
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  Navigate,
-  Link,
-} from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate, Link } from "react-router-dom";
 
 import { LivePage } from "./pages/LivePage";
 import { ComboPage } from "./pages/ComboPage";
@@ -15,16 +9,14 @@ import { VipPage } from "./pages/VipPage";
 import { AdminPage } from "./pages/AdminPage";
 import { LoginPage } from "./pages/LoginPage";
 
-import "./index.css";
-
-export const App: React.FC = () => {
+export default function App() {
   const isLogged = localStorage.getItem("oracle-auth") === "true";
 
   return (
     <Router>
       <div className="flex h-screen bg-black text-white">
-        
-        {/* Sidebar intégrée comme AU PREMIER DÉPLOIEMENT */}
+
+        {/* SIDEBAR ORIGINALE — EXACTE */}
         {isLogged && (
           <div className="w-56 bg-neutral-900 border-r border-neutral-800 p-4 flex flex-col gap-2">
             <h1 className="text-2xl font-bold">OracleBet</h1>
@@ -43,6 +35,7 @@ export const App: React.FC = () => {
           </div>
         )}
 
+        {/* CONTENU DES PAGES */}
         <div className="flex-1 overflow-y-auto p-6">
           <Routes>
             {!isLogged && <Route path="*" element={<LoginPage />} />}
@@ -61,8 +54,9 @@ export const App: React.FC = () => {
       </div>
     </Router>
   );
-};
+}
 
+/* BOUTON SIDEBAR EXACT D'ORIGINE */
 const SidebarButton = ({ to, label }: any) => {
   return (
     <Link
@@ -73,6 +67,7 @@ const SidebarButton = ({ to, label }: any) => {
     </Link>
   );
 };
+
 
 //
 export default App;
