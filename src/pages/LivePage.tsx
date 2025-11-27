@@ -1,5 +1,5 @@
 import React from 'react';
-import { MOCK_MATCHES } from '../constants';
+import { MOCK_MATCHES } from '../engine/constants';
 import { MatchCard } from '../components/MatchCard';
 import { MatchStatus } from '../types';
 
