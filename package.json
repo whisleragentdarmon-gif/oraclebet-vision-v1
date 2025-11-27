@@ -14,7 +14,7 @@
     "react-router-dom": "^6.22.3",
     "lucide-react": "latest",
     "jspdf": "latest",
-    "recharts": "2.12.2"       // 🔥 LA LIGNE QUI MANQUAIT !
+    "recharts": "2.12.2"      
   },
   "devDependencies": {
     "@types/node": "^18.0.0",
