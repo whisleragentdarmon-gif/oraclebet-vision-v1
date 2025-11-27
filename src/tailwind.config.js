@@ -7,12 +7,28 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Ces couleurs correspondent à ce que j'ai vu dans ton CSS
-        neon: '#00f3ff',
-        surface: '#111',
+        neon: '#00f3ff',     // Cyan vif
+        surface: '#111',     // Gris très foncé
         surfaceHighlight: '#1a1a1a',
+        carbon: '#09090b',   // Noir profond (celui qui manquait !)
       },
     },
   },
   plugins: [],
 }
+```
+
+---
+
+### Étape 4 : Le grand final (Installation)
+
+Puisque nous avons changé `package.json`, tu **dois** lancer cette commande pour installer les outils manquants :
+
+1.  Coupe ton serveur (`Ctrl + C`).
+2.  Lance :
+    ```bash
+    npm install
+    ```
+3.  Une fois fini, relance :
+    ```bash
+    npm run dev
