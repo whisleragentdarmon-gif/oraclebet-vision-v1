@@ -11,8 +11,8 @@ interface LivePageProps {
 export const LivePage: React.FC<LivePageProps> = ({ filter, title }) => {
   const matches = MOCK_MATCHES.filter(m => {
      if (filter === 'LIVE') return m.status === 'LIVE';
-     if (filter === 'TODAY') return m.status === 'TODAY';
-     if (filter === 'UPCOMING') return m.status === 'UPCOMING';
+     if (filter === 'TODAY') return m.status === 'TODAY' || m.status === 'SCHEDULED'; // Adaptation pour être sûr de capter les matchs
+     if (filter === 'UPCOMING') return m.status === 'UPCOMING' || m.status === 'SCHEDULED';
      return true;
   });
 
