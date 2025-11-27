@@ -1,23 +1,5 @@
 import React, { useState } from 'react';
-import {
-  Target,
-  TrendingUp,
-  Users,
-  Database,
-  Settings,
-  Save,
-  RefreshCw,
-  CheckCircle
-} from 'lucide-react';
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer
-} from 'recharts';
+import { Save, Send, Settings } from 'lucide-react';
 import { useConfig } from '../context/ConfigContext';
 
 export const AdminPage: React.FC = () => {
@@ -42,7 +24,7 @@ export const AdminPage: React.FC = () => {
     <div>
       <h1 className="text-2xl font-bold mb-6">Admin – OracleBet Vision</h1>
 
-      {/* Telegram Configuration */}
+      {/* Telegram */}
       <section className="mb-10 p-4 rounded-xl border border-neutral-800 bg-surface">
         <h2 className="text-xl font-bold flex items-center gap-2">
           <Send size={18} /> Configuration Telegram
@@ -74,7 +56,7 @@ export const AdminPage: React.FC = () => {
         </div>
       </section>
 
-      {/* IA Model Settings */}
+      {/* IA */}
       <section className="mb-10 p-4 rounded-xl border border-neutral-800 bg-surface">
         <h2 className="text-xl font-bold flex items-center gap-2">
           <Settings size={18} /> Paramètres IA
