@@ -1,67 +1,43 @@
+import React from "react";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { Sidebar } from "./components/Sidebar";
+import { LoginPage } from "./pages/LoginPage";
+import { LivePage } from "./pages/LivePage";
+import { ComboPage } from "./pages/ComboPage";
+import { BankrollPage } from "./pages/BankrollPage";
+import { AnalysisPage } from "./pages/AnalysisPage";
+import { VipPage } from "./pages/VipPage";
+import { AdminPage } from "./pages/AdminPage";
+import { ConfigProvider } from "./context/ConfigContext";
+import { BankrollProvider } from "./context/BankrollContext";
 
-import React, { useState } from 'react';
-import { Layout } from './components/Layout';
-import { LivePage } from './pages/LivePage';
-import { AnalysisPage } from './pages/AnalysisPage';
-import { ComboPage } from './pages/ComboPage';
-import { AdminPage } from './pages/AdminPage';
-import { VipPage } from './pages/VipPage';
-import { BankrollPage } from './pages/BankrollPage';
-import { LoginPage } from './pages/LoginPage';
-import { BankrollProvider } from './context/BankrollContext';
-import { AuthProvider, useAuth } from './context/AuthContext';
-import { ConfigProvider } from './context/ConfigContext';
+import "./index.css";
 
-const AuthenticatedApp: React.FC = () => {
-  const { isAuthenticated } = useAuth();
-  const [activeTab, setActiveTab] = useState('analysis');
-
-  if (!isAuthenticated) {
-    return <LoginPage />;
-  }
-
-  const renderContent = () => {
-    switch (activeTab) {
-      case 'live':
-        return <LivePage filter="LIVE" title="Matchs en Direct" />;
-      case 'today':
-        return <LivePage filter="TODAY" title="Matchs du Jour" />;
-      case 'upcoming':
-        return <LivePage filter="UPCOMING" title="Matchs à Venir" />;
-      case 'analysis':
-        return <AnalysisPage />;
-      case 'combos':
-        return <ComboPage />;
-      case 'bankroll':
-        return <BankrollPage />;
-      case 'vip':
-        return <VipPage />;
-      case 'admin':
-        return <AdminPage />;
-      default:
-        return <AnalysisPage />;
-    }
-  };
-
+export const App: React.FC = () => {
   return (
-    <Layout activeTab={activeTab} onTabChange={setActiveTab}>
-      <div className="animate-fade-in">
-        {renderContent()}
-      </div>
-    </Layout>
+    <ConfigProvider>
+      <BankrollProvider>
+        <Router>
+          <div className="flex h-screen w-full bg-black text-white">
+            <Sidebar />
+
+            <div className="flex-1 overflow-y-auto p-6">
+              <Routes>
+                <Route path="/" element={<Navigate to="/login" />} />
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/live" element={<LivePage filter="LIVE" title="En Direct" />} />
+                <Route path="/today" element={<LivePage filter="TODAY" title="Matchs du jour" />} />
+                <Route path="/upcoming" element={<LivePage filter="UPCOMING" title="À venir" />} />
+                <Route path="/combos" element={<ComboPage />} />
+                <Route path="/bankroll" element={<BankrollPage />} />
+                <Route path="/analysis" element={<AnalysisPage />} />
+                <Route path="/vip" element={<VipPage />} />
+                <Route path="/admin" element={<AdminPage />} />
+              </Routes>
+            </div>
+          </div>
+        </Router>
+      </BankrollProvider>
+    </ConfigProvider>
   );
 };
-
-const App: React.FC = () => {
-  return (
-    <AuthProvider>
-      <ConfigProvider>
-        <BankrollProvider>
-            <AuthenticatedApp />
-        </BankrollProvider>
-      </ConfigProvider>
-    </AuthProvider>
-  );
-};
-
-export default App;
