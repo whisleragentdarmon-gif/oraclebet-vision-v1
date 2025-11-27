@@ -1,105 +1,65 @@
-
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 import { AIModelWeights, BetRecord } from '../engine/types';
 import { OracleAI } from '../engine';
-import { MOCK_LOGS } from '../constants';
 
 interface TelegramConfig {
   botToken: string;
   chatId: string;
 }
 
-interface ConfigContextType {
-  aiWeights: AIModelWeights;
-  updateWeights: (newWeights: AIModelWeights) => void;
+interface ConfigContextValues {
   telegramConfig: TelegramConfig;
-  updateTelegramConfig: (cfg: TelegramConfig) => void;
-  saveConfig: () => void;
-  retrainAI: (history: BetRecord[]) => { success: boolean; msg: string; improvement: number };
-  systemLogs: any[];
+  setTelegramConfig: (cfg: TelegramConfig) => void;
+
+  modelConfig: AIModelWeights;
+  setModelConfig: (cfg: AIModelWeights) => void;
+
+  logs: BetRecord[];
+  addLog: (log: BetRecord) => void;
 }
 
-const ConfigContext = createContext<ConfigContextType | undefined>(undefined);
+const defaultTelegram: TelegramConfig = {
+  botToken: '',
+  chatId: ''
+};
 
-export const ConfigProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  // Default Weights
-  const [aiWeights, setAiWeights] = useState<AIModelWeights>({
-    surfaceWeight: 0.35,
-    formWeight: 0.30,
-    h2hWeight: 0.15,
-    mentalWeight: 0.10,
-    fatigueFactor: 0.10,
-    momentumWeight: 0.20,
-    variance: 0.05,
-    serveDominance: 1.0
-  });
+const defaultModel: AIModelWeights = {
+  formWeight: 1,
+  mentalWeight: 1,
+  fatigueFactor: 1,
+  serveDominance: 1,
+  variance: 1
+};
 
-  const [telegramConfig, setTelegramConfig] = useState<TelegramConfig>({
-    botToken: '',
-    chatId: ''
-  });
+const ConfigContext = createContext<ConfigContextValues | undefined>(undefined);
 
-  const [systemLogs, setSystemLogs] = useState<any[]>(MOCK_LOGS);
+export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [telegramConfig, setTelegramConfig] = useState(defaultTelegram);
+  const [modelConfig, setModelConfig] = useState(defaultModel);
+  const [logs, setLogs] = useState<BetRecord[]>([]);
 
-  // Load from LocalStorage
-  useEffect(() => {
-    const savedWeights = localStorage.getItem('oracle_ai_weights');
-    const savedTele = localStorage.getItem('oracle_telegram_config');
-    
-    if (savedWeights) {
-        const w = JSON.parse(savedWeights);
-        setAiWeights(w);
-        OracleAI.predictor.learning.setWeights(w); // Sync engine
-    }
-    if (savedTele) setTelegramConfig(JSON.parse(savedTele));
-  }, []);
-
-  const updateWeights = (newWeights: AIModelWeights) => {
-    setAiWeights(newWeights);
-    OracleAI.predictor.learning.setWeights(newWeights); // Sync engine
-  };
-
-  const updateTelegramConfig = (cfg: TelegramConfig) => {
-    setTelegramConfig(cfg);
-  };
-
-  const saveConfig = () => {
-    localStorage.setItem('oracle_ai_weights', JSON.stringify(aiWeights));
-    localStorage.setItem('oracle_telegram_config', JSON.stringify(telegramConfig));
-    alert("Configuration Système & Admin sauvegardée avec succès ! 💾");
-  };
-
-  const retrainAI = (history: BetRecord[]) => {
-    const result = OracleAI.predictor.learning.retrainModelFromHistory(history);
-    
-    if (result.improvement > 0 || history.length >= 5) {
-        setAiWeights(result.weights);
-        localStorage.setItem('oracle_ai_weights', JSON.stringify(result.weights));
-        
-        // Add Log
-        const newLog = {
-            id: Date.now().toString(),
-            timestamp: new Date().toLocaleString(),
-            action: 'MODEL_TRAIN',
-            details: `Auto-learning completed. Accuracy +${result.improvement}%`
-        };
-        setSystemLogs([newLog, ...systemLogs]);
-        
-        return { success: true, msg: result.log, improvement: result.improvement };
-    }
-    
-    return { success: false, msg: result.log, improvement: 0 };
+  const addLog = (log: BetRecord) => {
+    setLogs(prev => [log, ...prev]);
   };
 
   return (
-    <ConfigContext.Provider value={{ aiWeights, updateWeights, telegramConfig, updateTelegramConfig, saveConfig, retrainAI, systemLogs }}>
+    <ConfigContext.Provider
+      value={{
+        telegramConfig,
+        setTelegramConfig,
+        modelConfig,
+        setModelConfig,
+        logs,
+        addLog
+      }}
+    >
       {children}
     </ConfigContext.Provider>
   );
 };
 
 export const useConfig = () => {
-  const context = useContext(ConfigContext);
-  if (!context) throw new Error("useConfig must be used within a ConfigProvider");
-  return context;
+  const ctx = useContext(ConfigContext);
+  if (!ctx) throw new Error('useConfig must be used within ConfigProvider');
+  return ctx;
 };
