@@ -1,71 +1,71 @@
-import React from "react";
-import { BrowserRouter as Router, Routes, Route, Navigate, Link } from "react-router-dom";
+import React, { useState } from 'react';
+import { Layout } from './components/Layout';
+import { LivePage } from './pages/LivePage';
+import { AnalysisPage } from './pages/AnalysisPage';
+import { ComboPage } from './pages/ComboPage';
+import { AdminPage } from './pages/AdminPage';
+import { VipPage } from './pages/VipPage';
+import { BankrollPage } from './pages/BankrollPage';
+import { LoginPage } from './pages/LoginPage';
+import { BankrollProvider } from './context/BankrollContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { ConfigProvider } from './context/ConfigContext';
 
-import { LivePage } from "./pages/LivePage";
-import { ComboPage } from "./pages/ComboPage";
-import { BankrollPage } from "./pages/BankrollPage";
-import { AnalysisPage } from "./pages/AnalysisPage";
-import { VipPage } from "./pages/VipPage";
-import { AdminPage } from "./pages/AdminPage";
-import { LoginPage } from "./pages/LoginPage";
+// Composant qui gère l'affichage selon si on est connecté ou non
+const AuthenticatedApp: React.FC = () => {
+  const { isAuthenticated } = useAuth();
+  const [activeTab, setActiveTab] = useState('analysis');
 
-export default function App() {
-  const isLogged = localStorage.getItem("oracle-auth") === "true";
+  // Si pas connecté, on affiche le Login
+  if (!isAuthenticated) {
+    return <LoginPage />;
+  }
 
+  // Logique d'affichage des pages (Tabs)
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'live':
+        return <LivePage filter="LIVE" title="Matchs en Direct" />;
+      case 'today':
+        return <LivePage filter="TODAY" title="Matchs du Jour" />;
+      case 'upcoming':
+        return <LivePage filter="UPCOMING" title="Matchs à Venir" />;
+      case 'analysis':
+        return <AnalysisPage />;
+      case 'combos':
+        return <ComboPage />;
+      case 'bankroll':
+        return <BankrollPage />;
+      case 'vip':
+        return <VipPage />;
+      case 'admin':
+        return <AdminPage />;
+      default:
+        return <AnalysisPage />;
+    }
+  };
+
+  // On retourne le Layout (ton design) avec le contenu au milieu
   return (
-    <Router>
-      <div className="flex h-screen bg-black text-white">
-
-        {/* SIDEBAR ORIGINALE — EXACTE */}
-        {isLogged && (
-          <div className="w-56 bg-neutral-900 border-r border-neutral-800 p-4 flex flex-col gap-2">
-            <h1 className="text-2xl font-bold">OracleBet</h1>
-            <p className="text-xs text-gray-400">Vision v1</p>
-
-            <div className="flex flex-col gap-1 mt-4">
-              <SidebarButton to="/live" label="En Direct" />
-              <SidebarButton to="/today" label="Aujourd'hui" />
-              <SidebarButton to="/upcoming" label="Demain" />
-              <SidebarButton to="/analysis" label="Analyse IA" />
-              <SidebarButton to="/combos" label="Combinés IA" />
-              <SidebarButton to="/bankroll" label="Ma Bankroll" />
-              <SidebarButton to="/vip" label="VIP Telegram" />
-              <SidebarButton to="/admin" label="Admin" />
-            </div>
-          </div>
-        )}
-
-        {/* CONTENU DES PAGES */}
-        <div className="flex-1 overflow-y-auto p-6">
-          <Routes>
-            {!isLogged && <Route path="*" element={<LoginPage />} />}
-
-            <Route path="/" element={<Navigate to="/live" />} />
-            <Route path="/live" element={<LivePage filter="LIVE" title="En Direct" />} />
-            <Route path="/today" element={<LivePage filter="TODAY" title="Matchs du jour" />} />
-            <Route path="/upcoming" element={<LivePage filter="UPCOMING" title="Matchs à venir" />} />
-            <Route path="/analysis" element={<AnalysisPage />} />
-            <Route path="/combos" element={<ComboPage />} />
-            <Route path="/bankroll" element={<BankrollPage />} />
-            <Route path="/vip" element={<VipPage />} />
-            <Route path="/admin" element={<AdminPage />} />
-          </Routes>
-        </div>
+    <Layout activeTab={activeTab} onTabChange={setActiveTab}>
+      <div className="animate-fade-in">
+        {renderContent()}
       </div>
-    </Router>
-  );
-}
-
-/* BOUTON SIDEBAR EXACT D'ORIGINE */
-const SidebarButton = ({ to, label }: any) => {
-  return (
-    <Link
-      to={to}
-      className="px-3 py-2 rounded-lg text-gray-300 hover:bg-neutral-800 transition"
-    >
-      {label}
-    </Link>
+    </Layout>
   );
 };
 
+// Application principale avec tous les Providers (Contextes)
+const App: React.FC = () => {
+  return (
+    <AuthProvider>
+      <ConfigProvider>
+        <BankrollProvider>
+            <AuthenticatedApp />
+        </BankrollProvider>
+      </ConfigProvider>
+    </AuthProvider>
+  );
+};
 
+export default App;
