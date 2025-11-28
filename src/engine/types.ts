@@ -1,118 +1,64 @@
-import { OddsAnalysis } from './engine/types';
-
-export type MatchStatus = 'LIVE' | 'TODAY' | 'UPCOMING' | 'FINISHED';
+import { OddsAnalysis } from '../engine/types';
 
 export interface Player {
   name: string;
   rank: number;
   country: string;
-}
-
-export interface MatchStats {
-  aces: number;
-  doubleFaults: number;
-  firstServeIn: number;
-  winFirstServe: number;
-  breakPointsSaved: number;
-}
-
-export interface PlayerAttributes {
-  power: number;
-  serve: number;
-  return: number;
-  mental: number;
   form: number;
-  fatigue: number;
-  style: string;
+  surfacePrefs: { hard: number; clay: number; grass: number };
 }
 
-export interface TrapResult {
-  isTrap: boolean;
-  score: number;
-  reason: string;
-  verdict: 'Safe' | 'Méfiance' | 'Piège';
+export interface MatchOdds {
+  player1: number;
+  player2: number;
+  p1: number; // Alias pour compatibilité
+  p2: number; // Alias pour compatibilité
 }
 
-export interface IntegrityResult {
-  isSuspicious: boolean;
-  score: number;
-  reason: string;
-  status: 'Clean' | 'Atypique' | 'Danger';
-}
-
-export interface MonteCarloStats {
-  runs: number;
-  p1WinRate: number;
-  p2WinRate: number;
-  tieBreakProb: number;
-  totalGamesAvg: number;
-  setDistribution: { [score: string]: number };
-  breakDistribution: { p1: number; p2: number };
-}
-
+// Structure complète pour AnalysisPage
 export interface AIPrediction {
   winner: string;
-  winnerProbability: number;
-  winProbA: number;
-  winProbB: number;
   confidence: number;
   recommendedBet: string;
-  expectedSets: string;
-  riskLevel: 'Safe' | 'Moderate' | 'Risky';
-  analysisText: string;
+  riskLevel: 'SAFE' | 'MODERATE' | 'RISKY';
+  marketType: string;
+  circuit: string;
   
-  structuralAnalysis: string;
-  quantitativeAnalysis: string;
-  qualitativeAnalysis: string;
-  
-  fairOdds: {
-    p1: number;
-    p2: number;
+  // Données graphiques AnalysisPage
+  winProbA?: number;
+  winProbB?: number;
+  fairOdds?: { p1: number; p2: number };
+  attributes?: { power: number; serve: number; return: number; mental: number; form: number }[];
+  monteCarlo?: {
+      setDistribution: { [key: string]: number };
   };
   
-  attributes: PlayerAttributes[];
-  trap: TrapResult;
-  integrity: IntegrityResult;
-  circuit: string;
-
-  // New fields required by UI and Engine
-  marketType: 'WINNER' | 'SETS' | 'GAMES' | 'HANDICAP';
-  monteCarlo: MonteCarloStats;
-  tieBreakProbability: number;
-  breaks: { p1: number; p2: number };
-  totalGamesProjection: number;
-  oddsAnalysis?: OddsAnalysis;
+  expectedSets?: string;
+  tieBreakProbability?: number;
+  breaks?: { p1: number; p2: number };
+  
+  trap?: { isTrap: boolean; verdict?: string; reason?: string };
+  integrity?: { isSuspicious: boolean; score: number; reason?: string };
+  
+  qualitativeAnalysis?: string;
+  structuralAnalysis?: string;
+  quantitativeAnalysis?: string;
+  
+  oddsAnalysis?: OddsAnalysis; // Liaison avec le moteur de cotes
 }
 
 export interface Match {
   id: string;
+  tournament: string;
+  date: string;
+  time: string;
+  status: 'SCHEDULED' | 'LIVE' | 'FINISHED' | 'TODAY' | 'UPCOMING';
   player1: Player;
   player2: Player;
-  tournament: string;
-  time: string; // ISO or display string
-  status: MatchStatus;
-  score?: string; // "6-4 | 2-1"
-  odds: {
-    p1: number;
-    p2: number;
-  };
+  score?: string;
+  odds: MatchOdds;
   ai?: AIPrediction;
-  stats?: {
-    p1: MatchStats;
-    p2: MatchStats;
-  };
+  surface: 'Hard' | 'Clay' | 'Grass' | 'Indoor';
 }
 
-export interface AdminStats {
-  aiAccuracy: number;
-  globalROI: number;
-  totalPredictions: number;
-  activeUsers: number;
-}
-
-export interface LogEntry {
-  id: string;
-  timestamp: string;
-  action: string;
-  details: string;
-}
+export type MatchStatus = Match['status'];
