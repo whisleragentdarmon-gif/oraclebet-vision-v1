@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Match } from '../types';
 import { Trophy, Clock, Activity, TrendingUp, ShieldAlert, Siren, ThumbsUp, ThumbsDown } from 'lucide-react';
@@ -17,8 +16,8 @@ export const MatchCard: React.FC<MatchCardProps> = ({ match, onClick, selected, 
   // Access Bankroll Context safely
   let validateBet: any;
   try {
-     const ctx = useBankroll();
-     validateBet = ctx.validateBet;
+      const ctx = useBankroll();
+      validateBet = ctx.validateBet;
   } catch(e) {}
 
   const handleValidation = (e: React.MouseEvent, isWin: boolean) => {
