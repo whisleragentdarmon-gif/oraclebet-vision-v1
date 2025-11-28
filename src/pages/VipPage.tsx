@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Send, History, ShieldCheck, Key, Save, Edit3, Trash2 } from 'lucide-react';
 import { useConfig } from '../context/ConfigContext';
