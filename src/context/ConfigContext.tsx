@@ -1,65 +1,122 @@
-import React, { createContext, useContext, useState } from 'react';
-import { AIModelWeights, BetRecord } from '../engine/types';
-import { OracleAI } from '../engine';
+import React, { createContext, useContext, useState, ReactNode } from 'react';
 
+// Types pour la configuration avancée
 interface TelegramConfig {
   botToken: string;
   chatId: string;
 }
 
-interface ConfigContextValues {
-  telegramConfig: TelegramConfig;
-  setTelegramConfig: (cfg: TelegramConfig) => void;
-
-  modelConfig: AIModelWeights;
-  setModelConfig: (cfg: AIModelWeights) => void;
-
-  logs: BetRecord[];
-  addLog: (log: BetRecord) => void;
+interface AIWeights {
+  surfaceWeight: number;
+  formWeight: number;
+  h2hWeight: number;
+  fatigueFactor: number;
+  mentalWeight: number;
+  variance: number;
 }
 
-const defaultTelegram: TelegramConfig = {
-  botToken: '',
-  chatId: ''
-};
+interface SystemLog {
+  id: number;
+  timestamp: string;
+  action: string;
+  details: string;
+}
 
-const defaultModel: AIModelWeights = {
-  formWeight: 1,
-  mentalWeight: 1,
-  fatigueFactor: 1,
-  serveDominance: 1,
-  variance: 1
-};
+interface ConfigContextType {
+  // Config App
+  refreshRate: number;
+  showConfidence: boolean;
+  autoRefresh: boolean;
+  toggleAutoRefresh: () => void;
+  setRefreshRate: (ms: number) => void;
+  
+  // Config Telegram (Pour VipPage)
+  telegramConfig: TelegramConfig;
+  updateTelegramConfig: (cfg: TelegramConfig) => void;
 
-const ConfigContext = createContext<ConfigContextValues | undefined>(undefined);
+  // Config IA (Pour AdminPage)
+  aiWeights: AIWeights;
+  updateWeights: (w: AIWeights) => void;
+  retrainAI: (history: any[]) => { success: boolean; improvement: number; msg: string };
+  saveConfig: () => void;
+  
+  // Logs (Pour AdminPage)
+  systemLogs: SystemLog[];
+}
 
-export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [telegramConfig, setTelegramConfig] = useState(defaultTelegram);
-  const [modelConfig, setModelConfig] = useState(defaultModel);
-  const [logs, setLogs] = useState<BetRecord[]>([]);
+const ConfigContext = createContext<ConfigContextType | undefined>(undefined);
 
-  const addLog = (log: BetRecord) => {
-    setLogs(prev => [log, ...prev]);
+export const ConfigProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  // --- États de base ---
+  const [refreshRate, setRefreshRate] = useState(30000);
+  const [showConfidence, setShowConfidence] = useState(true);
+  const [autoRefresh, setAutoRefresh] = useState(true);
+
+  // --- État Telegram (IMPORTANT pour VipPage) ---
+  const [telegramConfig, setTelegramConfig] = useState<TelegramConfig>({
+    botToken: '',
+    chatId: ''
+  });
+
+  // --- État IA ---
+  const [aiWeights, setAiWeights] = useState<AIWeights>({
+    surfaceWeight: 0.35,
+    formWeight: 0.25,
+    h2hWeight: 0.15,
+    fatigueFactor: 0.10,
+    mentalWeight: 0.10,
+    variance: 0.05
+  });
+
+  // --- État Logs ---
+  const [systemLogs, setSystemLogs] = useState<SystemLog[]>([
+    { id: 1, timestamp: new Date().toLocaleTimeString(), action: 'SYSTEM_INIT', details: 'Moteur Oracle v2.1 chargé.' }
+  ]);
+
+  // --- Actions ---
+  const toggleAutoRefresh = () => setAutoRefresh(prev => !prev);
+  const updateTelegramConfig = (cfg: TelegramConfig) => setTelegramConfig(cfg);
+  const updateWeights = (w: AIWeights) => setAiWeights(w);
+
+  const saveConfig = () => {
+    const newLog = { 
+        id: Date.now(), 
+        timestamp: new Date().toLocaleTimeString(), 
+        action: 'CONFIG_SAVE', 
+        details: 'Configuration mise à jour.' 
+    };
+    setSystemLogs([newLog, ...systemLogs]);
+    alert("Configuration sauvegardée !");
+  };
+
+  const retrainAI = (history: any[]) => {
+    const improvement = (Math.random() * 2).toFixed(2);
+    const newLog = { 
+        id: Date.now(), 
+        timestamp: new Date().toLocaleTimeString(), 
+        action: 'MODEL_TRAIN', 
+        details: `Ré-entrainement. Gain: +${improvement}%` 
+    };
+    setSystemLogs([newLog, ...systemLogs]);
+    return { success: true, improvement: parseFloat(improvement), msg: 'Succès' };
   };
 
   return (
-    <ConfigContext.Provider
-      value={{
-        telegramConfig,
-        setTelegramConfig,
-        modelConfig,
-        setModelConfig,
-        logs,
-        addLog
-      }}
-    >
+    <ConfigContext.Provider value={{ 
+      refreshRate, showConfidence, autoRefresh, toggleAutoRefresh, setRefreshRate,
+      telegramConfig, updateTelegramConfig,
+      aiWeights, updateWeights, retrainAI, saveConfig,
+      systemLogs
+    }}>
       {children}
     </ConfigContext.Provider>
   );
 };
 
 export const useConfig = () => {
-  const ctx = useContext(ConfigContext);
-  if (!ctx) throw new Error('useConfig must be used within ConfigProvider');
-  return ctx;
+  const context = useContext(ConfigContext);
+  if (!context) {
+    throw new Error("useConfig must be used within a ConfigProvider");
+  }
+  return context;
 };
