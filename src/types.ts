@@ -1,5 +1,6 @@
 // Fichier : src/types.ts
-import { OddsAnalysis, PlayerAttributes } from './engine/types';
+// On importe tout depuis le moteur pour éviter les doublons
+import { OddsAnalysis, AIPrediction, PlayerAttributes } from './engine/types';
 
 export interface Player {
   name: string;
@@ -16,29 +17,8 @@ export interface MatchOdds {
   p2: number;
 }
 
-export interface AIPrediction {
-  winner: string;
-  confidence: number;
-  recommendedBet: string;
-  riskLevel: 'SAFE' | 'MODERATE' | 'RISKY';
-  marketType: string;
-  circuit: string;
-  
-  winProbA?: number;
-  winProbB?: number;
-  fairOdds?: { p1: number; p2: number };
-  attributes?: PlayerAttributes[];
-  monteCarlo?: { setDistribution: { [key: string]: number } };
-  expectedSets?: string;
-  tieBreakProbability?: number;
-  breaks?: { p1: number; p2: number };
-  trap?: { isTrap: boolean; verdict?: string; reason?: string };
-  integrity?: { isSuspicious: boolean; score: number; reason?: string };
-  qualitativeAnalysis?: string;
-  structuralAnalysis?: string;
-  quantitativeAnalysis?: string;
-  oddsAnalysis?: OddsAnalysis; 
-}
+// On ré-exporte AIPrediction pour que les pages le trouvent facilement
+export type { AIPrediction };
 
 export interface Match {
   id: string;
