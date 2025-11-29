@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { MOCK_MATCHES } from '../constants';
 import { MatchCard } from '../components/MatchCard';
-import { MatchDetailModal } from '../components/MatchDetailModal'; // Import du modal
-import { Match } from '../types';
-import { Clock, Filter } from 'lucide-react';
+import { MatchDetailModal } from '../components/MatchDetailModal';
+import { Match, Circuit } from '../types';
+import { Clock, Filter, Trophy, Zap } from 'lucide-react';
 import { AutoValidator } from '../engine/AutoValidator';
 
 interface LivePageProps {
@@ -14,32 +14,32 @@ interface LivePageProps {
 export const LivePage: React.FC<LivePageProps> = ({ filter, title }) => {
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
   const [timeFilter, setTimeFilter] = useState<'ALL' | '6H' | '12H' | '24H'>('ALL');
+  const [circuitFilter, setCircuitFilter] = useState<'ALL' | Circuit>('ALL');
+  const [autoLogs, setAutoLogs] = useState<string[]>([]);
 
-  // Au chargement de la page, on lance l'auto-validation (Mode Vacances)
-  useEffect(() => {
+  // Fonction pour lancer l'Auto-Validation (God Mode)
+  const runAutoValidate = () => {
       const logs = AutoValidator.run(MOCK_MATCHES);
       if (logs.length > 0) {
-          console.log("🤖 Auto-Validation exécutée :", logs);
-          // On pourrait afficher une notification ici
+          setAutoLogs(logs);
+          setTimeout(() => setAutoLogs([]), 5000); // Efface après 5s
+      } else {
+          alert("Aucun match terminé en attente de validation.");
       }
-  }, []);
+  };
 
-  // Filtrage avancé
   const getFilteredMatches = () => {
       let matches = MOCK_MATCHES.filter(m => {
-        if (filter === 'LIVE') return m.status === 'LIVE';
-        if (filter === 'TODAY') return m.status === 'TODAY' || m.status === 'SCHEDULED'; 
-        if (filter === 'UPCOMING') return m.status === 'UPCOMING' || m.status === 'SCHEDULED';
+        // Filtre Statut
+        if (filter === 'LIVE' && m.status !== 'LIVE') return false;
+        if (filter === 'TODAY' && (m.status !== 'TODAY' && m.status !== 'SCHEDULED')) return false;
+        if (filter === 'UPCOMING' && (m.status !== 'UPCOMING' && m.status !== 'SCHEDULED')) return false;
+        
+        // Filtre Circuit (ATP/WTA...)
+        if (circuitFilter !== 'ALL' && m.ai?.circuit !== circuitFilter) return false;
+
         return true;
       });
-
-      // Simulation du filtre horaire (puisqu'on n'a pas de vraies dates JS dans le mock, on simule)
-      if (timeFilter !== 'ALL' && filter !== 'LIVE') {
-          // Ici, avec une vraie API, on comparerait new Date(m.date) avec Date.now() + 6h
-          // Pour l'exemple, on ne filtre pas vraiment les mocks statiques pour ne pas tout vider
-          console.log(`Filtre horaire ${timeFilter} appliqué`); 
-      }
-
       return matches;
   };
 
@@ -47,42 +47,63 @@ export const LivePage: React.FC<LivePageProps> = ({ filter, title }) => {
 
   return (
     <div>
+      {/* En-tête avec Bouton Auto-Validate */}
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
         <div>
-            <h2 className="text-2xl font-bold border-l-4 border-neon pl-4">{title}</h2>
-            <span className="text-sm text-gray-500 font-mono ml-5">{matches.length} Matchs disponibles</span>
+            <h2 className="text-2xl font-bold border-l-4 border-neon pl-4 flex items-center gap-3">
+                {title}
+                {filter === 'LIVE' && (
+                    <button 
+                        onClick={runAutoValidate}
+                        className="text-[10px] bg-purple-900/50 text-purple-300 px-2 py-1 rounded border border-purple-500/50 hover:bg-purple-500 hover:text-white transition-colors flex items-center gap-1"
+                        title="Vérifier les résultats finis et mettre à jour l'IA"
+                    >
+                        <Zap size={10} /> Auto-Detect
+                    </button>
+                )}
+            </h2>
+            <span className="text-sm text-gray-500 font-mono ml-5">{matches.length} Matchs</span>
         </div>
 
-        {/* Filtres horaires */}
-        {filter !== 'LIVE' && (
-            <div className="flex bg-surface border border-neutral-800 rounded-lg p-1">
-                <button 
-                    onClick={() => setTimeFilter('ALL')}
-                    className={`px-3 py-1 text-xs font-bold rounded ${timeFilter === 'ALL' ? 'bg-neutral-700 text-white' : 'text-gray-500 hover:text-white'}`}
-                >
-                    Tout
-                </button>
-                <button 
-                    onClick={() => setTimeFilter('6H')}
-                    className={`px-3 py-1 text-xs font-bold rounded flex items-center gap-1 ${timeFilter === '6H' ? 'bg-neon text-black' : 'text-gray-500 hover:text-white'}`}
-                >
-                    <Clock size={12} /> +6h
-                </button>
-                <button 
-                    onClick={() => setTimeFilter('12H')}
-                    className={`px-3 py-1 text-xs font-bold rounded ${timeFilter === '12H' ? 'bg-neutral-700 text-white' : 'text-gray-500 hover:text-white'}`}
-                >
-                    +12h
-                </button>
-                <button 
-                    onClick={() => setTimeFilter('24H')}
-                    className={`px-3 py-1 text-xs font-bold rounded ${timeFilter === '24H' ? 'bg-neutral-700 text-white' : 'text-gray-500 hover:text-white'}`}
-                >
-                    +24h
-                </button>
+        <div className="flex flex-col gap-2">
+            {/* Filtres Circuit */}
+            <div className="flex bg-surface border border-neutral-800 rounded-lg p-1 overflow-x-auto">
+                {['ALL', 'ATP', 'WTA', 'CHALLENGER', 'ITF'].map((c) => (
+                    <button 
+                        key={c}
+                        onClick={() => setCircuitFilter(c as any)}
+                        className={`px-3 py-1 text-xs font-bold rounded whitespace-nowrap ${circuitFilter === c ? 'bg-white text-black' : 'text-gray-500 hover:text-white'}`}
+                    >
+                        {c}
+                    </button>
+                ))}
             </div>
-        )}
+
+            {/* Filtres Horaires */}
+            {filter !== 'LIVE' && (
+                <div className="flex bg-surface border border-neutral-800 rounded-lg p-1">
+                    {['ALL', '6H', '12H', '24H'].map((t) => (
+                        <button 
+                            key={t}
+                            onClick={() => setTimeFilter(t as any)}
+                            className={`px-3 py-1 text-xs font-bold rounded ${timeFilter === t ? 'bg-neutral-700 text-white' : 'text-gray-500 hover:text-white'}`}
+                        >
+                            {t === 'ALL' ? 'Tout' : `+${t.replace('H', 'h')}`}
+                        </button>
+                    ))}
+                </div>
+            )}
+        </div>
       </div>
+
+      {/* Logs Auto-Validation */}
+      {autoLogs.length > 0 && (
+          <div className="mb-4 p-3 bg-purple-900/20 border border-purple-500/50 rounded-lg animate-fade-in">
+              {autoLogs.map((log, i) => (
+                  <p key={i} className="text-xs text-purple-300 font-mono">🤖 {log}</p>
+              ))}
+          </div>
+      )}
 
       {matches.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -90,22 +111,18 @@ export const LivePage: React.FC<LivePageProps> = ({ filter, title }) => {
             <MatchCard 
                 key={match.id} 
                 match={match} 
-                onClick={() => setSelectedMatch(match)} // Ouvre le modal
+                onClick={() => setSelectedMatch(match)} 
             />
           ))}
         </div>
       ) : (
         <div className="flex flex-col items-center justify-center h-64 bg-surface rounded-2xl border border-neutral-800 border-dashed">
           <Filter className="text-gray-600 mb-2" size={32} />
-          <p className="text-gray-500">Aucun match ne correspond à vos filtres.</p>
+          <p className="text-gray-500">Aucun match ne correspond aux filtres.</p>
         </div>
       )}
 
-      {/* LE MODAL QUI S'OUVRE PAR DESSUS */}
-      <MatchDetailModal 
-        match={selectedMatch} 
-        onClose={() => setSelectedMatch(null)} 
-      />
+      <MatchDetailModal match={selectedMatch} onClose={() => setSelectedMatch(null)} />
     </div>
   );
 };
