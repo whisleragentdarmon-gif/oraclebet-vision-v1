@@ -1,6 +1,5 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  // C'est cette partie qui est CRUCIALE :
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
