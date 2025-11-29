@@ -13,7 +13,6 @@ export interface AIModelWeights {
   fatigueFactor: number;
   mentalWeight: number;
   variance: number;
-  // Ajoutés pour corriger LearningModule.ts :
   momentumWeight?: number;
   serveDominance?: number;
 }
@@ -25,8 +24,7 @@ export interface LearningExperience {
   outcome: 'WIN' | 'LOSS' | 'VOID';
   circuit: Circuit;
   adjustments: string;
-  // Ajouté pour corriger LearningModule.ts :
-  result?: string; 
+  result?: string;
 }
 
 // --- Joueurs & Attributs ---
@@ -71,9 +69,8 @@ export interface OddsAnalysis {
 }
 
 // --- Bankroll ---
-// On met number | string pour corriger l'erreur TS2322 dans BankrollManager
 export interface BankrollSimulationMetric {
-  finalBankroll: number | string; 
+  finalBankroll: number | string;
   riskOfRuin: number | string;
   volatility: number | string;
   maxBankroll: number | string;
@@ -81,7 +78,7 @@ export interface BankrollSimulationMetric {
   paths: { x: number; y: number }[][];
 }
 
-export type SimulationResult = BankrollSimulationMetric; 
+export type SimulationResult = BankrollSimulationMetric;
 
 export interface BetRecord {
     id: string;
@@ -89,8 +86,7 @@ export interface BetRecord {
     matchTitle: string;
     selection: string;
     odds: number;
-    // On permet string au cas où le code utilise .toFixed()
-    stake: number | string; 
+    stake: number | string;
     status: 'PENDING' | 'WON' | 'LOST' | 'VOID';
     profit: number | string;
     date: string;
@@ -110,4 +106,64 @@ export interface BankrollState {
 }
 
 // --- Prédictions ---
-export i
+export interface DetailedPrediction {
+  winner: string;
+  confidence: number;
+  scorePrediction: string;
+  totalGames: number;
+  riskLevel: RiskLevel;
+}
+
+export interface AIPrediction {
+  winner: string;
+  confidence: number;
+  recommendedBet: string;
+  riskLevel: RiskLevel;
+  marketType: string;
+  circuit: string;
+  totalGamesProjection?: number;
+  winProbA?: number;
+  winProbB?: number;
+  fairOdds?: { p1: number; p2: number };
+  attributes?: PlayerAttributes[];
+  monteCarlo?: { setDistribution: { [key: string]: number } };
+  expectedSets?: string;
+  tieBreakProbability?: number;
+  breaks?: { p1: number; p2: number };
+  trap?: { isTrap: boolean; verdict?: string; reason?: string };
+  integrity?: { isSuspicious: boolean; score: number; reason?: string };
+  qualitativeAnalysis?: string;
+  structuralAnalysis?: string;
+  quantitativeAnalysis?: string;
+  oddsAnalysis?: OddsAnalysis;
+}
+
+export interface LiveUpdatePayload {
+  matchId: string;
+  score: string;
+  pointByPoint: string[];
+  momentum: number;
+}
+
+// --- Combinés ---
+export interface ComboSelection {
+    matchId: string;
+    player1: string;
+    player2: string;
+    selection: string;
+    odds: number;
+    confidence: number;
+    reason: string;
+    valueScore?: number;
+}
+
+export interface ComboStrategy {
+  type: 'Safe' | 'Balanced' | 'Value' | 'Oracle Ultra Premium';
+  selections: ComboSelection[];
+  combinedOdds: number;
+  successProbability: number;
+  riskScore: string;
+  expectedRoi?: number;
+}
+
+export type ComboStrategyResult = ComboStrategy;
