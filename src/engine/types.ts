@@ -1,24 +1,26 @@
 // Fichier : src/types.ts
-
-// Correction du chemin : on utilise ./ car engine est dans le même dossier src
-import { OddsAnalysis } from './engine/types'; 
+// CORRECTION ICI : on met ./ et pas ../ car engine est dans src
+import { OddsAnalysis } from './engine/types';
 
 export interface Player {
   name: string;
   rank: number;
   country: string;
   form: number;
-  surfacePrefs: { hard: number; clay: number; grass: number };
+  surfacePrefs: {
+    hard: number;
+    clay: number;
+    grass: number;
+  };
 }
 
 export interface MatchOdds {
   player1: number;
   player2: number;
-  p1: number; // Alias pour compatibilité
-  p2: number; // Alias pour compatibilité
+  p1: number;
+  p2: number;
 }
 
-// Structure complète pour AnalysisPage
 export interface AIPrediction {
   winner: string;
   confidence: number;
@@ -27,11 +29,19 @@ export interface AIPrediction {
   marketType: string;
   circuit: string;
   
-  // Données graphiques AnalysisPage
   winProbA?: number;
   winProbB?: number;
+  
   fairOdds?: { p1: number; p2: number };
-  attributes?: { power: number; serve: number; return: number; mental: number; form: number }[];
+  
+  attributes?: { 
+    power: number; 
+    serve: number; 
+    return: number; 
+    mental: number; 
+    form: number 
+  }[];
+  
   monteCarlo?: {
       setDistribution: { [key: string]: number };
   };
@@ -47,7 +57,7 @@ export interface AIPrediction {
   structuralAnalysis?: string;
   quantitativeAnalysis?: string;
   
-  oddsAnalysis?: OddsAnalysis; // Liaison avec le moteur de cotes
+  oddsAnalysis?: OddsAnalysis; 
 }
 
 export interface Match {
