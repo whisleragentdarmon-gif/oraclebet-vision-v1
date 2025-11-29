@@ -32,6 +32,8 @@ export interface Match {
   odds: MatchOdds;
   ai?: AIPrediction;
   surface: 'Hard' | 'Clay' | 'Grass' | 'Indoor';
+  // 👇 AJOUT ICI : Pour savoir si tu as validé le résultat
+  validationResult?: 'CORRECT' | 'WRONG' | 'PENDING'; 
 }
 
 export type MatchStatus = Match['status'];
