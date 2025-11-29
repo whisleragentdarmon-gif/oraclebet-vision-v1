@@ -1,75 +1,55 @@
 import React from 'react';
-import { ArrowRight, BarChart } from 'lucide-react';
+import { OddsAnalysis } from '../engine/types';
+import { ExternalLink, TrendingUp, TrendingDown, AlertTriangle } from 'lucide-react';
 
-interface OddsAnalysis {
-  provider: string;
-  p1: number;
-  p2: number;
-}
-
-interface OddsComparatorProps {
-  analysis?: OddsAnalysis[];
+interface Props {
+  analysis: OddsAnalysis;
   fairOdds?: { p1: number; p2: number };
   player1: string;
   player2: string;
 }
 
-export const OddsComparator: React.FC<OddsComparatorProps> = ({ analysis, fairOdds, player1, player2 }) => {
-  // Mock data if analysis is missing (to prevent crash)
-  const oddsData = analysis || [
-    { provider: 'Betclic', p1: 1.85, p2: 1.95 },
-    { provider: 'Winamax', p1: 1.88, p2: 1.92 },
-    { provider: 'Unibet', p1: 1.82, p2: 2.00 },
-  ];
-
+export const OddsComparator: React.FC<Props> = ({ analysis, fairOdds, player1, player2 }) => {
   return (
-    <div className="bg-surfaceHighlight rounded-xl p-6 border border-neutral-700">
-      <div className="flex items-center gap-2 mb-4">
-         <BarChart className="text-neon" size={20} />
-         <h3 className="font-bold text-white">Comparateur de Cotes</h3>
+    <div className="bg-surfaceHighlight rounded-xl border border-neutral-800 overflow-hidden">
+      <div className="p-4 border-b border-neutral-800 flex justify-between items-center">
+        <h3 className="font-bold text-white flex items-center gap-2">
+           Scanneur de Cotes
+        </h3>
+        <span className="text-xs text-green-500 bg-green-900/20 px-2 py-1 rounded border border-green-500/30">
+           {analysis.recommendedBookie} Recommandé
+        </span>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-gray-500 border-b border-neutral-700">
-              <th className="text-left pb-2">Bookmaker</th>
-              <th className="text-center pb-2">{player1}</th>
-              <th className="text-center pb-2">{player2}</th>
-              <th className="text-right pb-2">Action</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-neutral-800">
-            {oddsData.map((book, idx) => (
-              <tr key={idx} className="hover:bg-white/5 transition-colors">
-                <td className="py-3 font-bold text-gray-300">{book.provider}</td>
-                <td className="py-3 text-center">
-                   <span className={`px-2 py-1 rounded ${fairOdds && book.p1 > fairOdds.p1 ? 'bg-green-500/20 text-green-400 border border-green-500/50' : 'text-gray-400'}`}>
-                     {book.p1.toFixed(2)}
+      <div className="p-4 grid grid-cols-1 gap-2">
+        {analysis.bookmakers.map((bookie, idx) => (
+          <div key={idx} className="flex items-center justify-between bg-black/20 p-3 rounded hover:bg-black/40 transition-colors">
+             <div className="flex items-center gap-3 w-1/3">
+                <span className="font-bold text-sm text-gray-300">{bookie.name}</span>
+                {bookie.isValue && <span className="text-[10px] bg-yellow-500/20 text-yellow-500 px-1 rounded">VALUE</span>}
+             </div>
+             
+             <div className="flex gap-4 text-sm font-mono">
+                <div className="flex flex-col items-center">
+                   <span className={bookie.p1 >= (fairOdds?.p1 || 0) ? "text-green-400 font-bold" : "text-gray-500"}>
+                     {bookie.p1.toFixed(2)}
                    </span>
-                </td>
-                <td className="py-3 text-center">
-                   <span className={`px-2 py-1 rounded ${fairOdds && book.p2 > fairOdds.p2 ? 'bg-green-500/20 text-green-400 border border-green-500/50' : 'text-gray-400'}`}>
-                     {book.p2.toFixed(2)}
+                </div>
+                <div className="flex flex-col items-center">
+                   <span className={bookie.p2 >= (fairOdds?.p2 || 0) ? "text-green-400 font-bold" : "text-gray-500"}>
+                     {bookie.p2.toFixed(2)}
                    </span>
-                </td>
-                <td className="py-3 text-right">
-                   <button className="text-xs bg-neutral-800 hover:bg-neutral-700 px-3 py-1.5 rounded-lg flex items-center gap-1 ml-auto transition-colors">
-                     Parier <ArrowRight size={12} />
-                   </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      
-      {fairOdds && (
-          <div className="mt-4 pt-4 border-t border-neutral-700 flex justify-between text-xs text-gray-500">
-              <span>Fair Odds (IA): {fairOdds.p1.toFixed(2)} vs {fairOdds.p2.toFixed(2)}</span>
-              <span className="text-neon">Détection de Value Bet active</span>
+                </div>
+             </div>
+
+             <div className="w-1/4 flex justify-end">
+                <button className="text-gray-500 hover:text-white transition-colors">
+                   <ExternalLink size={14} />
+                </button>
+             </div>
           </div>
-      )}
+        ))}
+      </div>
     </div>
   );
 };
