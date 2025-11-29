@@ -4,14 +4,12 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>OracleBet Vision v1</title>
-    <!-- Chargement de la police Inter -->
+    <!-- On charge la police proprement -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
-    <!-- Le lien vers le CSS global qui contient le Tailwind compilé -->
-    <link rel="stylesheet" href="/index.css"> 
   </head>
-  <body>
+  <body class="bg-carbon text-white font-sans antialiased">
     <div id="root"></div>
-    <!-- POINT D'ENTRÉE CORRIGÉ : utilise le chemin racine -->
-    <script type="module" src="/src/index.tsx"></script> 
+    <!-- LE FIX CRUCIAL EST ICI : on pointe vers le bon dossier src/ -->
+    <script type="module" src="/src/index.tsx"></script>
   </body>
 </html>
