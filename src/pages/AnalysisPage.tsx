@@ -1,31 +1,36 @@
 import React, { useState } from 'react';
 import { MOCK_MATCHES } from '../constants';
 import { MatchCard } from '../components/MatchCard';
-import { OddsComparator } from '../components/OddsComparator'; // Updated Comparator
+import { OddsComparator } from '../components/OddsComparator';
 import { Match } from '../types';
 import { 
   BarChart, Bar, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend
 } from 'recharts';
-import { AlertTriangle, CheckCircle, TrendingUp, ShieldAlert, Siren, Globe, Cpu, AlignLeft, Calculator, Lightbulb, Activity, Target } from 'lucide-react';
+import { TrendingUp, ShieldAlert, Siren, Globe, Cpu, AlignLeft, Calculator, Lightbulb, Activity, Target } from 'lucide-react';
 
 export const AnalysisPage: React.FC = () => {
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(MOCK_MATCHES[0]);
 
-  // Transform data for charts
+  // SÉCURITÉ 1 : Données pour le graphique de Victoire
   const winProbData = selectedMatch?.ai ? [
-    { name: selectedMatch.player1.name, prob: selectedMatch.ai.winProbA, fill: '#6B7280' },
-    { name: selectedMatch.player2.name, prob: selectedMatch.ai.winProbB, fill: '#FF7A00' }
+    { name: selectedMatch.player1.name, prob: selectedMatch.ai.winProbA || 50, fill: '#6B7280' },
+    { name: selectedMatch.player2.name, prob: selectedMatch.ai.winProbB || 50, fill: '#FF7A00' }
   ] : [];
 
-  const radarData = selectedMatch?.ai ? [
-    { subject: 'Puissance', A: selectedMatch.ai.attributes?.[0].power || 0, B: selectedMatch.ai.attributes?.[1].power || 0, fullMark: 100 },
-    { subject: 'Service', A: selectedMatch.ai.attributes?.[0].serve || 0, B: selectedMatch.ai.attributes?.[1].serve || 0, fullMark: 100 },
-    { subject: 'Retour', A: selectedMatch.ai.attributes?.[0].return || 0, B: selectedMatch.ai.attributes?.[1].return || 0, fullMark: 100 },
-    { subject: 'Mental', A: selectedMatch.ai.attributes?.[0].mental || 0, B: selectedMatch.ai.attributes?.[1].mental || 0, fullMark: 100 },
-    { subject: 'Forme', A: selectedMatch.ai.attributes?.[0].form || 0, B: selectedMatch.ai.attributes?.[1].form || 0, fullMark: 100 },
+  // SÉCURITÉ 2 : Données pour le Radar (Attributs)
+  // On vérifie que 'attributes' existe ET qu'il a bien 2 éléments
+  const attributes = selectedMatch?.ai?.attributes;
+  const radarData = attributes && attributes.length >= 2 ? [
+    { subject: 'Puissance', A: attributes[0].power || 0, B: attributes[1].power || 0, fullMark: 100 },
+    { subject: 'Service', A: attributes[0].serve || 0, B: attributes[1].serve || 0, fullMark: 100 },
+    { subject: 'Retour', A: attributes[0].return || 0, B: attributes[1].return || 0, fullMark: 100 },
+    { subject: 'Mental', A: attributes[0].mental || 0, B: attributes[1].mental || 0, fullMark: 100 },
+    { subject: 'Forme', A: attributes[0].form || 0, B: attributes[1].form || 0, fullMark: 100 },
   ] : [];
 
-  const setDistData = selectedMatch?.ai?.monteCarlo ? Object.entries(selectedMatch.ai.monteCarlo.setDistribution).map(([score, prob]) => ({
+  // SÉCURITÉ 3 : Données Monte Carlo
+  const monteCarlo = selectedMatch?.ai?.monteCarlo;
+  const setDistData = monteCarlo ? Object.entries(monteCarlo.setDistribution).map(([score, prob]) => ({
       name: score, value: parseFloat((prob * 100).toFixed(1))
   })) : [];
 
@@ -40,7 +45,7 @@ export const AnalysisPage: React.FC = () => {
 
   return (
     <div className="flex flex-col lg:flex-row gap-6 h-full">
-      {/* List Column */}
+      {/* Colonne de Gauche : Liste des Matchs */}
       <div className="lg:w-1/3 flex flex-col gap-4">
         <h2 className="text-2xl font-bold mb-2">Sélectionner un Match</h2>
         <div className="overflow-y-auto pr-2 space-y-3 max-h-[80vh]">
@@ -56,7 +61,7 @@ export const AnalysisPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Detail Column */}
+      {/* Colonne de Droite : Détails de l'Analyse */}
       <div className="lg:w-2/3">
         {selectedMatch && selectedMatch.ai ? (
           <div className="bg-surface border border-neutral-800 rounded-2xl p-6 h-full shadow-2xl animate-fade-in overflow-y-auto">
@@ -77,7 +82,7 @@ export const AnalysisPage: React.FC = () => {
                </div>
             </div>
 
-            {/* AI Recommendation Banner */}
+            {/* Bannière de Recommandation IA */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
                <div className="md:col-span-2 bg-gradient-to-r from-neutral-900 to-carbon border border-neon/30 p-4 rounded-xl flex items-center gap-4 relative overflow-hidden">
                   <div className="absolute right-0 bottom-0 opacity-10"><TrendingUp size={100} /></div>
@@ -91,7 +96,7 @@ export const AnalysisPage: React.FC = () => {
                   </div>
                </div>
 
-               {/* Suspicious Score / Trap */}
+               {/* Score de Suspicion / Piège */}
                <div className="space-y-2">
                  {selectedMatch.ai.integrity && (
                    <div className={`p-3 rounded-lg border flex items-center gap-2 text-xs ${selectedMatch.ai.integrity.score > 50 ? 'bg-red-900/20 border-red-500 text-red-400' : 'bg-surfaceHighlight border-neutral-700 text-gray-400'}`}>
@@ -113,14 +118,14 @@ export const AnalysisPage: React.FC = () => {
                       <ShieldAlert size={16} />
                       <div>
                         <p className="font-bold">Scanner Bookmaker</p>
-                        <p>{selectedMatch.ai.trap.verdict || (selectedMatch.ai.trap.isTrap ? 'Piège détecté' : 'Aucun piège')}</p>
+                        <p>{selectedMatch.ai.trap.verdict || (selectedMatch.ai.trap.isTrap ? 'Piège détecté' : 'Safe')}</p>
                       </div>
                    </div>
                  )}
                </div>
             </div>
 
-            {/* Fair Odds vs Market Odds (Value Engine) */}
+            {/* Fair Odds vs Marché */}
             {selectedMatch.ai.fairOdds && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
                   <div className="bg-black/30 rounded-xl p-4 border border-neutral-800">
@@ -165,7 +170,7 @@ export const AnalysisPage: React.FC = () => {
               </div>
             )}
             
-            {/* NEW COMPARATOR MODULE */}
+            {/* Comparateur de Cotes */}
             {selectedMatch.ai.oddsAnalysis && selectedMatch.ai.fairOdds && (
                 <div className="mb-8">
                     <OddsComparator 
@@ -177,7 +182,7 @@ export const AnalysisPage: React.FC = () => {
                 </div>
             )}
 
-            {/* Monte Carlo Module */}
+            {/* Module Monte Carlo */}
             <div className="bg-surfaceHighlight rounded-xl p-5 border border-neutral-700 mb-8 relative overflow-hidden">
                 <div className="absolute -right-4 -top-4 text-neutral-700 opacity-20"><Cpu size={120} /></div>
                 <div className="flex items-center gap-2 mb-4">
@@ -188,9 +193,9 @@ export const AnalysisPage: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10">
                     <div>
                         <p className="text-gray-400 text-xs uppercase mb-1">Scénario le plus probable</p>
-                        <p className="text-2xl font-bold text-white">{selectedMatch.ai.expectedSets}</p>
+                        <p className="text-2xl font-bold text-white">{selectedMatch.ai.expectedSets || "N/A"}</p>
                         <p className="text-xs text-gray-500 mt-1">
-                            Proba Tie-Break: <span className="text-white">{selectedMatch.ai.tieBreakProbability}%</span>
+                            Proba Tie-Break: <span className="text-white">{selectedMatch.ai.tieBreakProbability || 0}%</span>
                         </p>
                     </div>
                     {selectedMatch.ai.breaks && (
@@ -220,52 +225,46 @@ export const AnalysisPage: React.FC = () => {
                                 </BarChart>
                             </ResponsiveContainer>
                         </div>
-                        <div className="flex justify-between text-[10px] text-gray-500 px-1">
-                            {setDistData.map(d => <span key={d.name}>{d.name}</span>)}
-                        </div>
                     </div>
                 </div>
             </div>
 
-            {/* Analysis Text & Charts */}
+            {/* Analyses Textuelles */}
             <div className="grid grid-cols-1 gap-4 mb-8">
-               {/* Qualitative / Verdict */}
                <div className="bg-black/20 p-4 rounded-lg border-l-4 border-neon">
                   <div className="flex items-center gap-2 mb-2">
                       <Lightbulb size={16} className="text-neon"/>
                       <h4 className="font-bold text-white text-sm">Analyse Qualitative & Verdict</h4>
                   </div>
                   <p className="text-gray-300 text-sm leading-relaxed whitespace-pre-line">
-                      {selectedMatch.ai.qualitativeAnalysis}
+                      {selectedMatch.ai.qualitativeAnalysis || "Analyse en cours..."}
                   </p>
                </div>
                
                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                   {/* Structural */}
                    <div className="bg-surfaceHighlight p-4 rounded-lg border border-neutral-800">
                         <div className="flex items-center gap-2 mb-2">
                             <AlignLeft size={16} className="text-blue-500"/>
                             <h4 className="font-bold text-white text-sm">Analyse Structurelle</h4>
                         </div>
                         <p className="text-gray-400 text-xs leading-relaxed whitespace-pre-line">
-                            {selectedMatch.ai.structuralAnalysis}
+                            {selectedMatch.ai.structuralAnalysis || "Pas de données structurelles."}
                         </p>
                    </div>
                    
-                   {/* Quantitative */}
                    <div className="bg-surfaceHighlight p-4 rounded-lg border border-neutral-800">
                         <div className="flex items-center gap-2 mb-2">
                             <Calculator size={16} className="text-green-500"/>
                             <h4 className="font-bold text-white text-sm">Données Quantitative</h4>
                         </div>
                         <p className="text-gray-400 text-xs leading-relaxed whitespace-pre-line">
-                            {selectedMatch.ai.quantitativeAnalysis}
+                            {selectedMatch.ai.quantitativeAnalysis || "Calculs en cours..."}
                         </p>
                    </div>
                </div>
             </div>
 
-            {/* Charts Grid */}
+            {/* Graphiques Finaux */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                <div className="bg-surfaceHighlight rounded-xl p-4 border border-neutral-800">
                  <h4 className="text-gray-400 text-xs uppercase mb-4 text-center">Probabilité de Victoire</h4>
@@ -284,30 +283,4 @@ export const AnalysisPage: React.FC = () => {
                </div>
 
                <div className="bg-surfaceHighlight rounded-xl p-4 border border-neutral-800">
-                  <h4 className="text-gray-400 text-xs uppercase mb-2 text-center">Comparatif Attributs</h4>
-                  <div className="h-[200px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
-                        <PolarGrid stroke="#333" />
-                        <PolarAngleAxis dataKey="subject" tick={{ fill: '#9CA3AF', fontSize: 10 }} />
-                        <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
-                        <Radar name={selectedMatch.player1.name} dataKey="A" stroke="#8884d8" fill="#8884d8" fillOpacity={0.3} />
-                        <Radar name={selectedMatch.player2.name} dataKey="B" stroke="#FF7A00" fill="#FF7A00" fillOpacity={0.5} />
-                        <Legend iconSize={8} wrapperStyle={{fontSize: '10px'}} />
-                        <Tooltip contentStyle={{backgroundColor: '#1F1F1F', border: '1px solid #333', color: '#fff'}} />
-                      </RadarChart>
-                    </ResponsiveContainer>
-                  </div>
-               </div>
-            </div>
-
-          </div>
-        ) : (
-          <div className="flex items-center justify-center h-full text-gray-500">
-            Sélectionnez un match pour voir l'analyse
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
+                  <h4 className="text-gray-400 text-xs uppercase mb-2 text-center">
