@@ -7,21 +7,20 @@ import { AdminPage } from './pages/AdminPage';
 import { VipPage } from './pages/VipPage';
 import { BankrollPage } from './pages/BankrollPage';
 import { LoginPage } from './pages/LoginPage';
+// 👇 AJOUT IMPORTANT
+import { HistoryPage } from './pages/HistoryPage'; 
 import { BankrollProvider } from './context/BankrollContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ConfigProvider } from './context/ConfigContext';
 
-// Composant qui gère l'affichage selon si on est connecté ou non
 const AuthenticatedApp: React.FC = () => {
   const { isAuthenticated } = useAuth();
   const [activeTab, setActiveTab] = useState('analysis');
 
-  // Si pas connecté, on affiche le Login
   if (!isAuthenticated) {
     return <LoginPage />;
   }
 
-  // Logique d'affichage des pages (Tabs)
   const renderContent = () => {
     switch (activeTab) {
       case 'live':
@@ -30,6 +29,8 @@ const AuthenticatedApp: React.FC = () => {
         return <LivePage filter="TODAY" title="Matchs du Jour" />;
       case 'upcoming':
         return <LivePage filter="UPCOMING" title="Matchs à Venir" />;
+      case 'history': // 👇 AJOUT IMPORTANT : Le cas pour afficher l'historique
+        return <HistoryPage />;
       case 'analysis':
         return <AnalysisPage />;
       case 'combos':
@@ -45,7 +46,6 @@ const AuthenticatedApp: React.FC = () => {
     }
   };
 
-  // On retourne le Layout (ton design) avec le contenu au milieu
   return (
     <Layout activeTab={activeTab} onTabChange={setActiveTab}>
       <div className="animate-fade-in">
@@ -55,7 +55,6 @@ const AuthenticatedApp: React.FC = () => {
   );
 };
 
-// Application principale avec tous les Providers (Contextes)
 const App: React.FC = () => {
   return (
     <AuthProvider>
