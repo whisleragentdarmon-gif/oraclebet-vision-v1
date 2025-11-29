@@ -4,73 +4,28 @@
 
 :root {
   font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-
   color-scheme: dark;
-  background-color: #09090b; /* Couleur Carbon de fond */
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Force l'application à prendre toute la hauteur */
-html, body, #root {
-  height: 100%;
-  width: 100%;
+body {
   margin: 0;
   padding: 0;
-  overflow-x: hidden; /* Évite le scroll horizontal inutile */
+  background-color: #0D0D0D; /* Carbon */
+  color: #ffffff;
+  min-height: 100vh;
 }
 
-/* Classes utilitaires personnalisées */
-.bg-surface {
-  background-color: #111111;
-}
-
-.bg-surfaceHighlight {
-  background-color: #1a1a1a;
-}
-
-.text-neon {
-  color: #00f3ff;
-}
-
-.bg-neon {
-  background-color: #00f3ff;
-  color: #000;
-}
-
-.bg-neonHover {
-  background-color: #06ddee;
-}
-
-/* Animation douce d'apparition */
-@keyframes fade-in {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.animate-fade-in {
-  animation: fade-in 0.4s ease-out forwards;
-}
-
-/* Scrollbar stylisée "Dark Mode" */
+/* Scrollbar stylisée */
 ::-webkit-scrollbar {
   width: 8px;
-  height: 8px;
 }
-
 ::-webkit-scrollbar-track {
-  background: #09090b; 
+  background: #0D0D0D; 
 }
-
 ::-webkit-scrollbar-thumb {
   background: #333; 
   border-radius: 4px;
 }
-
 ::-webkit-scrollbar-thumb:hover {
-  background: #444; 
+  background: #FF7A00; 
 }
