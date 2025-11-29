@@ -10,7 +10,6 @@ export const BankrollPage: React.FC = () => {
   const [simResults, setSimResults] = useState<any>(null);
 
   const runSimulation = () => {
-    // Determine win rate from history or default to 60% if no history
     const winRate = state.totalBets > 0 ? (state.wins / state.totalBets) * 100 : 60;
     const avgOdds = state.history.length > 0 
         ? state.history.reduce((acc, curr) => acc + curr.odds, 0) / state.history.length 
@@ -20,22 +19,15 @@ export const BankrollPage: React.FC = () => {
     setSimResults(results);
   };
 
-  // Prepare chart data (reverse history for chronological order)
   const chartData = [...state.history].reverse().map((bet, index) => {
-      // Reconstruct balance history simplified
-      return { 
-          name: `Bet ${index + 1}`, 
-          profit: bet.profit 
-      };
+      return { name: `Bet ${index + 1}`, profit: typeof bet.profit === 'number' ? bet.profit : parseFloat(bet.profit as string) };
   });
   
-  // Create cumulative balance array for chart
   let runningBalance = state.startBalance;
   const balanceCurve = chartData.map(d => {
       runningBalance += d.profit;
       return { name: d.name, balance: runningBalance };
   });
-  // Add start point
   balanceCurve.unshift({ name: 'Start', balance: state.startBalance });
 
   return (
@@ -99,7 +91,6 @@ export const BankrollPage: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
           {/* Chart Section */}
           <div className="lg:col-span-2 bg-surface border border-neutral-800 rounded-xl p-6">
              <h3 className="font-bold text-lg mb-6">Évolution du Capital</h3>
@@ -161,54 +152,6 @@ export const BankrollPage: React.FC = () => {
                   </div>
               )}
           </div>
-      </div>
-
-      {/* Bet History Table */}
-      <div className="bg-surface border border-neutral-800 rounded-xl overflow-hidden">
-        <div className="p-4 border-b border-neutral-800 flex justify-between items-center">
-          <h3 className="font-bold">Historique de Paris</h3>
-          <span className="text-xs text-gray-500">{state.history.length} paris validés</span>
-        </div>
-        <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm text-gray-400">
-            <thead className="bg-black/20 text-gray-200">
-                <tr>
-                <th className="p-4">Date</th>
-                <th className="p-4">Match</th>
-                <th className="p-4">Sélection</th>
-                <th className="p-4 text-center">Mise</th>
-                <th className="p-4 text-center">Cote</th>
-                <th className="p-4 text-right">Résultat</th>
-                <th className="p-4 text-right">Gain</th>
-                </tr>
-            </thead>
-            <tbody>
-                {state.history.length > 0 ? state.history.map(bet => (
-                <tr key={bet.id} className="border-t border-neutral-800 hover:bg-white/5">
-                    <td className="p-4 text-xs font-mono">{bet.date.split(',')[0]}</td>
-                    <td className="p-4 font-medium text-white">{bet.matchTitle}</td>
-                    <td className="p-4">
-                        <span className="text-neon">{bet.selection}</span>
-                    </td>
-                    <td className="p-4 text-center">{bet.stake.toFixed(2)} €</td>
-                    <td className="p-4 text-center font-bold text-white">{bet.odds.toFixed(2)}</td>
-                    <td className={`p-4 text-right font-bold ${bet.status === 'WON' ? 'text-green-500' : 'text-red-500'}`}>
-                          {bet.status}
-                    </td>
-                    <td className={`p-4 text-right font-bold ${bet.status === 'WON' ? 'text-green-500' : 'text-red-500'}`}>
-                        {bet.profit > 0 ? '+' : ''}{bet.profit.toFixed(2)} €
-                    </td>
-                </tr>
-                )) : (
-                    <tr>
-                        <td colSpan={7} className="p-8 text-center text-gray-600 italic">
-                            Aucun pari validé pour le moment. Utilisez les boutons 👍/👎 sur les cartes de match.
-                        </td>
-                    </tr>
-                )}
-            </tbody>
-            </table>
-        </div>
       </div>
     </div>
   );
