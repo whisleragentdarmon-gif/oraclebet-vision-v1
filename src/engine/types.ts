@@ -1,6 +1,5 @@
 // Fichier : src/engine/types.ts
 
-// --- Types de base ---
 export type Circuit = 'ATP' | 'WTA' | 'CHALLENGER' | 'ITF';
 export type RiskLevel = 'SAFE' | 'MODERATE' | 'RISKY' | 'Safe' | 'Moderate' | 'Risky';
 export type PlayerStyle = 'Aggressive' | 'Defensive' | 'ServeVolley' | 'Balanced';
@@ -20,7 +19,6 @@ export interface AIModelWeights {
 export interface LearningExperience {
   matchId: string;
   date: string;
-  // AJOUT ICI pour corriger l'erreur :
   timestamp?: number;
   prediction: string;
   outcome: 'WIN' | 'LOSS' | 'VOID';
@@ -30,7 +28,23 @@ export interface LearningExperience {
   weightsUsed?: any;
 }
 
-// --- Joueurs & Attributs ---
+// --- DEEP DATA : PARAMÈTRES AVANCÉS ---
+export interface AdvancedStats {
+  timeOnCourt: number; // Heures jouées cette semaine (Fatigue)
+  breakPointConversion: number; // % de balles de break converties (Mental)
+  breakPointsSaved: number; // % de balles de break sauvées (Mental sous pression)
+  firstServeSpeedAvg: number; // Vitesse moyenne 1ère balle (km/h)
+  unforcedErrorsPerSet: number; // Précision
+}
+
+export interface MatchConditions {
+  courtSpeed: number; // 1 (Lent) à 100 (Rapide) -> Très important pour l'IA
+  weather: 'Sunny' | 'Cloudy' | 'Windy' | 'Indoor'; // Le vent tue les serveurs
+  temperature: number; // La chaleur accélère la balle
+  ballType?: string; // Wilson, Dunlop... (Détail pro)
+}
+
+// --- Joueurs ---
 export interface PlayerAttributes {
   power: number;
   serve: number;
@@ -41,7 +55,7 @@ export interface PlayerAttributes {
   speed?: number;
 }
 
-// --- Cotes & Bookmakers ---
+// --- Cotes & Mouvements (DETECTION TRUCAGE) ---
 export type BookmakerName = 'Winamax' | 'Betclic' | 'Unibet' | 'Pinnacle' | 'Bwin';
 
 export interface BookmakerOdds {
@@ -49,7 +63,8 @@ export interface BookmakerOdds {
   p1: number;
   p2: number;
   payout: number;
-  movement: 'UP' | 'DOWN' | 'STABLE';
+  openingOdds: { p1: number, p2: number }; // Cote à l'ouverture (pour voir la chute)
+  movement: 'UP' | 'DOWN' | 'STABLE' | 'CRASH'; // CRASH = Suspect
   isTrap: boolean;
   isValue: boolean;
 }
@@ -124,9 +139,7 @@ export interface AIPrediction {
   riskLevel: RiskLevel;
   marketType: string;
   circuit: string;
-  
   totalGamesProjection?: number; 
-  
   winProbA?: number;
   winProbB?: number;
   fairOdds?: { p1: number; p2: number };
@@ -174,27 +187,3 @@ export interface ComboStrategy {
 }
 
 export type ComboStrategyResult = ComboStrategy;
-// ... (Garde tout le reste au dessus)
-
-// AJOUT POUR FLASHCORE STYLE
-export interface PastMatch {
-  date: string;
-  tournament: string;
-  surface: 'Hard' | 'Clay' | 'Grass' | 'Indoor';
-  opponent: string;
-  score: string;
-  result: 'W' | 'L'; // Win ou Loss
-}
-
-// On met à jour Player pour inclure l'historique
-export interface Player {
-  name: string;
-  rank: number;
-  country: string;
-  form: number;
-  surfacePrefs: { hard: number; clay: number; grass: number };
-  // AJOUT : La liste des derniers matchs (comme tes screens)
-  lastMatches?: PastMatch[]; 
-}
-
-// ... (Le reste : Match, MatchOdds, etc.)
