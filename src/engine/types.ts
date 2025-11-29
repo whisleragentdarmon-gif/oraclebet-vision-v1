@@ -1,4 +1,7 @@
-import { OddsAnalysis } from '../engine/types';
+// Fichier : src/types.ts
+
+// Correction du chemin : on utilise ./ car engine est dans le même dossier src
+import { OddsAnalysis } from './engine/types'; 
 
 export interface Player {
   name: string;
