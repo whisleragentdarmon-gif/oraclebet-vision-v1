@@ -18,7 +18,6 @@ export const AnalysisPage: React.FC = () => {
   ] : [];
 
   // SÉCURITÉ 2 : Données pour le Radar (Attributs)
-  // On vérifie que 'attributes' existe ET qu'il a bien 2 éléments
   const attributes = selectedMatch?.ai?.attributes;
   const radarData = attributes && attributes.length >= 2 ? [
     { subject: 'Puissance', A: attributes[0].power || 0, B: attributes[1].power || 0, fullMark: 100 },
@@ -283,4 +282,30 @@ export const AnalysisPage: React.FC = () => {
                </div>
 
                <div className="bg-surfaceHighlight rounded-xl p-4 border border-neutral-800">
-                  <h4 className="text-gray-400 text-xs uppercase mb-2 text-center">
+                  <h4 className="text-gray-400 text-xs uppercase mb-2 text-center">Comparatif Attributs</h4>
+                  <div className="h-[200px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
+                        <PolarGrid stroke="#333" />
+                        <PolarAngleAxis dataKey="subject" tick={{ fill: '#9CA3AF', fontSize: 10 }} />
+                        <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
+                        <Radar name={selectedMatch.player1.name} dataKey="A" stroke="#8884d8" fill="#8884d8" fillOpacity={0.3} />
+                        <Radar name={selectedMatch.player2.name} dataKey="B" stroke="#FF7A00" fill="#FF7A00" fillOpacity={0.5} />
+                        <Legend iconSize={8} wrapperStyle={{fontSize: '10px'}} />
+                        <Tooltip contentStyle={{backgroundColor: '#1F1F1F', border: '1px solid #333', color: '#fff'}} />
+                      </RadarChart>
+                    </ResponsiveContainer>
+                  </div>
+               </div>
+            </div>
+
+          </div>
+        ) : (
+          <div className="flex items-center justify-center h-full text-gray-500">
+            Sélectionnez un match pour voir l'analyse
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
