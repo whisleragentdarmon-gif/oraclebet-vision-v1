@@ -1,6 +1,10 @@
 import { Circuit, SimulationResult, ComboStrategy } from './types';
 import { MonteCarlo } from './MonteCarlo'; 
 import { OddsEngine } from './OddsEngine'; 
+import { LearningModule } from './LearningModule'; // <-- Import du nouveau module
+
+// On crée une instance unique du cerveau
+const learningInstance = new LearningModule();
 
 export const OracleAI = {
   bankroll: {
@@ -16,7 +20,6 @@ export const OracleAI = {
   combo: {
     generateStrategies: (matches: any[]): ComboStrategy[] => {
       const safeMatches = matches.filter((m: any) => m.ai?.confidence > 80).slice(0, 3);
-      
       const strategies: ComboStrategy[] = [];
 
       if (safeMatches.length >= 2) {
@@ -24,7 +27,6 @@ export const OracleAI = {
           strategies.push({
             type: 'Safe',
             selections: safeMatches.map((m: any) => ({
-                // FIX: On ajoute matchId ici
                 matchId: m.id,
                 player1: m.player1.name,
                 player2: m.player2.name,
@@ -43,7 +45,6 @@ export const OracleAI = {
       strategies.push({
           type: 'Balanced',
           selections: matches.slice(0, 2).map((m: any) => ({
-            // FIX: On ajoute matchId ici aussi
             matchId: m.id,
             player1: m.player1.name,
             player2: m.player2.name,
@@ -63,9 +64,14 @@ export const OracleAI = {
   },
   predictor: {
     learning: {
+      // On utilise maintenant la VRAIE instance d'apprentissage
       learnFromMatch: (isWin: boolean, data: { circuit: Circuit, winnerPrediction: string, totalGames: number, riskLevel: string }, id: string) => {
-        return `Apprentissage IA : Match ${id} analysé. Résultat: ${isWin ? 'Victoire' : 'Défaite'}.`;
-      }
+        return learningInstance.learnFromMatch(isWin, data, id);
+      },
+      // Fonction pour exposer les stats à l'admin
+      getStats: () => learningInstance.getLearningStats(),
+      // Fonction pour le ré-entraînement manuel
+      retrain: (history: any[]) => learningInstance.retrainModelFromHistory(history)
     },
     analyzeOdds: (p1: string, p2: string, o1: number, o2: number) => {
         return OddsEngine.analyze(p1, p2, o1, o2);
