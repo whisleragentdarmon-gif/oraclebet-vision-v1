@@ -174,3 +174,27 @@ export interface ComboStrategy {
 }
 
 export type ComboStrategyResult = ComboStrategy;
+// ... (Garde tout le reste au dessus)
+
+// AJOUT POUR FLASHCORE STYLE
+export interface PastMatch {
+  date: string;
+  tournament: string;
+  surface: 'Hard' | 'Clay' | 'Grass' | 'Indoor';
+  opponent: string;
+  score: string;
+  result: 'W' | 'L'; // Win ou Loss
+}
+
+// On met à jour Player pour inclure l'historique
+export interface Player {
+  name: string;
+  rank: number;
+  country: string;
+  form: number;
+  surfacePrefs: { hard: number; clay: number; grass: number };
+  // AJOUT : La liste des derniers matchs (comme tes screens)
+  lastMatches?: PastMatch[]; 
+}
+
+// ... (Le reste : Match, MatchOdds, etc.)
