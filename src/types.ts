@@ -1,7 +1,9 @@
-// On importe les types techniques depuis le moteur
+// Fichier : src/types.ts
+
+// IMPORT PROPRE (Pas de ./types ici)
 import { OddsAnalysis, AIPrediction, PlayerAttributes } from './engine/types';
 
-// --- 1. DÉFINITION DES MATCHS PASSÉS (C'est ce qui manquait !) ---
+// Structure des Matchs Passés
 export interface PastMatch {
   date: string;
   tournament: string;
@@ -11,18 +13,12 @@ export interface PastMatch {
   result: 'W' | 'L';
 }
 
-// --- 2. MISE À JOUR DU JOUEUR (Avec l'historique) ---
 export interface Player {
   name: string;
   rank: number;
   country: string;
   form: number;
-  surfacePrefs: {
-    hard: number;
-    clay: number;
-    grass: number;
-  };
-  // C'est cette ligne qui corrige l'erreur "lastMatches n'existe pas"
+  surfacePrefs: { hard: number; clay: number; grass: number };
   lastMatches?: PastMatch[]; 
 }
 
@@ -33,7 +29,7 @@ export interface MatchOdds {
   p2: number;
 }
 
-// On ré-exporte pour que tout le monde puisse les utiliser
+// Ré-exportation propre
 export type { AIPrediction, OddsAnalysis, PlayerAttributes };
 
 export interface Match {
