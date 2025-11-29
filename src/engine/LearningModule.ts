@@ -44,7 +44,7 @@ export class LearningModule {
     }
 
     const newWeights = { ...this.currentWeights };
-    // Initialisation sécurisée des poids optionnels pour les calculs
+    // Initialisation sécurisée
     newWeights.formWeight = newWeights.formWeight || 0.3;
     newWeights.h2hWeight = newWeights.h2hWeight || 0.15;
     newWeights.variance = newWeights.variance || 0.05;
@@ -55,7 +55,6 @@ export class LearningModule {
     let errorScore = 0;
     let adjustments = 0;
 
-    // 1. Phase d'Analyse
     betHistory.forEach(bet => {
         if (bet.status === 'PENDING') return;
 
@@ -66,29 +65,24 @@ export class LearningModule {
         const error = Math.abs(outcomeValue - confidence);
         errorScore += error;
 
-        // 2. Logique d'Ajustement (Descente de gradient simplifiée)
         const learningRate = 0.005; 
 
         if (!isWin && confidence > 0.75) {
-            // "Faux Positif" : Trop confiant sur les stats
             newWeights.formWeight -= learningRate;
             newWeights.h2hWeight -= learningRate;
             newWeights.variance += learningRate * 2;
             newWeights.mentalWeight += learningRate;
             adjustments++;
         } else if (isWin && confidence < 0.60) {
-            // "Victoire Surprise" : On a sous-estimé la surface ou le momentum
             newWeights.surfaceWeight += learningRate;
             newWeights.momentumWeight += learningRate;
             newWeights.formWeight -= learningRate;
             adjustments++;
         } else if (isWin && confidence > 0.80) {
-            // "Prédiction Solide" : On renforce le biais actuel
             newWeights.formWeight += (learningRate / 2);
         }
     });
 
-    // 3. Normalisation (Évite les valeurs extrêmes)
     newWeights.variance = Math.max(0.01, Math.min(0.20, newWeights.variance));
     newWeights.mentalWeight = Math.max(0.05, Math.min(0.30, newWeights.mentalWeight));
     newWeights.formWeight = Math.max(0.10, Math.min(0.50, newWeights.formWeight));
@@ -97,7 +91,6 @@ export class LearningModule {
     const improvement = parseFloat(((adjustments / betHistory.length) * 1.5).toFixed(2));
     this.currentWeights = newWeights;
     
-    // Sauvegarde persistante
     if (typeof window !== 'undefined') {
         localStorage.setItem('oracle_ai_weights', JSON.stringify(newWeights));
     }
@@ -110,7 +103,7 @@ export class LearningModule {
   }
 
   /**
-   * Fonction d'apprentissage déclenchée par les boutons utilisateur PASS/FAIL
+   * Fonction d'apprentissage
    */
   public learnFromMatch(
     isSuccess: boolean, 
@@ -118,20 +111,20 @@ export class LearningModule {
     matchId: string
   ): string {
     
-    // 1. Enregistrer l'expérience
     const experience: LearningExperience = {
       matchId,
+      // C'EST ICI QUE J'AI AJOUTÉ LA LIGNE MANQUANTE :
+      date: new Date().toISOString(), 
+      timestamp: Date.now(),
       circuit: context.circuit,
       prediction: context.winnerPrediction,
-      outcome: isSuccess ? 'WIN' : 'LOSS', // Adapte au type WIN/LOSS
+      outcome: isSuccess ? 'WIN' : 'LOSS',
       adjustments: isSuccess ? 'Reinforcement' : 'Correction',
-      result: isSuccess ? 'PASS' : 'FAIL', // Propriété supplémentaire pour l'affichage
-      weightsUsed: { ...this.currentWeights },
-      timestamp: Date.now() // CORRECTION: Utilise un nombre (timestamp) et non une string
+      result: isSuccess ? 'PASS' : 'FAIL',
+      weightsUsed: { ...this.currentWeights }
     };
     this.history.push(experience);
 
-    // 2. Ajuster les poids
     let logMessage = "";
 
     if (isSuccess) {
@@ -142,7 +135,6 @@ export class LearningModule {
       logMessage = `❌ ÉCHEC: Recalibrage en cours. Variance et Facteur Mental augmentés pour ${context.circuit}.`;
     }
 
-    // Sauvegarde immédiate
     if (typeof window !== 'undefined') {
         localStorage.setItem('oracle_ai_weights', JSON.stringify(this.currentWeights));
     }
@@ -169,7 +161,6 @@ export class LearningModule {
       this.currentWeights.variance = (this.currentWeights.variance || 0.05) + rate;
 
       if (circuit === 'WTA') {
-          // Utilisation de || 1.0 pour éviter undefined sur serveDominance
           this.currentWeights.serveDominance = Math.max(0.1, (this.currentWeights.serveDominance || 1.0) - rate); 
           this.currentWeights.mentalWeight = (this.currentWeights.mentalWeight || 0.1) + rate;
           this.currentWeights.formWeight = (this.currentWeights.formWeight || 0.3) - rate; 
