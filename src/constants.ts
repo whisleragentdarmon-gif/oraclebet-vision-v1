@@ -1,28 +1,42 @@
 import { Match } from './types';
 
 export const MOCK_MATCHES: Match[] = [
-  // --- MATCH 1 : LE DIRECT (Ton Challenger Bogota) ---
   {
     id: 'live-bogota-ficovich',
     tournament: 'Challenger Bogota',
     date: '29.11.2025',
     time: '18:10',
     status: 'LIVE',
-    surface: 'Clay', // Terre battue (Point fort Ficovich)
-    score: '0-0 (2-2)', // Score du screenshot
+    surface: 'Clay',
+    score: '0-0 (2-2)',
     player1: { 
         name: 'Ficovich J.P.', 
         rank: 169, 
         country: 'ARG', 
         form: 90, 
-        surfacePrefs: { hard: 60, clay: 95, grass: 40 } 
+        surfacePrefs: { hard: 60, clay: 95, grass: 40 },
+        // 👇 LES DONNÉES DE TES SCREENS SONT ICI
+        lastMatches: [
+            { date: '28.11', tournament: 'Bogota', surface: 'Clay', opponent: 'Barrientos N.', score: '2-0', result: 'W' },
+            { date: '26.11', tournament: 'Bogota', surface: 'Clay', opponent: 'McCormick T.', score: '2-1', result: 'W' },
+            { date: '24.11', tournament: 'Bogota', surface: 'Clay', opponent: 'Alves M.', score: '2-1', result: 'W' },
+            { date: '24.10', tournament: 'Curitiba', surface: 'Clay', opponent: 'Boscardin P.', score: '0-2', result: 'L' },
+            { date: '13.10', tournament: 'Campinas', surface: 'Clay', opponent: 'Pacheco R.', score: '1-2', result: 'L' },
+        ]
     },
     player2: { 
         name: 'Gomez J.S.', 
         rank: 997, 
         country: 'COL', 
         form: 40, 
-        surfacePrefs: { hard: 50, clay: 60, grass: 30 } 
+        surfacePrefs: { hard: 50, clay: 60, grass: 30 },
+        lastMatches: [
+            { date: '28.11', tournament: 'Bogota', surface: 'Clay', opponent: 'Inconnu A.', score: '0-2', result: 'L' },
+            { date: '15.11', tournament: 'Futures', surface: 'Hard', opponent: 'Perez A.', score: '1-2', result: 'L' },
+            { date: '02.11', tournament: 'Futures', surface: 'Hard', opponent: 'Smith J.', score: '0-2', result: 'L' },
+            { date: '20.10', tournament: 'Bogota', surface: 'Clay', opponent: 'Local Player', score: '2-0', result: 'W' },
+            { date: '10.10', tournament: 'Medellin', surface: 'Clay', opponent: 'Top Seed', score: '0-2', result: 'L' },
+        ]
     },
     odds: { player1: 1.15, player2: 4.50, p1: 1.15, p2: 4.50 },
     ai: {
@@ -32,27 +46,20 @@ export const MOCK_MATCHES: Match[] = [
       riskLevel: 'SAFE',
       marketType: 'SET_BET',
       circuit: 'CHALLENGER',
-      
-      // Analyse basée sur tes captures
       fairOdds: { p1: 1.05, p2: 8.00 },
-      attributes: [
-        { power: 85, serve: 50, return: 80, mental: 85, form: 90 },
-        { power: 60, serve: 77, return: 40, mental: 50, form: 40 }
-      ],
-      qualitativeAnalysis: "Mismatch total. Ficovich est sur sa surface de prédilection. Gomez (ATP 997) ne tient pas la cadence en fond de court.",
-      structuralAnalysis: "Le % de premier service de Ficovich est faible (50%) mais il gagne 80% des points derrière.",
-      quantitativeAnalysis: "Ficovich reste sur 3 victoires consécutives ici.",
+      attributes: [{ power: 85, serve: 50, return: 80, mental: 85, form: 90 }, { power: 60, serve: 77, return: 40, mental: 50, form: 40 }],
+      qualitativeAnalysis: "Mismatch total. Ficovich reste sur 3 victoires solides ici à Bogota.",
+      structuralAnalysis: "Gomez est classé 997ème et peine en Futures.",
+      quantitativeAnalysis: "Ratio Victoire/Défaite sur Terre Battue : Ficovich 65% vs Gomez 40%.",
       integrity: { isSuspicious: false, score: 0 },
-      oddsAnalysis: { 
-          bestOdds: { p1: 1.15, p2: 4.75, bookieP1: 'Winamax', bookieP2: 'Unibet' }, 
-          marketAverage: { p1: 1.12, p2: 4.50 }, 
-          recommendedBookie: 'Winamax', 
-          kelly: { percentage: 10, advice: "Mise Max (Safe)" }, 
-          arbitrage: { isSurebet: false, profit: 0, bookmakerP1: '', bookmakerP2: '', msg: '' }, 
-          bookmakers: [] 
-      }
+      oddsAnalysis: { bestOdds: { p1: 1.15, p2: 4.75, bookieP1: 'Winamax', bookieP2: 'Unibet' }, marketAverage: { p1: 1.12, p2: 4.50 }, recommendedBookie: 'Winamax', kelly: { percentage: 10, advice: "Mise Max" }, arbitrage: { isSurebet: false, profit: 0, bookmakerP1: '', bookmakerP2: '', msg: '' }, bookmakers: [] }
     }
   },
+  
+  // ... (Garde les autres matchs en dessous comme avant)
+];
+
+// ... (Garde MOCK_ADMIN_STATS à la fin)
 
   // --- MATCH 2 : LIVE (ATP Miami - Pour avoir du contenu) ---
   {
