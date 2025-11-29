@@ -1,16 +1,15 @@
 import { AIModelWeights, Circuit, LearningExperience, BetRecord } from './types';
 
 /**
- * Self-Learning Engine
- * Adapts internal weights based on Pass/Fail user feedback.
- * Stores experience history to detect patterns.
+ * Moteur d'Auto-Apprentissage
+ * Adapte les poids internes en fonction des résultats PASS/FAIL (Succès/Échec).
  */
 export class LearningModule {
   private currentWeights: AIModelWeights;
   private history: LearningExperience[];
 
   constructor() {
-    // Default starting weights
+    // Poids par défaut
     this.currentWeights = {
       surfaceWeight: 0.35,
       formWeight: 0.30,
@@ -19,7 +18,7 @@ export class LearningModule {
       fatigueFactor: 0.10,
       momentumWeight: 0.20,
       variance: 0.05,
-      serveDominance: 1.0 // Baseline
+      serveDominance: 1.0 
     };
     this.history = [];
   }
@@ -33,8 +32,7 @@ export class LearningModule {
   }
 
   /**
-   * CORE ALGORITHM: Retrain Model from Real History
-   * This replaces the need for a Python backend by running the gradient adjustment locally.
+   * ALGORITHME CENTRAL : Ré-entraînement basé sur l'historique réel
    */
   public retrainModelFromHistory(betHistory: BetRecord[]): { weights: AIModelWeights, improvement: number, log: string } {
     if (betHistory.length < 5) {
@@ -46,58 +44,63 @@ export class LearningModule {
     }
 
     const newWeights = { ...this.currentWeights };
+    // Initialisation sécurisée des poids optionnels pour les calculs
+    newWeights.formWeight = newWeights.formWeight || 0.3;
+    newWeights.h2hWeight = newWeights.h2hWeight || 0.15;
+    newWeights.variance = newWeights.variance || 0.05;
+    newWeights.mentalWeight = newWeights.mentalWeight || 0.1;
+    newWeights.surfaceWeight = newWeights.surfaceWeight || 0.35;
+    newWeights.momentumWeight = newWeights.momentumWeight || 0.2;
+
     let errorScore = 0;
     let adjustments = 0;
 
-    // 1. Analysis Phase
+    // 1. Phase d'Analyse
     betHistory.forEach(bet => {
-        // Only analyze confirmed results
         if (bet.status === 'PENDING') return;
 
         const isWin = bet.status === 'WON';
-        const confidence = bet.confidenceAtTime / 100; // 0.85
+        const confidence = bet.confidenceAtTime / 100;
         
-        // Calculate "Surprise Factor"
         const outcomeValue = isWin ? 1 : 0;
         const error = Math.abs(outcomeValue - confidence);
         errorScore += error;
 
-        // 2. Weight Adjustment Logic (Gradient Descent simplified)
+        // 2. Logique d'Ajustement (Descente de gradient simplifiée)
         const learningRate = 0.005; 
 
         if (!isWin && confidence > 0.75) {
-            // "False Positive" - The model was too confident in stats (Form, H2H)
-            // We must reduce stat reliance and increase Variance/Chaos factors
+            // "Faux Positif" : Trop confiant sur les stats
             newWeights.formWeight -= learningRate;
             newWeights.h2hWeight -= learningRate;
-            newWeights.variance += learningRate * 2; // Acknowledge chaos
-            newWeights.mentalWeight += learningRate; // Mental often causes upsets
+            newWeights.variance += learningRate * 2;
+            newWeights.mentalWeight += learningRate;
             adjustments++;
         } else if (isWin && confidence < 0.60) {
-            // "Underdog Win" - We underestimated a factor
-            // Often implies Surface or Momentum was more important than Form
+            // "Victoire Surprise" : On a sous-estimé la surface ou le momentum
             newWeights.surfaceWeight += learningRate;
             newWeights.momentumWeight += learningRate;
             newWeights.formWeight -= learningRate;
             adjustments++;
         } else if (isWin && confidence > 0.80) {
-            // "Solid Prediction" - Reinforce current bias slightly
+            // "Prédiction Solide" : On renforce le biais actuel
             newWeights.formWeight += (learningRate / 2);
         }
     });
 
-    // 3. Normalize Weights (prevent infinite growth/shrink)
+    // 3. Normalisation (Évite les valeurs extrêmes)
     newWeights.variance = Math.max(0.01, Math.min(0.20, newWeights.variance));
     newWeights.mentalWeight = Math.max(0.05, Math.min(0.30, newWeights.mentalWeight));
     newWeights.formWeight = Math.max(0.10, Math.min(0.50, newWeights.formWeight));
     newWeights.surfaceWeight = Math.max(0.20, Math.min(0.60, newWeights.surfaceWeight));
 
-    // Calculate theoretical improvement
-    const improvement = parseFloat(((adjustments / betHistory.length) * 1.5).toFixed(2)); // Simulated gain
+    const improvement = parseFloat(((adjustments / betHistory.length) * 1.5).toFixed(2));
     this.currentWeights = newWeights;
     
-    // Explicitly Save to LocalStorage to ensure persistence "model_weights.json" style
-    localStorage.setItem('oracle_ai_weights', JSON.stringify(newWeights));
+    // Sauvegarde persistante
+    if (typeof window !== 'undefined') {
+        localStorage.setItem('oracle_ai_weights', JSON.stringify(newWeights));
+    }
 
     return {
         weights: newWeights,
@@ -107,7 +110,7 @@ export class LearningModule {
   }
 
   /**
-   * Core Learning Function triggered by User "Pass/Fail" buttons
+   * Fonction d'apprentissage déclenchée par les boutons utilisateur PASS/FAIL
    */
   public learnFromMatch(
     isSuccess: boolean, 
@@ -115,17 +118,20 @@ export class LearningModule {
     matchId: string
   ): string {
     
-    // 1. Store Experience
+    // 1. Enregistrer l'expérience
     const experience: LearningExperience = {
       matchId,
       circuit: context.circuit,
-      result: isSuccess ? 'PASS' : 'FAIL',
+      prediction: context.winnerPrediction,
+      outcome: isSuccess ? 'WIN' : 'LOSS', // Adapte au type WIN/LOSS
+      adjustments: isSuccess ? 'Reinforcement' : 'Correction',
+      result: isSuccess ? 'PASS' : 'FAIL', // Propriété supplémentaire pour l'affichage
       weightsUsed: { ...this.currentWeights },
-      timestamp: new Date().toISOString()
+      timestamp: Date.now() // CORRECTION: Utilise un nombre (timestamp) et non une string
     };
     this.history.push(experience);
 
-    // 2. Adjust Weights (Auto-Calibration)
+    // 2. Ajuster les poids
     let logMessage = "";
 
     if (isSuccess) {
@@ -136,8 +142,10 @@ export class LearningModule {
       logMessage = `❌ ÉCHEC: Recalibrage en cours. Variance et Facteur Mental augmentés pour ${context.circuit}.`;
     }
 
-    // Persist immediately
-    localStorage.setItem('oracle_ai_weights', JSON.stringify(this.currentWeights));
+    // Sauvegarde immédiate
+    if (typeof window !== 'undefined') {
+        localStorage.setItem('oracle_ai_weights', JSON.stringify(this.currentWeights));
+    }
 
     return logMessage;
   }
@@ -145,31 +153,32 @@ export class LearningModule {
   private reinforceWeights(circuit: Circuit) {
      const rate = 0.005; 
      if (circuit === 'ATP') {
-         this.currentWeights.formWeight += rate;
-         this.currentWeights.surfaceWeight += rate;
+         this.currentWeights.formWeight = (this.currentWeights.formWeight || 0.3) + rate;
+         this.currentWeights.surfaceWeight = (this.currentWeights.surfaceWeight || 0.35) + rate;
      } else if (circuit === 'WTA') {
-         this.currentWeights.mentalWeight += rate;
-         this.currentWeights.momentumWeight += rate;
+         this.currentWeights.mentalWeight = (this.currentWeights.mentalWeight || 0.1) + rate;
+         this.currentWeights.momentumWeight = (this.currentWeights.momentumWeight || 0.2) + rate;
      } else if (circuit === 'ITF') {
-         this.currentWeights.h2hWeight += rate;
+         this.currentWeights.h2hWeight = (this.currentWeights.h2hWeight || 0.15) + rate;
      }
   }
 
   private correctWeights(circuit: Circuit, riskLevel: string) {
       const rate = 0.02; 
 
-      this.currentWeights.variance += rate;
+      this.currentWeights.variance = (this.currentWeights.variance || 0.05) + rate;
 
       if (circuit === 'WTA') {
-          this.currentWeights.serveDominance = Math.max(0.1, this.currentWeights.serveDominance - rate); 
-          this.currentWeights.mentalWeight += rate;
-          this.currentWeights.formWeight -= rate; 
+          // Utilisation de || 1.0 pour éviter undefined sur serveDominance
+          this.currentWeights.serveDominance = Math.max(0.1, (this.currentWeights.serveDominance || 1.0) - rate); 
+          this.currentWeights.mentalWeight = (this.currentWeights.mentalWeight || 0.1) + rate;
+          this.currentWeights.formWeight = (this.currentWeights.formWeight || 0.3) - rate; 
       } else if (circuit === 'ATP') {
-          this.currentWeights.fatigueFactor += rate;
-          this.currentWeights.surfaceWeight += rate;
+          this.currentWeights.fatigueFactor = (this.currentWeights.fatigueFactor || 0.1) + rate;
+          this.currentWeights.surfaceWeight = (this.currentWeights.surfaceWeight || 0.35) + rate;
       } else if (circuit === 'CHALLENGER' || circuit === 'ITF') {
-          this.currentWeights.formWeight -= (rate * 2); 
-          this.currentWeights.mentalWeight += (rate * 2); 
+          this.currentWeights.formWeight = (this.currentWeights.formWeight || 0.3) - (rate * 2); 
+          this.currentWeights.mentalWeight = (this.currentWeights.mentalWeight || 0.1) + (rate * 2); 
       }
   }
 
