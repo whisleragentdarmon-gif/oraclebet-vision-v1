@@ -19,8 +19,6 @@ export const MOCK_MATCHES: Match[] = [
       riskLevel: 'MODERATE',
       marketType: 'WINNER',
       circuit: 'ATP',
-      
-      // Données graphiques AnalysisPage
       winProbA: 45,
       winProbB: 55,
       fairOdds: { p1: 2.10, p2: 1.75 },
@@ -34,14 +32,11 @@ export const MOCK_MATCHES: Match[] = [
       expectedSets: '1-2',
       tieBreakProbability: 60,
       breaks: { p1: 2.5, p2: 3.0 },
-      
       integrity: { isSuspicious: false, score: 12 },
       trap: { isTrap: false, verdict: "Cotes cohérentes" },
-      
       qualitativeAnalysis: "Match très serré. Sinner a l'avantage mental sur surface rapide indoor.",
       structuralAnalysis: "Le service de Sinner fait la différence dans les moments clés.",
       quantitativeAnalysis: "Ratio W/UE favorable à Sinner sur les 5 derniers matchs.",
-      
       oddsAnalysis: {
         bestOdds: { p1: 1.85, p2: 2.00, bookieP1: 'Winamax', bookieP2: 'Unibet' },
         marketAverage: { p1: 1.82, p2: 1.95 },
@@ -73,7 +68,6 @@ export const MOCK_MATCHES: Match[] = [
       riskLevel: 'SAFE',
       marketType: 'WINNER',
       circuit: 'ATP',
-      
       winProbA: 65,
       winProbB: 35,
       fairOdds: { p1: 1.55, p2: 2.80 },
@@ -87,14 +81,11 @@ export const MOCK_MATCHES: Match[] = [
       expectedSets: '2-0',
       tieBreakProbability: 40,
       breaks: { p1: 4.0, p2: 1.5 },
-      
       integrity: { isSuspicious: false, score: 5 },
       trap: { isTrap: false, verdict: "Safe Bet" },
-      
       qualitativeAnalysis: "Medvedev est le mur sur lequel Zverev va s'écraser aujourd'hui.",
       structuralAnalysis: "La défense de Medvedev forcera Zverev à la faute.",
       quantitativeAnalysis: "Zverev : 45% de fautes directes sous pression.",
-      
       oddsAnalysis: {
         bestOdds: { p1: 1.72, p2: 2.15, bookieP1: 'Winamax', bookieP2: 'Betclic' },
         marketAverage: { p1: 1.68, p2: 2.10 },
@@ -125,10 +116,8 @@ export const MOCK_MATCHES: Match[] = [
       riskLevel: 'RISKY',
       marketType: 'WINNER',
       circuit: 'CHALLENGER',
-      
       trap: { isTrap: true, verdict: "Piège retour de blessure", reason: 'Berrettini return from injury' },
       integrity: { isSuspicious: true, score: 65, reason: "Mouvements de cotes bizarres" },
-      
       winProbA: 52,
       winProbB: 48,
       fairOdds: { p1: 1.90, p2: 1.90 },
@@ -142,11 +131,9 @@ export const MOCK_MATCHES: Match[] = [
       expectedSets: '2-1',
       tieBreakProbability: 70,
       breaks: { p1: 1.5, p2: 1.5 },
-      
       qualitativeAnalysis: "Match piège par excellence. Berrettini manque de rythme mais son service reste une arme.",
       structuralAnalysis: "Nakashima est plus solide dans l'échange.",
       quantitativeAnalysis: "Volatilité extrême détectée sur ce match.",
-      
       oddsAnalysis: {
         bestOdds: { p1: 1.65, p2: 2.30, bookieP1: 'Winamax', bookieP2: 'Unibet' },
         marketAverage: { p1: 1.60, p2: 2.20 },
