@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Match, PastMatch } from '../types';
-import { X, Trophy, Clock, Zap, Calendar, BarChart3, Map, Swords } from 'lucide-react';
+import { X, Trophy, Clock, Zap, Calendar, BarChart3, Map, Swords, Wind, Thermometer, Gauge, TrendingDown } from 'lucide-react';
 
 interface Props {
   match: Match | null;
@@ -8,63 +8,49 @@ interface Props {
 }
 
 export const MatchDetailModal: React.FC<Props> = ({ match, onClose }) => {
-  const [activeTab, setActiveTab] = useState<'ANALYSIS' | 'FORM' | 'STATS'>('ANALYSIS');
+  const [activeTab, setActiveTab] = useState<'ANALYSIS' | 'FORM' | 'EXPERT'>('ANALYSIS');
 
   if (!match) return null;
 
-  // --- COMPOSANT : SCOREBOARD TV (Le vrai tableau de tennis) ---
   const TennisScoreboard = () => (
     <div className="bg-black border-y border-neutral-800 p-4">
         {/* En-têtes Sets */}
         <div className="flex justify-end gap-6 text-xs text-gray-500 mb-2 px-4">
             <span className="w-4 text-center">S1</span>
             <span className="w-4 text-center">S2</span>
-            <span className="w-4 text-center">S3</span>
-            <span className="w-8 text-center text-white font-bold">PTS</span>
+            <span className="w-4 text-center">PTS</span>
         </div>
-
-        {/* Joueur 1 */}
+        {/* J1 */}
         <div className="flex items-center justify-between bg-surfaceHighlight/50 p-2 rounded mb-1">
             <div className="flex items-center gap-3">
                 {match.status === 'LIVE' && <span className="text-neon text-[10px]">🎾</span>}
                 <span className={`font-bold ${match.ai?.winner === match.player1.name ? 'text-neon' : 'text-white'}`}>
                     {match.player1.name}
                 </span>
-                {/* Indicateur Surface Pref */}
-                <span className="text-[10px] px-1.5 py-0.5 bg-neutral-800 rounded text-gray-400 border border-neutral-700">
-                    {match.surface === 'Clay' ? match.player1.surfacePrefs.clay : match.player1.surfacePrefs.hard}% Win
-                </span>
             </div>
             <div className="flex gap-6 font-mono font-bold text-lg">
-                <span className="w-4 text-center text-gray-400">6</span>
-                <span className="w-4 text-center text-white">4</span>
-                <span className="w-4 text-center text-gray-600">-</span>
-                <span className="w-8 text-center text-neon">30</span>
+                <span className="w-4 text-center text-white">0</span>
+                <span className="w-4 text-center text-white">0</span>
+                <span className="w-4 text-center text-neon">0</span>
             </div>
         </div>
-
-        {/* Joueur 2 */}
+        {/* J2 */}
         <div className="flex items-center justify-between p-2 rounded">
             <div className="flex items-center gap-3">
-                <span className="w-3"></span> {/* Espace pour la balle */}
+                <span className="w-3"></span>
                 <span className={`font-bold ${match.ai?.winner === match.player2.name ? 'text-neon' : 'text-white'}`}>
                     {match.player2.name}
                 </span>
-                <span className="text-[10px] px-1.5 py-0.5 bg-neutral-800 rounded text-gray-400 border border-neutral-700">
-                    {match.surface === 'Clay' ? match.player2.surfacePrefs.clay : match.player2.surfacePrefs.hard}% Win
-                </span>
             </div>
             <div className="flex gap-6 font-mono font-bold text-lg">
-                <span className="w-4 text-center text-gray-400">4</span>
-                <span className="w-4 text-center text-white">3</span>
-                <span className="w-4 text-center text-gray-600">-</span>
-                <span className="w-8 text-center text-white">15</span>
+                <span className="w-4 text-center text-white">0</span>
+                <span className="w-4 text-center text-white">0</span>
+                <span className="w-4 text-center text-white">0</span>
             </div>
         </div>
     </div>
   );
 
-  // --- COMPOSANT : BARRE DE SURFACE ---
   const SurfaceBar = ({ label, p1Val, p2Val, type }: { label: string, p1Val: number, p2Val: number, type: 'Hard'|'Clay'|'Grass' }) => {
       const isCurrentSurface = match.surface === type;
       return (
@@ -91,9 +77,7 @@ export const MatchDetailModal: React.FC<Props> = ({ match, onClose }) => {
                 {m.surface.substring(0, 1)}
             </span>
         </div>
-        <div className="flex-1 font-medium text-gray-300 truncate px-2">
-            {m.opponent}
-        </div>
+        <div className="flex-1 font-medium text-gray-300 truncate px-2">{m.opponent}</div>
         <div className="flex items-center gap-3">
             <span className="font-mono text-white">{m.score}</span>
             <span className={`w-5 h-5 flex items-center justify-center rounded font-bold text-[10px] ${m.result === 'W' ? 'bg-green-500 text-black' : 'bg-red-500 text-white'}`}>
@@ -109,7 +93,6 @@ export const MatchDetailModal: React.FC<Props> = ({ match, onClose }) => {
 
       <div className="relative bg-carbon border border-neutral-700 w-full max-w-3xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[95vh]">
         
-        {/* Header : Tournoi */}
         <div className="bg-surface p-4 flex justify-between items-center">
            <div className="flex items-center gap-2 text-neon">
               <Trophy size={16} />
@@ -122,10 +105,17 @@ export const MatchDetailModal: React.FC<Props> = ({ match, onClose }) => {
            </button>
         </div>
 
-        {/* LE NOUVEAU SCOREBOARD */}
-        <TennisScoreboard />
+        {match.status === 'LIVE' ? <TennisScoreboard /> : (
+            <div className="bg-black border-y border-neutral-800 p-6 flex justify-center items-center">
+                <div className="text-center">
+                    <p className="text-neon text-xl font-bold">{match.date}</p>
+                    <p className="text-white text-3xl font-bold mt-1">{match.time}</p>
+                    <p className="text-gray-500 text-xs mt-2 uppercase tracking-widest">Match à venir</p>
+                </div>
+            </div>
+        )}
 
-        {/* Tabs */}
+        {/* Navigation Onglets */}
         <div className="flex border-b border-neutral-800 bg-surface">
             <button onClick={() => setActiveTab('ANALYSIS')} className={`flex-1 py-3 text-xs font-bold flex items-center justify-center gap-2 border-b-2 ${activeTab === 'ANALYSIS' ? 'border-neon text-white' : 'border-transparent text-gray-500'}`}>
                 <Zap size={14} /> ORACLE
@@ -133,17 +123,16 @@ export const MatchDetailModal: React.FC<Props> = ({ match, onClose }) => {
             <button onClick={() => setActiveTab('FORM')} className={`flex-1 py-3 text-xs font-bold flex items-center justify-center gap-2 border-b-2 ${activeTab === 'FORM' ? 'border-neon text-white' : 'border-transparent text-gray-500'}`}>
                 <Calendar size={14} /> FORME & H2H
             </button>
-            <button onClick={() => setActiveTab('STATS')} className={`flex-1 py-3 text-xs font-bold flex items-center justify-center gap-2 border-b-2 ${activeTab === 'STATS' ? 'border-neon text-white' : 'border-transparent text-gray-500'}`}>
-                <BarChart3 size={14} /> STATS LIVE
+            <button onClick={() => setActiveTab('EXPERT')} className={`flex-1 py-3 text-xs font-bold flex items-center justify-center gap-2 border-b-2 ${activeTab === 'EXPERT' ? 'border-neon text-white' : 'border-transparent text-gray-500'}`}>
+                <Gauge size={14} /> DATA EXPERT
             </button>
         </div>
 
         <div className="overflow-y-auto p-6 bg-carbon">
             
-            {/* --- TAB 1: ANALYSE IA --- */}
+            {/* TAB 1 : ANALYSE */}
             {activeTab === 'ANALYSIS' && (
                 <div className="space-y-6 animate-fade-in">
-                    {/* Prediction Box */}
                     <div className="bg-gradient-to-r from-neutral-900 to-black p-5 rounded-xl border border-neutral-700 flex justify-between items-center relative overflow-hidden">
                         <div className="absolute -right-6 -bottom-6 opacity-10"><Zap size={100}/></div>
                         <div>
@@ -167,25 +156,22 @@ export const MatchDetailModal: React.FC<Props> = ({ match, onClose }) => {
                         <h4 className="text-white text-sm font-bold mb-3 border-l-2 border-neon pl-2">Analyse du match</h4>
                         <p className="text-gray-400 text-xs leading-relaxed mb-4">{match.ai?.qualitativeAnalysis}</p>
                         
-                        <div className="grid grid-cols-2 gap-4 pt-4 border-t border-neutral-800">
-                            <div>
-                                <p className="text-[10px] text-gray-500 uppercase">Points Forts {match.player1.name}</p>
-                                <p className="text-xs text-gray-300 mt-1">Service puissant, Spécialiste {match.surface}</p>
+                        {match.ai?.integrity?.isSuspicious && (
+                            <div className="bg-red-900/20 border border-red-500/50 p-3 rounded flex items-center gap-3">
+                                <div className="p-2 bg-red-500/20 rounded-full text-red-500"><TrendingDown size={16}/></div>
+                                <div>
+                                    <p className="text-red-400 font-bold text-xs uppercase">Alerte Intégrité</p>
+                                    <p className="text-red-300 text-xs">{match.ai.integrity.reason}</p>
+                                </div>
                             </div>
-                            <div>
-                                <p className="text-[10px] text-gray-500 uppercase">Points Faibles {match.player2.name}</p>
-                                <p className="text-xs text-gray-300 mt-1">Retour faible, Mental friable</p>
-                            </div>
-                        </div>
+                        )}
                     </div>
                 </div>
             )}
 
-            {/* --- TAB 2: FORME & H2H (CE QUE TU VOULAIS) --- */}
+            {/* TAB 2 : FORME */}
             {activeTab === 'FORM' && (
                 <div className="space-y-8 animate-fade-in">
-                    
-                    {/* STATS SURFACE (Le fameux Dur vs Terre) */}
                     <div className="bg-surfaceHighlight p-4 rounded-xl border border-neutral-800">
                         <h4 className="text-white text-sm font-bold mb-4 flex items-center gap-2">
                             <Map size={14} className="text-neon"/> Performance par Surface (Winrate)
@@ -195,7 +181,6 @@ export const MatchDetailModal: React.FC<Props> = ({ match, onClose }) => {
                         <SurfaceBar label="Gazon (Grass)" p1Val={match.player1.surfacePrefs.grass} p2Val={match.player2.surfacePrefs.grass} type="Grass" />
                     </div>
 
-                    {/* LAST 5 MATCHES */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <div className="flex items-center gap-2 mb-3">
@@ -216,64 +201,59 @@ export const MatchDetailModal: React.FC<Props> = ({ match, onClose }) => {
                             </div>
                         </div>
                     </div>
-
-                    {/* H2H (Simulation) */}
-                    <div className="bg-surfaceHighlight p-4 rounded-xl border border-neutral-800">
-                        <h4 className="text-white text-sm font-bold mb-3 flex items-center gap-2">
-                            <Swords size={14} className="text-red-500"/> Face à Face (H2H)
-                        </h4>
-                        <div className="text-center text-xs text-gray-500 py-4 border border-dashed border-neutral-700 rounded-lg">
-                            Première confrontation enregistrée entre ces deux joueurs.
-                        </div>
-                    </div>
                 </div>
             )}
 
-            {/* --- TAB 3: STATS LIVE --- */}
-            {activeTab === 'STATS' && (
-                <div className="grid grid-cols-1 gap-4 animate-fade-in">
-                    <div className="flex justify-between text-xs text-gray-500 px-4">
-                        <span>{match.player1.name}</span>
-                        <span>{match.player2.name}</span>
-                    </div>
+            {/* TAB 3 : DATA EXPERT (NOUVEAU) */}
+            {activeTab === 'EXPERT' && (
+                <div className="space-y-6 animate-fade-in">
                     
-                    {/* Exemple de stat : 1er Service */}
-                    <div className="bg-surfaceHighlight p-3 rounded-lg border border-neutral-800">
-                        <div className="flex justify-between text-xs font-bold text-white mb-1">
-                            <span>50%</span>
-                            <span>1er Service</span>
-                            <span>77%</span>
+                    {/* Conditions */}
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="bg-surfaceHighlight p-4 rounded-xl border border-neutral-800 flex items-center gap-3">
+                            <div className="bg-neutral-800 p-2 rounded-full text-blue-400"><Wind size={18}/></div>
+                            <div>
+                                <p className="text-gray-500 text-[10px] uppercase">Météo</p>
+                                <p className="text-white font-bold text-sm">Vent Modéré (15km/h)</p>
+                            </div>
                         </div>
-                        <div className="flex h-1.5 w-full bg-neutral-800 rounded-full overflow-hidden">
-                            <div className="bg-blue-500 w-1/2"></div>
-                            <div className="bg-orange-500 w-1/2"></div>
-                        </div>
-                    </div>
-
-                    <div className="bg-surfaceHighlight p-3 rounded-lg border border-neutral-800">
-                        <div className="flex justify-between text-xs font-bold text-white mb-1">
-                            <span>3</span>
-                            <span>Aces</span>
-                            <span>8</span>
-                        </div>
-                        <div className="flex h-1.5 w-full bg-neutral-800 rounded-full overflow-hidden">
-                            <div className="bg-blue-500 w-[20%]"></div>
-                            <div className="flex-1 bg-transparent"></div>
-                            <div className="bg-orange-500 w-[60%]"></div>
+                        <div className="bg-surfaceHighlight p-4 rounded-xl border border-neutral-800 flex items-center gap-3">
+                            <div className="bg-neutral-800 p-2 rounded-full text-orange-400"><Thermometer size={18}/></div>
+                            <div>
+                                <p className="text-gray-500 text-[10px] uppercase">Température</p>
+                                <p className="text-white font-bold text-sm">24°C (Balle rapide)</p>
+                            </div>
                         </div>
                     </div>
 
-                    <div className="bg-surfaceHighlight p-3 rounded-lg border border-neutral-800">
-                        <div className="flex justify-between text-xs font-bold text-white mb-1">
-                            <span>12</span>
-                            <span>Fautes Directes</span>
-                            <span>4</span>
-                        </div>
-                        <div className="flex h-1.5 w-full bg-neutral-800 rounded-full overflow-hidden">
-                            <div className="bg-red-500 w-[80%]"></div>
-                            <div className="flex-1 bg-transparent"></div>
-                            <div className="bg-green-500 w-[20%]"></div>
-                        </div>
+                    {/* Mouvements Cotes */}
+                    <div className="bg-surfaceHighlight p-4 rounded-xl border border-neutral-800">
+                        <h4 className="text-white text-sm font-bold mb-4 flex items-center gap-2">
+                            <BarChart3 size={14} className="text-neon"/> Mouvements de Cotes (Dernières 24h)
+                        </h4>
+                        
+                        {match.ai?.oddsAnalysis?.bookmakers.map((bookie, idx) => (
+                            <div key={idx} className="flex justify-between items-center bg-black/40 p-3 rounded mb-2">
+                                <span className="text-gray-400 text-xs font-bold w-20">{bookie.name}</span>
+                                <div className="flex items-center gap-4 text-sm font-mono">
+                                    <div className="text-center">
+                                        <span className="text-gray-600 text-[10px] line-through block">{bookie.openingOdds?.p1}</span>
+                                        <span className={`font-bold ${bookie.movement === 'DOWN' ? 'text-green-500' : 'text-white'}`}>{bookie.p1}</span>
+                                    </div>
+                                    <span className="text-gray-700">|</span>
+                                    <div className="text-center">
+                                        <span className="text-gray-600 text-[10px] line-through block">{bookie.openingOdds?.p2}</span>
+                                        <span className={`font-bold ${bookie.movement === 'DOWN' ? 'text-white' : 'text-red-500'}`}>{bookie.p2}</span>
+                                    </div>
+                                </div>
+                                <span className={`text-[10px] px-2 py-0.5 rounded ${bookie.movement === 'CRASH' ? 'bg-red-500 text-white' : 'bg-neutral-800 text-gray-500'}`}>
+                                    {bookie.movement === 'CRASH' ? 'SUSPECT' : bookie.movement}
+                                </span>
+                            </div>
+                        ))}
+                        {(!match.ai?.oddsAnalysis?.bookmakers || match.ai.oddsAnalysis.bookmakers.length === 0) && (
+                            <p className="text-xs text-gray-500 text-center py-4">Pas de données de mouvement disponibles.</p>
+                        )}
                     </div>
                 </div>
             )}
