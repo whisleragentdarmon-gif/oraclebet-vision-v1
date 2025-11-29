@@ -25,6 +25,8 @@ export interface LearningExperience {
   circuit: Circuit;
   adjustments: string;
   result?: string;
+  // Ajout pour corriger LearningModule :
+  weightsUsed?: any;
 }
 
 // --- Joueurs & Attributs ---
@@ -70,15 +72,17 @@ export interface OddsAnalysis {
 
 // --- Bankroll ---
 export interface BankrollSimulationMetric {
-  finalBankroll: number | string;
-  riskOfRuin: number | string;
-  volatility: number | string;
-  maxBankroll: number | string;
-  minBankroll: number | string;
-  paths: { x: number; y: number }[][];
+  // On remet number strict pour les calculs
+  finalBankroll: number;
+  riskOfRuin: number;
+  volatility: number | string; // Parfois formaté
+  maxBankroll: number;
+  minBankroll: number;
+  // On met paths en optionnel (?) pour corriger BankrollManager
+  paths?: { x: number; y: number }[][];
 }
 
-export type SimulationResult = BankrollSimulationMetric;
+export type SimulationResult = BankrollSimulationMetric; 
 
 export interface BetRecord {
     id: string;
@@ -86,9 +90,10 @@ export interface BetRecord {
     matchTitle: string;
     selection: string;
     odds: number;
-    stake: number | string;
+    // On remet number strict pour les calculs (toFixed, +=)
+    stake: number;
     status: 'PENDING' | 'WON' | 'LOST' | 'VOID';
-    profit: number | string;
+    profit: number;
     date: string;
     confidenceAtTime: number;
 }
@@ -121,7 +126,9 @@ export interface AIPrediction {
   riskLevel: RiskLevel;
   marketType: string;
   circuit: string;
-  totalGamesProjection?: number;
+  
+  totalGamesProjection?: number; 
+  
   winProbA?: number;
   winProbB?: number;
   fairOdds?: { p1: number; p2: number };
@@ -135,7 +142,7 @@ export interface AIPrediction {
   qualitativeAnalysis?: string;
   structuralAnalysis?: string;
   quantitativeAnalysis?: string;
-  oddsAnalysis?: OddsAnalysis;
+  oddsAnalysis?: OddsAnalysis; 
 }
 
 export interface LiveUpdatePayload {
@@ -145,7 +152,7 @@ export interface LiveUpdatePayload {
   momentum: number;
 }
 
-// --- Combinés ---
+// --- Combinés (ComboGenerator) ---
 export interface ComboSelection {
     matchId: string;
     player1: string;
@@ -155,6 +162,8 @@ export interface ComboSelection {
     confidence: number;
     reason: string;
     valueScore?: number;
+    // Ajout pour corriger ComboGenerator :
+    marketType?: string;
 }
 
 export interface ComboStrategy {
@@ -164,6 +173,8 @@ export interface ComboStrategy {
   successProbability: number;
   riskScore: string;
   expectedRoi?: number;
+  // Ajout pour corriger ComboGenerator :
+  analysis?: string;
 }
 
 export type ComboStrategyResult = ComboStrategy;
