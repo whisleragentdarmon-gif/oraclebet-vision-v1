@@ -20,12 +20,13 @@ export interface AIModelWeights {
 export interface LearningExperience {
   matchId: string;
   date: string;
+  // AJOUT ICI pour corriger l'erreur :
+  timestamp?: number;
   prediction: string;
   outcome: 'WIN' | 'LOSS' | 'VOID';
   circuit: Circuit;
   adjustments: string;
   result?: string;
-  // Ajout pour corriger LearningModule :
   weightsUsed?: any;
 }
 
@@ -72,13 +73,11 @@ export interface OddsAnalysis {
 
 // --- Bankroll ---
 export interface BankrollSimulationMetric {
-  // On remet number strict pour les calculs
   finalBankroll: number;
   riskOfRuin: number;
-  volatility: number | string; // Parfois formaté
+  volatility: number | string;
   maxBankroll: number;
   minBankroll: number;
-  // On met paths en optionnel (?) pour corriger BankrollManager
   paths?: { x: number; y: number }[][];
 }
 
@@ -90,7 +89,6 @@ export interface BetRecord {
     matchTitle: string;
     selection: string;
     odds: number;
-    // On remet number strict pour les calculs (toFixed, +=)
     stake: number;
     status: 'PENDING' | 'WON' | 'LOST' | 'VOID';
     profit: number;
@@ -152,7 +150,7 @@ export interface LiveUpdatePayload {
   momentum: number;
 }
 
-// --- Combinés (ComboGenerator) ---
+// --- Combinés ---
 export interface ComboSelection {
     matchId: string;
     player1: string;
@@ -162,7 +160,6 @@ export interface ComboSelection {
     confidence: number;
     reason: string;
     valueScore?: number;
-    // Ajout pour corriger ComboGenerator :
     marketType?: string;
 }
 
@@ -173,7 +170,6 @@ export interface ComboStrategy {
   successProbability: number;
   riskScore: string;
   expectedRoi?: number;
-  // Ajout pour corriger ComboGenerator :
   analysis?: string;
 }
 
