@@ -1,6 +1,5 @@
-
 import React, { useState } from 'react';
-import { Activity, Calendar, Zap, LayoutDashboard, Brain, Share2, ShieldCheck, Menu, X, Wallet, LogOut } from 'lucide-react';
+import { Activity, Calendar, Zap, LayoutDashboard, Brain, Share2, ShieldCheck, Menu, X, Wallet, LogOut, History } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 interface LayoutProps {
@@ -17,6 +16,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
     { id: 'live', label: 'En Direct', icon: Activity },
     { id: 'today', label: 'Aujourd\'hui', icon: Calendar },
     { id: 'upcoming', label: 'Demain', icon: Zap },
+    { id: 'history', label: 'Résultats', icon: History }, // 👇 LE BOUTON AJOUTÉ
     { id: 'analysis', label: 'Analyse IA', icon: Brain },
     { id: 'combos', label: 'Combinés IA', icon: Share2 },
     { id: 'bankroll', label: 'Ma Bankroll', icon: Wallet },
