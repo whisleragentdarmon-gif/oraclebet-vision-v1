@@ -1,7 +1,60 @@
 import { Match } from './types';
 
 export const MOCK_MATCHES: Match[] = [
-  // Match 1 : LIVE (ATP Miami)
+  // --- MATCH 1 : LE DIRECT (Ton Challenger Bogota) ---
+  {
+    id: 'live-bogota-ficovich',
+    tournament: 'Challenger Bogota',
+    date: '29.11.2025',
+    time: '18:10',
+    status: 'LIVE',
+    surface: 'Clay', // Terre battue (Point fort Ficovich)
+    score: '0-0 (2-2)', // Score du screenshot
+    player1: { 
+        name: 'Ficovich J.P.', 
+        rank: 169, 
+        country: 'ARG', 
+        form: 90, 
+        surfacePrefs: { hard: 60, clay: 95, grass: 40 } 
+    },
+    player2: { 
+        name: 'Gomez J.S.', 
+        rank: 997, 
+        country: 'COL', 
+        form: 40, 
+        surfacePrefs: { hard: 50, clay: 60, grass: 30 } 
+    },
+    odds: { player1: 1.15, player2: 4.50, p1: 1.15, p2: 4.50 },
+    ai: {
+      winner: 'Ficovich J.P.',
+      confidence: 92,
+      recommendedBet: 'Ficovich 2-0',
+      riskLevel: 'SAFE',
+      marketType: 'SET_BET',
+      circuit: 'CHALLENGER',
+      
+      // Analyse basée sur tes captures
+      fairOdds: { p1: 1.05, p2: 8.00 },
+      attributes: [
+        { power: 85, serve: 50, return: 80, mental: 85, form: 90 },
+        { power: 60, serve: 77, return: 40, mental: 50, form: 40 }
+      ],
+      qualitativeAnalysis: "Mismatch total. Ficovich est sur sa surface de prédilection. Gomez (ATP 997) ne tient pas la cadence en fond de court.",
+      structuralAnalysis: "Le % de premier service de Ficovich est faible (50%) mais il gagne 80% des points derrière.",
+      quantitativeAnalysis: "Ficovich reste sur 3 victoires consécutives ici.",
+      integrity: { isSuspicious: false, score: 0 },
+      oddsAnalysis: { 
+          bestOdds: { p1: 1.15, p2: 4.75, bookieP1: 'Winamax', bookieP2: 'Unibet' }, 
+          marketAverage: { p1: 1.12, p2: 4.50 }, 
+          recommendedBookie: 'Winamax', 
+          kelly: { percentage: 10, advice: "Mise Max (Safe)" }, 
+          arbitrage: { isSurebet: false, profit: 0, bookmakerP1: '', bookmakerP2: '', msg: '' }, 
+          bookmakers: [] 
+      }
+    }
+  },
+
+  // --- MATCH 2 : LIVE (ATP Miami - Pour avoir du contenu) ---
   {
     id: '1',
     tournament: 'ATP Miami',
@@ -26,7 +79,8 @@ export const MOCK_MATCHES: Match[] = [
       oddsAnalysis: { bestOdds: { p1: 1.85, p2: 1.95, bookieP1: 'Winamax', bookieP2: 'Unibet' }, marketAverage: { p1: 1.82, p2: 1.95 }, recommendedBookie: 'Unibet', kelly: { percentage: 2.5, advice: "Mise modérée" }, arbitrage: { isSurebet: false, profit: 0, bookmakerP1: '', bookmakerP2: '', msg: '' }, bookmakers: [] }
     }
   },
-  // Match 2 : TERMINÉ (À valider pour l'IA)
+
+  // --- MATCH 3 : TERMINÉ (Pour tester la validation dans Résultats) ---
   {
     id: 'history-1',
     tournament: 'ATP Indian Wells',
@@ -35,7 +89,7 @@ export const MOCK_MATCHES: Match[] = [
     status: 'FINISHED',
     surface: 'Hard',
     score: '6-3 6-2',
-    validationResult: 'PENDING', // 👈 C'est lui qu'on va valider
+    validationResult: 'PENDING', // 👈 Tu pourras cliquer sur ✅ ou ❌
     player1: { name: 'D. Medvedev', rank: 4, country: 'RUS', form: 90, surfacePrefs: { hard: 95, clay: 60, grass: 70 } },
     player2: { name: 'T. Paul', rank: 12, country: 'USA', form: 85, surfacePrefs: { hard: 85, clay: 65, grass: 75 } },
     odds: { player1: 1.45, player2: 2.80, p1: 1.45, p2: 2.80 },
@@ -50,7 +104,8 @@ export const MOCK_MATCHES: Match[] = [
       integrity: { isSuspicious: false, score: 5 }
     }
   },
-  // Match 3 : GOD MODE (ITF Chine Féminin)
+
+  // --- MATCH 4 : GOD MODE (ITF Chine - Pour tester l'auto-validation) ---
   {
     id: 'god-mode-1',
     tournament: 'ITF W15 Shenzhen',
