@@ -1,114 +1,76 @@
-// Fichier : src/engine/types.ts
 
-export type Circuit = 'ATP' | 'WTA' | 'CHALLENGER' | 'ITF';
-export type PlayerStyle = 'Aggressive' | 'Defensive' | 'ServeVolley' | 'Balanced';
-export type RiskLevel = 'SAFE' | 'MODERATE' | 'RISKY';
+// Fichier : src/types.ts
+import { OddsAnalysis } from './engine/types';
 
-export interface PlayerAttributes {
-  power: number;
-  serve: number;
-  return: number;
-  mental: number;
+export interface Player {
+  name: string;
+  rank: number;
+  country: string;
   form: number;
-  stamina?: number;
-  speed?: number;
+  surfacePrefs: {
+    hard: number;
+    clay: number;
+    grass: number;
+  };
 }
 
-export interface DetailedPrediction {
-  winner: string;
-  confidence: number;
-  scorePrediction: string;
-  totalGames: number;
-  riskLevel: RiskLevel;
-}
-
-export interface LiveUpdatePayload {
-  matchId: string;
-  score: string;
-  pointByPoint: string[];
-  momentum: number; // -100 to 100
-}
-
-export interface SimulationResult {
-  finalBankroll: number;
-  riskOfRuin: number;
-  volatility: number;
-  maxBankroll: number;
-  minBankroll: number;
-  paths: { x: number; y: number }[][];
-}
-
-export interface MonteCarloStats {
-  winProbability: number;
-  expectedValue: number;
-  kellyCriterion: number;
-}
-
-export type BookmakerName = 'Winamax' | 'Betclic' | 'Unibet' | 'Pinnacle' | 'Bwin';
-
-export interface BookmakerOdds {
-  name: BookmakerName;
+export interface MatchOdds {
+  player1: number;
+  player2: number;
   p1: number;
   p2: number;
-  payout: number;
-  movement: 'UP' | 'DOWN' | 'STABLE';
-  isTrap: boolean;
-  isValue: boolean;
 }
 
-export interface ArbitrageResult {
-  isSurebet: boolean;
-  profit: number;
-  bookmakerP1: string;
-  bookmakerP2: string;
-  msg: string;
-}
-
-export interface OddsAnalysis {
-  bestOdds: { p1: number; p2: number; bookieP1: string; bookieP2: string };
-  marketAverage: { p1: number; p2: number };
-  recommendedBookie: string;
-  kelly: { percentage: number; advice: string };
-  arbitrage: ArbitrageResult;
-  bookmakers: BookmakerOdds[];
-}
-
-export interface BetRecord {
-    id: string;
-    matchId: string;
-    matchTitle: string;
-    selection: string;
-    odds: number;
-    stake: number;
-    status: 'PENDING' | 'WON' | 'LOST' | 'VOID';
-    profit: number;
-    date: string;
-    confidenceAtTime: number;
-}
-
-export interface BankrollState {
-    currentBalance: number;
-    startBalance: number;
-    totalBets: number;
-    wins: number;
-    losses: number;
-    totalInvested: number;
-    totalReturned: number;
-    roi: number;
-    history: BetRecord[];
-}
-
-export interface ComboStrategy {
-  type: 'Safe' | 'Balanced' | 'Value' | 'Oracle Ultra Premium';
-  selections: {
-    player1: string;
-    player2: string;
-    selection: string;
-    odds: number;
-    confidence: number;
-    reason: string;
+export interface AIPrediction {
+  winner: string;
+  confidence: number;
+  recommendedBet: string;
+  riskLevel: 'SAFE' | 'MODERATE' | 'RISKY';
+  marketType: string;
+  circuit: string;
+  
+  winProbA?: number;
+  winProbB?: number;
+  fairOdds?: { p1: number; p2: number };
+  
+  attributes?: { 
+    power: number; 
+    serve: number; 
+    return: number; 
+    mental: number; 
+    form: number 
   }[];
-  combinedOdds: number;
-  successProbability: number;
-  riskScore: string;
+  
+  monteCarlo?: {
+      setDistribution: { [key: string]: number };
+  };
+  
+  expectedSets?: string;
+  tieBreakProbability?: number;
+  breaks?: { p1: number; p2: number };
+  
+  trap?: { isTrap: boolean; verdict?: string; reason?: string };
+  integrity?: { isSuspicious: boolean; score: number; reason?: string };
+  
+  qualitativeAnalysis?: string;
+  structuralAnalysis?: string;
+  quantitativeAnalysis?: string;
+  
+  oddsAnalysis?: OddsAnalysis; 
 }
+
+export interface Match {
+  id: string;
+  tournament: string;
+  date: string;
+  time: string;
+  status: 'SCHEDULED' | 'LIVE' | 'FINISHED' | 'TODAY' | 'UPCOMING';
+  player1: Player;
+  player2: Player;
+  score?: string;
+  odds: MatchOdds;
+  ai?: AIPrediction;
+  surface: 'Hard' | 'Clay' | 'Grass' | 'Indoor';
+}
+
+export type MatchStatus = Match['status'];
