@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
-import { MOCK_MATCHES } from '../constants';
+import React, { useState, useEffect } from 'react';
 import { MatchCard } from '../components/MatchCard';
 import { MatchDetailModal } from '../components/MatchDetailModal';
-import { Match, Circuit } from '../types';
-import { Clock, Filter } from 'lucide-react';
+import { Match } from '../types';
+import { RefreshCw, AlertTriangle, CheckCircle } from 'lucide-react';
+import { MatchService } from '../services/api'; 
+
+// ⚠️ ON N'IMPORTE PLUS LES MOCK_MATCHES POUR FORCER LA VÉRITÉ
 
 interface LivePageProps {
   filter: 'LIVE' | 'TODAY' | 'UPCOMING';
@@ -11,83 +13,73 @@ interface LivePageProps {
 }
 
 export const LivePage: React.FC<LivePageProps> = ({ filter, title }) => {
+  const [matches, setMatches] = useState<Match[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
-  const [timeFilter, setTimeFilter] = useState<'ALL' | '6H' | '12H' | '24H'>('ALL');
-  const [circuitFilter, setCircuitFilter] = useState<'ALL' | Circuit>('ALL');
+  const [debugLog, setDebugLog] = useState<string>("En attente de connexion...");
 
-  const getFilteredMatches = () => {
-      let matches = MOCK_MATCHES.filter(m => {
-        // Filtre Statut
-        if (filter === 'LIVE' && m.status !== 'LIVE') return false;
-        if (filter === 'TODAY' && (m.status !== 'TODAY' && m.status !== 'SCHEDULED')) return false;
-        if (filter === 'UPCOMING' && (m.status !== 'UPCOMING' && m.status !== 'SCHEDULED')) return false;
+  const loadData = async () => {
+    setLoading(true);
+    setDebugLog("Tentative de connexion à l'API via Vercel...");
+    
+    try {
+        const realMatches = await MatchService.getTodaysMatches();
         
-        // Filtre Circuit
-        if (circuitFilter !== 'ALL' && m.ai?.circuit !== circuitFilter) return false;
-
-        return true;
-      });
-      return matches;
+        if (realMatches.length > 0) {
+            setMatches(realMatches);
+            setDebugLog(`✅ SUCCÈS : ${realMatches.length} matchs récupérés depuis SportScore.`);
+        } else {
+            setMatches([]);
+            setDebugLog("⚠️ RÉPONSE VIDE : L'API a répondu correctement (200 OK) mais la liste des matchs est vide. (Peut-être aucun match à cette date ou problème de fuseau horaire).");
+        }
+    } catch (e: any) {
+        setDebugLog(`❌ ERREUR CRITIQUE : ${e.message || "Problème de connexion"}.`);
+    }
+    
+    setLoading(false);
   };
 
-  const matches = getFilteredMatches();
+  useEffect(() => {
+    loadData();
+  }, []);
 
   return (
     <div>
-      {/* En-tête simple */}
+      {/* --- ZONE DE DIAGNOSTIC (TEMPORAIRE) --- */}
+      <div className={`mb-6 p-4 rounded-xl border font-mono text-xs ${debugLog.includes('SUCCÈS') ? 'bg-green-900/20 border-green-500 text-green-400' : 'bg-red-900/20 border-red-500 text-red-300'}`}>
+          <h4 className="font-bold mb-2 flex items-center gap-2">
+              {debugLog.includes('SUCCÈS') ? <CheckCircle size={16}/> : <AlertTriangle size={16}/>}
+              DIAGNOSTIC API
+          </h4>
+          <p>{debugLog}</p>
+          <div className="mt-2 text-gray-500">
+              Note : Si tu testes sur ton PC (localhost), ça peut échouer. Teste sur le lien Vercel.
+          </div>
+      </div>
+      {/* --------------------------------------- */}
+
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
         <div>
             <h2 className="text-2xl font-bold border-l-4 border-neon pl-4 flex items-center gap-3">
                 {title}
+                <button onClick={loadData} className="p-2 bg-neutral-800 rounded-full hover:bg-neutral-700 transition-colors">
+                    <RefreshCw size={14} className={loading ? "animate-spin text-neon" : "text-gray-400"} />
+                </button>
             </h2>
-            <span className="text-sm text-gray-500 font-mono ml-5">{matches.length} Matchs</span>
-        </div>
-
-        <div className="flex flex-col gap-2">
-            {/* Filtres Circuit */}
-            <div className="flex bg-surface border border-neutral-800 rounded-lg p-1 overflow-x-auto">
-                {['ALL', 'ATP', 'WTA', 'CHALLENGER', 'ITF'].map((c) => (
-                    <button 
-                        key={c}
-                        onClick={() => setCircuitFilter(c as any)}
-                        className={`px-3 py-1 text-xs font-bold rounded whitespace-nowrap ${circuitFilter === c ? 'bg-white text-black' : 'text-gray-500 hover:text-white'}`}
-                    >
-                        {c}
-                    </button>
-                ))}
-            </div>
-
-            {/* Filtres Horaires */}
-            {filter !== 'LIVE' && (
-                <div className="flex bg-surface border border-neutral-800 rounded-lg p-1">
-                    {['ALL', '6H', '12H', '24H'].map((t) => (
-                        <button 
-                            key={t}
-                            onClick={() => setTimeFilter(t as any)}
-                            className={`px-3 py-1 text-xs font-bold rounded ${timeFilter === t ? 'bg-neutral-700 text-white' : 'text-gray-500 hover:text-white'}`}
-                        >
-                            {t === 'ALL' ? 'Tout' : `+${t.replace('H', 'h')}`}
-                        </button>
-                    ))}
-                </div>
-            )}
         </div>
       </div>
 
-      {matches.length > 0 ? (
+      {loading ? (
+          <div className="flex justify-center items-center h-64"><RefreshCw className="animate-spin text-neon" size={40} /></div>
+      ) : matches.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {matches.map(match => (
-            <MatchCard 
-                key={match.id} 
-                match={match} 
-                onClick={() => setSelectedMatch(match)} 
-            />
+            <MatchCard key={match.id} match={match} onClick={() => setSelectedMatch(match)} />
           ))}
         </div>
       ) : (
         <div className="flex flex-col items-center justify-center h-64 bg-surface rounded-2xl border border-neutral-800 border-dashed">
-          <Filter className="text-gray-600 mb-2" size={32} />
-          <p className="text-gray-500">Aucun match ne correspond aux filtres.</p>
+          <p className="text-gray-500">Aucun match affiché (Voir diagnostic ci-dessus).</p>
         </div>
       )}
 
