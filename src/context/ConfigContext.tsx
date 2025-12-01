@@ -69,8 +69,9 @@ export const ConfigProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
   const saveConfig = () => {
     localStorage.setItem('oracle_config', JSON.stringify({ aiWeights, telegramConfig }));
-    addLog('CONFIG_SAVE', 'Configuration mise à jour manuellement par Admin.');
-    alert("Configuration sauvegardée !");
+    addLog('CONFIG_SAVE', 'Configuration mise à jour manuellement.');
+    // ❌ J'ai supprimé l'ancien alert("Configuration sauvegardée") ici !
+    // C'est la page VIP qui gérera l'affichage du succès maintenant.
   };
 
   const addLog = (action: string, details: string) => {
