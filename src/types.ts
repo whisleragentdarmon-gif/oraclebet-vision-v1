@@ -1,9 +1,6 @@
-// Fichier : src/types.ts
+// On importe Circuit depuis le moteur
+import { OddsAnalysis, AIPrediction, PlayerAttributes, Circuit } from './engine/types';
 
-// IMPORT PROPRE (Pas de ./types ici)
-import { OddsAnalysis, AIPrediction, PlayerAttributes } from './engine/types';
-
-// Structure des Matchs Passés
 export interface PastMatch {
   date: string;
   tournament: string;
@@ -18,7 +15,11 @@ export interface Player {
   rank: number;
   country: string;
   form: number;
-  surfacePrefs: { hard: number; clay: number; grass: number };
+  surfacePrefs: {
+    hard: number;
+    clay: number;
+    grass: number;
+  };
   lastMatches?: PastMatch[]; 
 }
 
@@ -29,8 +30,8 @@ export interface MatchOdds {
   p2: number;
 }
 
-// Ré-exportation propre
-export type { AIPrediction, OddsAnalysis, PlayerAttributes };
+// 👇 C'EST ICI LA CORRECTION : On a ajouté Circuit à la liste
+export type { AIPrediction, OddsAnalysis, PlayerAttributes, Circuit };
 
 export interface Match {
   id: string;
