@@ -4,46 +4,74 @@ import { MatchCard } from '../components/MatchCard';
 import { Match } from '../types';
 import { OracleReactor } from '../components/OracleReactor';
 import { OddsComparator } from '../components/OddsComparator';
-import { ScandalEngine } from '../engine/market/ScandalEngine';
 import { GeoEngine } from '../engine/market/GeoEngine';
 import { TrapDetector } from '../engine/market/TrapDetector';
 import { 
   BarChart, Bar, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend 
 } from 'recharts';
-import { TrendingUp, ShieldAlert, Siren, Globe, Cpu, Wind, Thermometer, Activity, Target, Zap, FileText } from 'lucide-react';
+import { TrendingUp, ShieldAlert, Siren, Globe, Cpu, Wind, Activity, Target, Zap, FileText, Search, Newspaper } from 'lucide-react';
 
 export const AnalysisPage: React.FC = () => {
   const { matches } = useData();
-  
-  // 👇 ICI : On crée la liste filtrée (Uniquement les matchs À VENIR ou LIVE)
   const activeMatches = matches.filter(m => m.status !== 'FINISHED');
-
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
   const [isComputing, setIsComputing] = useState(false);
   const [godModeData, setGodModeData] = useState<any>(null);
+  
+  // État pour les news web
+  const [webIntel, setWebIntel] = useState<{title: string, snippet: string}[]>([]);
 
-  // Au chargement, on sélectionne le premier match de la liste FILTRÉE
   useEffect(() => {
-    if (activeMatches.length > 0 && !selectedMatch) {
-        setSelectedMatch(activeMatches[0]);
-    }
+    if (activeMatches.length > 0 && !selectedMatch) setSelectedMatch(activeMatches[0]);
   }, [matches]);
 
-  const runGodMode = () => {
+  const runGodMode = async () => {
     setIsComputing(true);
+    setWebIntel([]); // Reset news
+
+    if (selectedMatch) {
+        // 1. RECHERCHE WEB EN TEMPS RÉEL
+        try {
+            const query = `${selectedMatch.player1.name} tennis blessure forme news`;
+            const res = await fetch('/api/search', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query })
+            });
+            const data = await res.json();
+            if (data.results) setWebIntel(data.results);
+        } catch (e) {
+            console.error("Erreur Web Search", e);
+        }
+    }
   };
 
   const onComputationComplete = () => {
     if (!selectedMatch) return;
-    const social = ScandalEngine.analyze(selectedMatch.player1.name);
+    
+    // Analyse des mots clés dans les news trouvées
+    let injuryAlert = false;
+    webIntel.forEach(news => {
+        const text = (news.title + " " + news.snippet).toLowerCase();
+        if (text.includes('blessure') || text.includes('forfait') || text.includes('abandon') || text.includes('douleur')) {
+            injuryAlert = true;
+        }
+    });
+
     const geo = GeoEngine.getConditions(selectedMatch.tournament);
     const trap = TrapDetector.scan(selectedMatch.odds);
     
-    setGodModeData({ social, geo, trap });
+    // On ajoute l'alerte blessure au résultat
+    setGodModeData({ 
+        geo, 
+        trap,
+        injuryAlert
+    });
+    
     setIsComputing(false);
   };
 
-  // Préparation des graphiques (Sécurisée)
+  // Graphiques (inchangés)
   const winProbData = selectedMatch?.ai ? [
     { name: selectedMatch.player1.name, prob: selectedMatch.ai.winProbA || 50, fill: '#6B7280' },
     { name: selectedMatch.player2.name, prob: selectedMatch.ai.winProbB || 50, fill: '#FF7A00' }
@@ -70,31 +98,18 @@ export const AnalysisPage: React.FC = () => {
       <OracleReactor isVisible={isComputing} onComplete={onComputationComplete} />
 
       <div className="flex flex-col lg:flex-row gap-6 h-full">
-        {/* Colonne Gauche : Liste des Matchs */}
+        {/* Liste */}
         <div className="lg:w-1/3 flex flex-col gap-4">
           <h2 className="text-2xl font-bold mb-2">Sélectionner un Match</h2>
           <div className="overflow-y-auto pr-2 space-y-3 max-h-[80vh]">
-            
-            {/* 👇 ICI : On utilise activeMatches pour l'affichage (le JSX) */}
             {activeMatches.map((match) => (
-              <MatchCard 
-                key={match.id} 
-                match={match} 
-                selected={selectedMatch?.id === match.id} 
-                onClick={() => { setSelectedMatch(match); setGodModeData(null); }} 
-                compact 
-              />
+              <MatchCard key={match.id} match={match} selected={selectedMatch?.id === match.id} onClick={() => { setSelectedMatch(match); setGodModeData(null); }} compact />
             ))}
-            
-            {activeMatches.length === 0 && (
-                <p className="text-gray-500 text-sm border border-dashed border-neutral-800 p-4 rounded text-center">
-                    Aucun match à venir disponible pour l'analyse.
-                </p>
-            )}
+            {activeMatches.length === 0 && <p className="text-gray-500 text-sm p-4 border border-dashed border-neutral-800 rounded">Aucun match à analyser.</p>}
           </div>
         </div>
 
-        {/* Colonne Droite : Détail (Reste inchangé) */}
+        {/* Analyse */}
         <div className="lg:w-2/3">
           {selectedMatch && selectedMatch.ai ? (
             <div className="bg-surface border border-neutral-800 rounded-2xl p-6 h-full shadow-2xl animate-fade-in overflow-y-auto">
@@ -112,7 +127,7 @@ export const AnalysisPage: React.FC = () => {
                  </div>
                  {!godModeData && (
                    <button onClick={runGodMode} className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-bold py-3 px-6 rounded-xl flex items-center gap-2 shadow-lg shadow-purple-500/20 transition-all transform hover:scale-105">
-                      <Cpu size={20} className="animate-pulse" /> LANCER GOD MODE
+                      <Search size={20} className="animate-pulse" /> SCANNER LE WEB (GOD MODE)
                    </button>
                  )}
               </div>
@@ -120,27 +135,49 @@ export const AnalysisPage: React.FC = () => {
               {/* RÉSULTAT GOD MODE */}
               {godModeData && (
                 <div className="mb-8 animate-fade-in space-y-4">
+                    
+                    {/* ALERTE BLESSURE WEB */}
+                    {godModeData.injuryAlert ? (
+                        <div className="bg-red-900/40 border border-red-500 p-4 rounded-xl flex items-center gap-4 animate-pulse">
+                            <Siren size={32} className="text-red-500"/>
+                            <div>
+                                <h3 className="text-red-400 font-bold uppercase">Alerte Info Web</h3>
+                                <p className="text-white text-sm">Le scan Google a détecté des mots-clés inquiétants (blessure/abandon) récemment pour ce joueur.</p>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="bg-green-900/20 border border-green-500/30 p-3 rounded-xl flex items-center gap-3">
+                            <ShieldAlert size={20} className="text-green-500"/>
+                            <p className="text-green-400 text-sm font-bold">R.A.S sur le Web (Pas de news blessure récente)</p>
+                        </div>
+                    )}
+
+                    {/* NEWS GOOGLE */}
+                    {webIntel.length > 0 && (
+                        <div className="bg-black/40 border border-neutral-800 p-4 rounded-xl">
+                            <h4 className="text-blue-400 text-xs font-bold uppercase mb-3 flex items-center gap-2">
+                                <Newspaper size={14}/> Dernières Infos Google
+                            </h4>
+                            <div className="space-y-3">
+                                {webIntel.map((news, i) => (
+                                    <div key={i} className="text-sm">
+                                        <a href="#" className="text-white font-bold hover:text-neon truncate block">{news.title}</a>
+                                        <p className="text-gray-500 text-xs line-clamp-2">{news.snippet}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* DATA MARKET EXISTANTES */}
                     <div className="bg-purple-900/10 border border-purple-500/30 p-4 rounded-xl">
-                        <h3 className="text-purple-400 font-bold mb-4 flex items-center gap-2"><Activity /> DEEP DATA MARKET ANALYSIS</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <h3 className="text-purple-400 font-bold mb-4 flex items-center gap-2"><Activity /> CONTEXTE MATCH</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="bg-black/40 p-3 rounded border border-purple-500/20">
                                 <p className="text-gray-500 text-xs uppercase mb-1">Conditions</p>
                                 <div className="flex items-center gap-2 text-white font-bold">
                                     <Wind size={16} className="text-blue-400"/> {godModeData.geo.wind} km/h
                                 </div>
-                                <div className="flex items-center gap-2 text-white font-bold mt-1">
-                                    <Globe size={16} className="text-green-400"/> {godModeData.geo.altitude}m Alt.
-                                </div>
-                            </div>
-                            <div className="bg-black/40 p-3 rounded border border-purple-500/20">
-                                <p className="text-gray-500 text-xs uppercase mb-1">Social & Mental</p>
-                                <div className="flex justify-between items-center mb-1">
-                                    <span className="text-xs text-gray-300">Pression</span>
-                                    <div className="w-16 h-1.5 bg-gray-700 rounded-full overflow-hidden">
-                                        <div className="h-full bg-red-500" style={{width: `${godModeData.social.mentalPressure}%`}}></div>
-                                    </div>
-                                </div>
-                                <p className="text-xs text-gray-300">Trend: <span className="text-neon">{godModeData.social.socialTrend}</span></p>
                             </div>
                             <div className="bg-black/40 p-3 rounded border border-purple-500/20">
                                 <p className="text-gray-500 text-xs uppercase mb-1">Trap Detector</p>
