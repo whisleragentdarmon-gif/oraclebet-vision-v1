@@ -3,54 +3,39 @@ import { Layout } from './components/Layout';
 import { LivePage } from './pages/LivePage';
 import { AnalysisPage } from './pages/AnalysisPage';
 import { ComboPage } from './pages/ComboPage';
-import { AdminPage } from './pages/AdminPage';
+import { AdminPage } from './pages/AdminPage'; // Si tu l'as encore
 import { VipPage } from './pages/VipPage';
 import { BankrollPage } from './pages/BankrollPage';
 import { LoginPage } from './pages/LoginPage';
-// 👇 AJOUT IMPORTANT
-import { HistoryPage } from './pages/HistoryPage'; 
+import { HistoryPage } from './pages/HistoryPage';
 import { BankrollProvider } from './context/BankrollContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ConfigProvider } from './context/ConfigContext';
+import { DataProvider } from './context/DataContext'; // 👈 AJOUT ICI
 
 const AuthenticatedApp: React.FC = () => {
   const { isAuthenticated } = useAuth();
   const [activeTab, setActiveTab] = useState('analysis');
 
-  if (!isAuthenticated) {
-    return <LoginPage />;
-  }
+  if (!isAuthenticated) return <LoginPage />;
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'live':
-        return <LivePage filter="LIVE" title="Matchs en Direct" />;
-      case 'today':
-        return <LivePage filter="TODAY" title="Matchs du Jour" />;
-      case 'upcoming':
-        return <LivePage filter="UPCOMING" title="Matchs à Venir" />;
-      case 'history': // 👇 AJOUT IMPORTANT : Le cas pour afficher l'historique
-        return <HistoryPage />;
-      case 'analysis':
-        return <AnalysisPage />;
-      case 'combos':
-        return <ComboPage />;
-      case 'bankroll':
-        return <BankrollPage />;
-      case 'vip':
-        return <VipPage />;
-      case 'admin':
-        return <AdminPage />;
-      default:
-        return <AnalysisPage />;
+      case 'live': return <LivePage filter="LIVE" title="Matchs en Direct" />;
+      case 'today': return <LivePage filter="TODAY" title="Matchs du Jour" />;
+      case 'upcoming': return <LivePage filter="UPCOMING" title="Matchs à Venir" />;
+      case 'history': return <HistoryPage />;
+      case 'analysis': return <AnalysisPage />;
+      case 'combos': return <ComboPage />;
+      case 'bankroll': return <BankrollPage />;
+      case 'vip': return <VipPage />;
+      default: return <AnalysisPage />;
     }
   };
 
   return (
     <Layout activeTab={activeTab} onTabChange={setActiveTab}>
-      <div className="animate-fade-in">
-        {renderContent()}
-      </div>
+      <div className="animate-fade-in">{renderContent()}</div>
     </Layout>
   );
 };
@@ -60,7 +45,10 @@ const App: React.FC = () => {
     <AuthProvider>
       <ConfigProvider>
         <BankrollProvider>
+          {/* 👇 ON ENGLOBE L'APPLI DANS LE DATA PROVIDER */}
+          <DataProvider>
             <AuthenticatedApp />
+          </DataProvider>
         </BankrollProvider>
       </ConfigProvider>
     </AuthProvider>
