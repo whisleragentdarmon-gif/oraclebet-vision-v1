@@ -1,11 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { MOCK_MATCHES } from '../constants';
 import { MatchCard } from '../components/MatchCard';
-import { History, ListChecks, BrainCircuit, TrendingUp, CheckCircle, XCircle } from 'lucide-react';
+import { History, ListChecks, BrainCircuit, CheckCircle, XCircle, Zap } from 'lucide-react';
 import { useBankroll } from '../context/BankrollContext';
 import { AreaChart, Area, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { AutoValidator } from '../engine/AutoValidator'; // Import du moteur auto
 
-// Données simulées pour l'évolution de la précision IA (Tu pourras les connecter à l'API plus tard)
 const accuracyData = [
   { month: 'Jan', acc: 65 }, { month: 'Fev', acc: 68 }, { month: 'Mar', acc: 72 },
   { month: 'Avr', acc: 70 }, { month: 'Mai', acc: 75 }, { month: 'Juin', acc: 78.5 }
@@ -13,15 +13,28 @@ const accuracyData = [
 
 export const HistoryPage: React.FC = () => {
   const { state } = useBankroll();
+  const [autoLogs, setAutoLogs] = useState<string[]>([]);
+  
   // Matchs à valider (Finis mais en attente)
   const matchesToValidate = MOCK_MATCHES.filter(m => m.status === 'FINISHED' && m.validationResult === 'PENDING');
+
+  // Fonction "God Mode" Auto-Validation
+  const runAutoValidate = () => {
+      const logs = AutoValidator.run(MOCK_MATCHES);
+      if (logs.length > 0) {
+          setAutoLogs(logs);
+          // Efface les logs après 10 secondes pour garder propre
+          setTimeout(() => setAutoLogs([]), 10000); 
+      } else {
+          alert("Tous les matchs terminés ont déjà été validés !");
+      }
+  };
 
   return (
     <div className="space-y-12">
       
-      {/* --- SECTION 1 : PERFORMANCE NEURONALE (NOUVEAU) --- */}
+      {/* --- SECTION 1 : PERFORMANCE NEURONALE --- */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-         {/* Graphique Précision IA */}
          <div className="lg:col-span-2 bg-surface border border-neutral-800 rounded-xl p-6">
             <div className="flex items-center gap-3 mb-6">
                 <div className="p-2 bg-purple-900/30 rounded-lg text-purple-400"><BrainCircuit size={20}/></div>
@@ -49,11 +62,9 @@ export const HistoryPage: React.FC = () => {
             </div>
          </div>
 
-         {/* Logs d'apprentissage récents */}
          <div className="bg-surface border border-neutral-800 rounded-xl p-6 flex flex-col">
             <h3 className="font-bold text-lg mb-4 text-white">Derniers Ajustements</h3>
             <div className="space-y-3 flex-1 overflow-y-auto max-h-[200px] pr-2">
-                {/* Exemple de logs simulés */}
                 <div className="bg-black/30 p-3 rounded border-l-2 border-green-500">
                     <div className="flex justify-between text-xs text-gray-500 mb-1">
                         <span>14:00</span>
@@ -61,28 +72,44 @@ export const HistoryPage: React.FC = () => {
                     </div>
                     <p className="text-xs text-gray-300">Modèle Terre Battue renforcé.</p>
                 </div>
-                <div className="bg-black/30 p-3 rounded border-l-2 border-red-500">
-                    <div className="flex justify-between text-xs text-gray-500 mb-1">
-                        <span>Hier</span>
-                        <span className="text-red-500 font-bold">Échec</span>
-                    </div>
-                    <p className="text-xs text-gray-300">Recalibrage poids "Fatigue".</p>
-                </div>
             </div>
          </div>
       </div>
 
-      {/* --- SECTION 2 : VALIDATION MANUELLE (EXISTANT) --- */}
+      {/* --- SECTION 2 : VALIDATION (AVEC LE BOUTON AUTO) --- */}
       <div>
-        <div className="flex items-center gap-3 mb-6">
-            <div className="p-3 bg-neutral-800 rounded-full text-neon">
-                <ListChecks size={24} />
+        <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+                <div className="p-3 bg-neutral-800 rounded-full text-neon">
+                    <ListChecks size={24} />
+                </div>
+                <div>
+                    <h2 className="text-2xl font-bold">Validation des Prédictions</h2>
+                    <p className="text-sm text-gray-400">Validez les matchs terminés pour entraîner l'IA.</p>
+                </div>
             </div>
-            <div>
-                <h2 className="text-2xl font-bold">Validation des Prédictions</h2>
-                <p className="text-sm text-gray-400">Validez les matchs terminés pour entraîner l'IA.</p>
-            </div>
+            
+            {/* LE BOUTON AUTO-DETECT EST ICI MAINTENANT */}
+            <button 
+                onClick={runAutoValidate}
+                className="bg-purple-900/50 hover:bg-purple-600 text-white px-4 py-2 rounded-xl border border-purple-500/50 flex items-center gap-2 transition-all shadow-lg shadow-purple-900/20"
+            >
+                <Zap size={16} className="text-yellow-300" />
+                <span className="font-bold text-sm">Auto-Detect & Learn</span>
+            </button>
         </div>
+
+        {/* LOGS DE L'AUTO VALIDATION */}
+        {autoLogs.length > 0 && (
+            <div className="mb-6 p-4 bg-purple-900/10 border border-purple-500/30 rounded-xl animate-fade-in">
+                <h4 className="text-purple-400 text-xs font-bold uppercase mb-2">Rapport d'exécution automatique</h4>
+                {autoLogs.map((log, i) => (
+                    <p key={i} className="text-xs text-gray-300 font-mono mb-1 border-b border-white/5 pb-1 last:border-0">
+                        {log}
+                    </p>
+                ))}
+            </div>
+        )}
 
         {matchesToValidate.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -93,12 +120,12 @@ export const HistoryPage: React.FC = () => {
         ) : (
             <div className="text-center p-8 text-gray-500 border border-dashed border-neutral-800 rounded-xl flex flex-col items-center gap-2">
                 <CheckCircle size={32} className="text-green-500 opacity-50"/>
-                <p>Tout est à jour ! L'IA a analysé tous les résultats disponibles.</p>
+                <p>Aucun match en attente. Tout est à jour !</p>
             </div>
         )}
       </div>
 
-      {/* --- SECTION 3 : HISTORIQUE FINANCIER (EXISTANT) --- */}
+      {/* --- SECTION 3 : HISTORIQUE FINANCIER --- */}
       <div className="bg-surface border border-neutral-800 rounded-xl overflow-hidden">
         <div className="p-6 border-b border-neutral-800 flex justify-between items-center bg-surfaceHighlight">
           <div className="flex items-center gap-3">
