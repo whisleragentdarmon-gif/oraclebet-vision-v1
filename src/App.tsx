@@ -3,7 +3,6 @@ import { Layout } from './components/Layout';
 import { LivePage } from './pages/LivePage';
 import { AnalysisPage } from './pages/AnalysisPage';
 import { ComboPage } from './pages/ComboPage';
-import { AdminPage } from './pages/AdminPage'; // Si tu l'as encore
 import { VipPage } from './pages/VipPage';
 import { BankrollPage } from './pages/BankrollPage';
 import { LoginPage } from './pages/LoginPage';
@@ -11,8 +10,10 @@ import { HistoryPage } from './pages/HistoryPage';
 import { BankrollProvider } from './context/BankrollContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ConfigProvider } from './context/ConfigContext';
-import { DataProvider } from './context/DataContext'; // 👈 AJOUT ICI
+import { DataProvider } from './context/DataContext';
+import { AnalysisProvider } from './context/AnalysisContext'; // 👈 IMPORT 1 : La Mémoire
 
+// Composant qui gère l'affichage selon si on est connecté ou non
 const AuthenticatedApp: React.FC = () => {
   const { isAuthenticated } = useAuth();
   const [activeTab, setActiveTab] = useState('analysis');
@@ -45,9 +46,11 @@ const App: React.FC = () => {
     <AuthProvider>
       <ConfigProvider>
         <BankrollProvider>
-          {/* 👇 ON ENGLOBE L'APPLI DANS LE DATA PROVIDER */}
           <DataProvider>
-            <AuthenticatedApp />
+            {/* 👇 AJOUT 2 : ON ENGLOBE TOUT AVEC LA MÉMOIRE */}
+            <AnalysisProvider>
+               <AuthenticatedApp />
+            </AnalysisProvider>
           </DataProvider>
         </BankrollProvider>
       </ConfigProvider>
