@@ -3,15 +3,10 @@ import { OracleAI } from '../engine';
 
 const mapStatus = (status: any): MatchStatus => {
   const s = (typeof status === 'string' ? status : status?.slug || '').toLowerCase();
-  
-  // LIVE : Si le statut contient ces mots clés
   if (s === 'inprogress' || s.includes('set') || s === 'live' || s === 'inplay') return 'LIVE';
-  
-  // FINI
   if (s === 'finished' || s === 'ended' || s === 'retired' || s === 'cancelled' || s === 'walkover') return 'FINISHED';
-  
-  // A VENIR (Tout le reste)
-  return 'UPCOMING';
+  if (s === 'notstarted' || s === 'scheduled') return 'UPCOMING';
+  return 'SCHEDULED';
 };
 
 export const MatchService = {
@@ -22,17 +17,20 @@ export const MatchService = {
 
       if (!json.data) return [];
 
-      const realMatches: Match[] = json.data.map((m: any) => {
-        const p1Name = m.home_team?.name || "TBA";
-        const p2Name = m.away_team?.name || "TBA";
+      // 1. FILTRE STRICT : On ne garde que le Tennis (sport_id 2)
+      // On exclut aussi les matchs sans noms de joueurs (parfois des bugs de l'API)
+      const tennisMatches = json.data.filter((m: any) => 
+          m.sport_id === 2 && 
+          m.home_team?.name && 
+          m.away_team?.name
+      );
+
+      const realMatches: Match[] = tennisMatches.map((m: any) => {
+        const p1Name = m.home_team.name;
+        const p2Name = m.away_team.name;
         const status = mapStatus(m.status);
         
-        // --- GÉNÉRATION INTELLIGENTE DES DONNÉES MANQUANTES ---
-        // L'API gratuite ne donne pas les rangs ou les cotes parfois.
-        // On génère des données cohérentes pour que le God Mode fonctionne.
-        
-        // Simulation de cotes basée sur une probabilité aléatoire mais fixe par match
-        // (Pour que la cote ne change pas à chaque rafraichissement)
+        // Calcul intelligent des cotes simulées (Car l'API gratuite ne les donne pas toujours)
         const seed = p1Name.length + p2Name.length; 
         const isP1Fav = seed % 2 === 0;
         const p1Odd = isP1Fav ? 1.45 : 2.60;
@@ -45,10 +43,9 @@ export const MatchService = {
             riskLevel: isP1Fav ? 'SAFE' : 'MODERATE',
             marketType: 'WINNER',
             circuit: m.league?.name?.includes('WTA') ? 'WTA' : 'ATP',
-            fairOdds: { p1: p1Odd - 0.1, p2: p2Odd - 0.2 }, // Value simulée
-            qualitativeAnalysis: `Analyse ${m.league?.name || 'Tournoi'}: ${isP1Fav ? p1Name : p2Name} montre une meilleure dynamique récente.`,
+            fairOdds: { p1: p1Odd - 0.1, p2: p2Odd - 0.2 },
+            qualitativeAnalysis: `Analyse ${m.league?.name || 'Tournoi'}: ${isP1Fav ? p1Name : p2Name} montre une meilleure dynamique.`,
             integrity: { isSuspicious: false, score: 0 },
-            // On pré-remplit des données pour que le modal ne soit pas vide
             attributes: [
                 { power: isP1Fav ? 85 : 70, serve: 80, return: 75, mental: 80, form: 85 },
                 { power: isP1Fav ? 70 : 80, serve: 75, return: 70, mental: 70, form: 75 }
@@ -61,7 +58,7 @@ export const MatchService = {
           date: m.start_at ? new Date(m.start_at).toLocaleDateString() : "Auj.",
           time: m.start_at ? new Date(m.start_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : "00:00",
           status: status,
-          surface: 'Hard', // Défaut car non fourni par l'API gratuite
+          surface: 'Hard', 
           score: m.home_score?.display ? `${m.home_score.display}-${m.away_score.display}` : undefined,
           player1: { name: p1Name, rank: 0, country: m.home_team?.country_code || 'WLD', form: 50, surfacePrefs: { hard: 50, clay: 50, grass: 50 } },
           player2: { name: p2Name, rank: 0, country: m.away_team?.country_code || 'WLD', form: 50, surfacePrefs: { hard: 50, clay: 50, grass: 50 } },
