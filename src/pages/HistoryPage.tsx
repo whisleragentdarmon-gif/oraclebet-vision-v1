@@ -1,18 +1,78 @@
 import React from 'react';
 import { MOCK_MATCHES } from '../constants';
 import { MatchCard } from '../components/MatchCard';
-import { History, ListChecks } from 'lucide-react';
+import { History, ListChecks, BrainCircuit, TrendingUp, CheckCircle, XCircle } from 'lucide-react';
 import { useBankroll } from '../context/BankrollContext';
+import { AreaChart, Area, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+
+// Données simulées pour l'évolution de la précision IA (Tu pourras les connecter à l'API plus tard)
+const accuracyData = [
+  { month: 'Jan', acc: 65 }, { month: 'Fev', acc: 68 }, { month: 'Mar', acc: 72 },
+  { month: 'Avr', acc: 70 }, { month: 'Mai', acc: 75 }, { month: 'Juin', acc: 78.5 }
+];
 
 export const HistoryPage: React.FC = () => {
   const { state } = useBankroll();
-  // On filtre pour ne garder que les matchs finis (pour la validation IA)
-  const matches = MOCK_MATCHES.filter(m => m.status === 'FINISHED');
+  // Matchs à valider (Finis mais en attente)
+  const matchesToValidate = MOCK_MATCHES.filter(m => m.status === 'FINISHED' && m.validationResult === 'PENDING');
 
   return (
     <div className="space-y-12">
       
-      {/* SECTION 1 : VALIDATION DES MATCHS IA */}
+      {/* --- SECTION 1 : PERFORMANCE NEURONALE (NOUVEAU) --- */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+         {/* Graphique Précision IA */}
+         <div className="lg:col-span-2 bg-surface border border-neutral-800 rounded-xl p-6">
+            <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-purple-900/30 rounded-lg text-purple-400"><BrainCircuit size={20}/></div>
+                <div>
+                    <h3 className="font-bold text-lg text-white">Évolution Précision IA</h3>
+                    <p className="text-xs text-gray-500">Apprentissage sur les 6 derniers mois</p>
+                </div>
+            </div>
+            <div className="h-[200px]">
+                <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={accuracyData}>
+                        <defs>
+                            <linearGradient id="colorAcc" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.3}/>
+                                <stop offset="95%" stopColor="#8B5CF6" stopOpacity={0}/>
+                            </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                        <XAxis dataKey="month" stroke="#666" fontSize={12} />
+                        <YAxis domain={[50, 100]} stroke="#666" fontSize={12} />
+                        <Tooltip contentStyle={{backgroundColor: '#1F1F1F', border: 'none'}} />
+                        <Area type="monotone" dataKey="acc" stroke="#8B5CF6" strokeWidth={3} fillOpacity={1} fill="url(#colorAcc)" />
+                    </AreaChart>
+                </ResponsiveContainer>
+            </div>
+         </div>
+
+         {/* Logs d'apprentissage récents */}
+         <div className="bg-surface border border-neutral-800 rounded-xl p-6 flex flex-col">
+            <h3 className="font-bold text-lg mb-4 text-white">Derniers Ajustements</h3>
+            <div className="space-y-3 flex-1 overflow-y-auto max-h-[200px] pr-2">
+                {/* Exemple de logs simulés */}
+                <div className="bg-black/30 p-3 rounded border-l-2 border-green-500">
+                    <div className="flex justify-between text-xs text-gray-500 mb-1">
+                        <span>14:00</span>
+                        <span className="text-green-500 font-bold">Succès</span>
+                    </div>
+                    <p className="text-xs text-gray-300">Modèle Terre Battue renforcé.</p>
+                </div>
+                <div className="bg-black/30 p-3 rounded border-l-2 border-red-500">
+                    <div className="flex justify-between text-xs text-gray-500 mb-1">
+                        <span>Hier</span>
+                        <span className="text-red-500 font-bold">Échec</span>
+                    </div>
+                    <p className="text-xs text-gray-300">Recalibrage poids "Fatigue".</p>
+                </div>
+            </div>
+         </div>
+      </div>
+
+      {/* --- SECTION 2 : VALIDATION MANUELLE (EXISTANT) --- */}
       <div>
         <div className="flex items-center gap-3 mb-6">
             <div className="p-3 bg-neutral-800 rounded-full text-neon">
@@ -24,20 +84,21 @@ export const HistoryPage: React.FC = () => {
             </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {matches.map(match => (
-            <MatchCard key={match.id} match={match} />
-            ))}
-        </div>
-
-        {matches.length === 0 && (
-            <div className="text-center p-8 text-gray-500 border border-dashed border-neutral-800 rounded-xl">
-                Aucun match en attente de validation IA.
+        {matchesToValidate.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {matchesToValidate.map(match => (
+                <MatchCard key={match.id} match={match} />
+                ))}
+            </div>
+        ) : (
+            <div className="text-center p-8 text-gray-500 border border-dashed border-neutral-800 rounded-xl flex flex-col items-center gap-2">
+                <CheckCircle size={32} className="text-green-500 opacity-50"/>
+                <p>Tout est à jour ! L'IA a analysé tous les résultats disponibles.</p>
             </div>
         )}
       </div>
 
-      {/* SECTION 2 : HISTORIQUE FINANCIER (LE TABLEAU DÉPLACÉ) */}
+      {/* --- SECTION 3 : HISTORIQUE FINANCIER (EXISTANT) --- */}
       <div className="bg-surface border border-neutral-800 rounded-xl overflow-hidden">
         <div className="p-6 border-b border-neutral-800 flex justify-between items-center bg-surfaceHighlight">
           <div className="flex items-center gap-3">
