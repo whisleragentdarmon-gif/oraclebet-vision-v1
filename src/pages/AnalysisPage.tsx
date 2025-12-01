@@ -5,11 +5,10 @@ import { Match } from '../types';
 import { OracleReactor } from '../components/OracleReactor';
 import { OddsComparator } from '../components/OddsComparator';
 import { GeoEngine } from '../engine/market/GeoEngine';
-import { TrapDetector } from '../engine/market/TrapDetector';
 import { 
   BarChart, Bar, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend 
 } from 'recharts';
-import { TrendingUp, ShieldAlert, Siren, Globe, Cpu, Wind, Activity, Target, Zap, FileText, Search, Newspaper } from 'lucide-react';
+import { TrendingUp, ShieldAlert, Siren, Globe, Cpu, Wind, Activity, Zap, FileText, Search, Newspaper, Users, BarChart2 } from 'lucide-react';
 
 export const AnalysisPage: React.FC = () => {
   const { matches } = useData();
@@ -18,8 +17,12 @@ export const AnalysisPage: React.FC = () => {
   const [isComputing, setIsComputing] = useState(false);
   const [godModeData, setGodModeData] = useState<any>(null);
   
-  // État pour les news web
-  const [webIntel, setWebIntel] = useState<{title: string, snippet: string}[]>([]);
+  // Intelligence Web classée par catégorie
+  const [webIntel, setWebIntel] = useState<{
+    stats: {title: string, snippet: string}[],
+    market: {title: string, snippet: string}[],
+    news: {title: string, snippet: string}[]
+  }>({ stats: [], market: [], news: [] });
 
   useEffect(() => {
     if (activeMatches.length > 0 && !selectedMatch) setSelectedMatch(activeMatches[0]);
@@ -27,21 +30,42 @@ export const AnalysisPage: React.FC = () => {
 
   const runGodMode = async () => {
     setIsComputing(true);
-    setWebIntel([]); // Reset news
+    setWebIntel({ stats: [], market: [], news: [] }); // Reset
 
     if (selectedMatch) {
-        // 1. RECHERCHE WEB EN TEMPS RÉEL
+        const p1 = selectedMatch.player1.name;
+        const p2 = selectedMatch.player2.name;
+
+        // 🚀 STRATÉGIE MULTI-AGENTS : 3 RECHERCHES PARALLÈLES
         try {
-            const query = `${selectedMatch.player1.name} tennis blessure forme news`;
-            const res = await fetch('/api/search', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ query })
+            // Agent 1 : Stats & H2H (Cible les sites de stats)
+            const qStats = `${p1} vs ${p2} h2h stats tennisexplorer flashscore head to head`;
+            
+            // Agent 2 : Marché & Cotes (Cible les forums et comparateurs)
+            const qMarket = `${p1} vs ${p2} betting odds prediction forum discussion tipsters`;
+            
+            // Agent 3 : News & Physique (Cible les blessures)
+            const qNews = `${p1} ${p2} tennis injury news interview fitness update`;
+
+            // On lance tout en même temps
+            const [resStats, resMarket, resNews] = await Promise.all([
+                fetch('/api/search', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ query: qStats }) }),
+                fetch('/api/search', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ query: qMarket }) }),
+                fetch('/api/search', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ query: qNews }) })
+            ]);
+
+            const dataStats = await resStats.json();
+            const dataMarket = await resMarket.json();
+            const dataNews = await resNews.json();
+
+            setWebIntel({
+                stats: dataStats.results || [],
+                market: dataMarket.results || [],
+                news: dataNews.results || []
             });
-            const data = await res.json();
-            if (data.results) setWebIntel(data.results);
+
         } catch (e) {
-            console.error("Erreur Web Search", e);
+            console.error("Erreur Web Search Agents", e);
         }
     }
   };
@@ -49,29 +73,20 @@ export const AnalysisPage: React.FC = () => {
   const onComputationComplete = () => {
     if (!selectedMatch) return;
     
-    // Analyse des mots clés dans les news trouvées
+    // Analyse des mots clés pour les alertes
     let injuryAlert = false;
-    webIntel.forEach(news => {
-        const text = (news.title + " " + news.snippet).toLowerCase();
-        if (text.includes('blessure') || text.includes('forfait') || text.includes('abandon') || text.includes('douleur')) {
-            injuryAlert = true;
-        }
+    webIntel.news.forEach(n => {
+        const t = (n.title + " " + n.snippet).toLowerCase();
+        if (t.includes('injury') || t.includes('withdraw') || t.includes('blessure') || t.includes('abandon')) injuryAlert = true;
     });
 
     const geo = GeoEngine.getConditions(selectedMatch.tournament);
-    const trap = TrapDetector.scan(selectedMatch.odds);
     
-    // On ajoute l'alerte blessure au résultat
-    setGodModeData({ 
-        geo, 
-        trap,
-        injuryAlert
-    });
-    
+    setGodModeData({ geo, injuryAlert });
     setIsComputing(false);
   };
 
-  // Graphiques (inchangés)
+  // --- Graphiques et Utils ---
   const winProbData = selectedMatch?.ai ? [
     { name: selectedMatch.player1.name, prob: selectedMatch.ai.winProbA || 50, fill: '#6B7280' },
     { name: selectedMatch.player2.name, prob: selectedMatch.ai.winProbB || 50, fill: '#FF7A00' }
@@ -98,18 +113,18 @@ export const AnalysisPage: React.FC = () => {
       <OracleReactor isVisible={isComputing} onComplete={onComputationComplete} />
 
       <div className="flex flex-col lg:flex-row gap-6 h-full">
-        {/* Liste */}
+        {/* Colonne Gauche */}
         <div className="lg:w-1/3 flex flex-col gap-4">
           <h2 className="text-2xl font-bold mb-2">Sélectionner un Match</h2>
           <div className="overflow-y-auto pr-2 space-y-3 max-h-[80vh]">
             {activeMatches.map((match) => (
               <MatchCard key={match.id} match={match} selected={selectedMatch?.id === match.id} onClick={() => { setSelectedMatch(match); setGodModeData(null); }} compact />
             ))}
-            {activeMatches.length === 0 && <p className="text-gray-500 text-sm p-4 border border-dashed border-neutral-800 rounded">Aucun match à analyser.</p>}
+            {activeMatches.length === 0 && <p className="text-gray-500 text-sm p-4 border border-dashed border-neutral-800 rounded">Aucun match disponible.</p>}
           </div>
         </div>
 
-        {/* Analyse */}
+        {/* Colonne Droite */}
         <div className="lg:w-2/3">
           {selectedMatch && selectedMatch.ai ? (
             <div className="bg-surface border border-neutral-800 rounded-2xl p-6 h-full shadow-2xl animate-fade-in overflow-y-auto">
@@ -127,67 +142,79 @@ export const AnalysisPage: React.FC = () => {
                  </div>
                  {!godModeData && (
                    <button onClick={runGodMode} className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-bold py-3 px-6 rounded-xl flex items-center gap-2 shadow-lg shadow-purple-500/20 transition-all transform hover:scale-105">
-                      <Search size={20} className="animate-pulse" /> SCANNER LE WEB (GOD MODE)
+                      <Search size={20} className="animate-pulse" /> LANCER GOD MODE ULTIME
                    </button>
                  )}
               </div>
 
-              {/* RÉSULTAT GOD MODE */}
+              {/* --- RÉSULTAT GOD MODE ULTIME --- */}
               {godModeData && (
                 <div className="mb-8 animate-fade-in space-y-4">
                     
-                    {/* ALERTE BLESSURE WEB */}
+                    {/* ALERTE BLESSURE */}
                     {godModeData.injuryAlert ? (
                         <div className="bg-red-900/40 border border-red-500 p-4 rounded-xl flex items-center gap-4 animate-pulse">
                             <Siren size={32} className="text-red-500"/>
                             <div>
-                                <h3 className="text-red-400 font-bold uppercase">Alerte Info Web</h3>
-                                <p className="text-white text-sm">Le scan Google a détecté des mots-clés inquiétants (blessure/abandon) récemment pour ce joueur.</p>
+                                <h3 className="text-red-400 font-bold uppercase">Alerte Physique / News</h3>
+                                <p className="text-white text-sm">Le scan Web a détecté des mentions de blessure ou forfait récent.</p>
                             </div>
                         </div>
                     ) : (
                         <div className="bg-green-900/20 border border-green-500/30 p-3 rounded-xl flex items-center gap-3">
                             <ShieldAlert size={20} className="text-green-500"/>
-                            <p className="text-green-400 text-sm font-bold">R.A.S sur le Web (Pas de news blessure récente)</p>
+                            <p className="text-green-400 text-sm font-bold">R.A.S : Aucune info inquiétante détectée (Blessure/Forfait).</p>
                         </div>
                     )}
 
-                    {/* NEWS GOOGLE */}
-                    {webIntel.length > 0 && (
-                        <div className="bg-black/40 border border-neutral-800 p-4 rounded-xl">
-                            <h4 className="text-blue-400 text-xs font-bold uppercase mb-3 flex items-center gap-2">
-                                <Newspaper size={14}/> Dernières Infos Google
-                            </h4>
-                            <div className="space-y-3">
-                                {webIntel.map((news, i) => (
-                                    <div key={i} className="text-sm">
-                                        <a href="#" className="text-white font-bold hover:text-neon truncate block">{news.title}</a>
-                                        <p className="text-gray-500 text-xs line-clamp-2">{news.snippet}</p>
+                    {/* MÉTÉO */}
+                    <div className="bg-black/40 border border-neutral-800 p-3 rounded-xl flex gap-6 items-center">
+                        <div className="flex items-center gap-2 text-blue-400 font-bold text-sm"><Wind size={16}/> {godModeData.geo.wind} km/h (Vent)</div>
+                        <div className="flex items-center gap-2 text-yellow-400 font-bold text-sm"><Globe size={16}/> {godModeData.geo.altitude}m (Altitude)</div>
+                    </div>
+
+                    {/* GRILLE INTELLIGENCE WEB (3 COLONNES) */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        
+                        {/* 1. STATS & H2H */}
+                        <div className="bg-surfaceHighlight p-3 rounded-xl border border-neutral-700">
+                            <h4 className="text-blue-400 text-xs font-bold uppercase mb-2 flex items-center gap-2"><BarChart2 size={12}/> Stats & H2H Web</h4>
+                            <div className="space-y-2 max-h-40 overflow-y-auto">
+                                {webIntel.stats.length > 0 ? webIntel.stats.map((item, i) => (
+                                    <a key={i} href={item.snippet} target="_blank" className="block text-[10px] text-gray-300 hover:text-white border-b border-white/5 pb-1 last:border-0">
+                                        <span className="font-bold text-blue-300 block truncate">{item.title}</span>
+                                        <span className="opacity-70 line-clamp-2">{item.snippet}</span>
+                                    </a>
+                                )) : <p className="text-[10px] text-gray-500">Rien trouvé.</p>}
+                            </div>
+                        </div>
+
+                        {/* 2. MARCHÉ & COTES */}
+                        <div className="bg-surfaceHighlight p-3 rounded-xl border border-neutral-700">
+                            <h4 className="text-green-400 text-xs font-bold uppercase mb-2 flex items-center gap-2"><Users size={12}/> Avis Marché & Cotes</h4>
+                            <div className="space-y-2 max-h-40 overflow-y-auto">
+                                {webIntel.market.length > 0 ? webIntel.market.map((item, i) => (
+                                    <div key={i} className="text-[10px] text-gray-300 border-b border-white/5 pb-1 last:border-0">
+                                        <span className="font-bold text-green-300 block truncate">{item.title}</span>
+                                        <span className="opacity-70 line-clamp-2">{item.snippet}</span>
                                     </div>
-                                ))}
+                                )) : <p className="text-[10px] text-gray-500">Rien trouvé.</p>}
                             </div>
                         </div>
-                    )}
 
-                    {/* DATA MARKET EXISTANTES */}
-                    <div className="bg-purple-900/10 border border-purple-500/30 p-4 rounded-xl">
-                        <h3 className="text-purple-400 font-bold mb-4 flex items-center gap-2"><Activity /> CONTEXTE MATCH</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="bg-black/40 p-3 rounded border border-purple-500/20">
-                                <p className="text-gray-500 text-xs uppercase mb-1">Conditions</p>
-                                <div className="flex items-center gap-2 text-white font-bold">
-                                    <Wind size={16} className="text-blue-400"/> {godModeData.geo.wind} km/h
-                                </div>
-                            </div>
-                            <div className="bg-black/40 p-3 rounded border border-purple-500/20">
-                                <p className="text-gray-500 text-xs uppercase mb-1">Trap Detector</p>
-                                {godModeData.trap.isTrap ? (
-                                    <div className="text-red-500 font-bold flex items-center gap-2"><Siren size={16}/> PIÈGE DÉTECTÉ</div>
-                                ) : (
-                                    <div className="text-green-500 font-bold flex items-center gap-2"><ShieldAlert size={16}/> Cotes Saines</div>
-                                )}
+                        {/* 3. NEWS & RUMEURS */}
+                        <div className="bg-surfaceHighlight p-3 rounded-xl border border-neutral-700">
+                            <h4 className="text-orange-400 text-xs font-bold uppercase mb-2 flex items-center gap-2"><Newspaper size={12}/> News & Rumeurs</h4>
+                            <div className="space-y-2 max-h-40 overflow-y-auto">
+                                {webIntel.news.length > 0 ? webIntel.news.map((item, i) => (
+                                    <div key={i} className="text-[10px] text-gray-300 border-b border-white/5 pb-1 last:border-0">
+                                        <span className="font-bold text-orange-300 block truncate">{item.title}</span>
+                                        <span className="opacity-70 line-clamp-2">{item.snippet}</span>
+                                    </div>
+                                )) : <p className="text-[10px] text-gray-500">Rien trouvé.</p>}
                             </div>
                         </div>
+
                     </div>
                 </div>
               )}
@@ -259,7 +286,7 @@ export const AnalysisPage: React.FC = () => {
             </div>
           ) : (
             <div className="flex items-center justify-center h-full text-gray-500 border border-dashed border-neutral-800 rounded-xl m-4">
-                Sélectionnez un match à venir pour lancer l'analyse.
+                Sélectionnez un match pour voir l'analyse.
             </div>
           )}
         </div>
