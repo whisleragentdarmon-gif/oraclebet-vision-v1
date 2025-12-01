@@ -172,3 +172,70 @@ export interface ComboStrategy {
 }
 
 export type ComboStrategyResult = ComboStrategy;
+// --- EXTENSION GOD MODE (DATA MARKET) ---
+
+// 1. Module Presse & Scandales
+export interface PressAnalysis {
+  sentimentScore: number; // -100 (Haine) à +100 (Adoration)
+  scandalAlert: boolean;
+  mentalPressureIndex: number; // 0-100
+  recentQuotes: { source: string; text: string; sentiment: 'POSITIVE' | 'NEGATIVE' | 'NEUTRAL' }[];
+  rumors: string[]; // ex: "Rumeur de blessure épaule"
+}
+
+// 2. Module Social Media
+export interface SocialSentiment {
+  twitterHype: number; // Volume de discussion
+  redditMood: 'BULLISH' | 'BEARISH' | 'TOXIC';
+  instagramActivity: string; // "Normal", "Absent", "Party Mode"
+  publicBettingTrend: number; // % des parieurs sur ce joueur
+}
+
+// 3. Module Fatigue & Voyage
+export interface FatigueData {
+  travelDistance: number; // km parcourus cette semaine
+  timeZoneChange: number; // Heures de décalage
+  hoursOnCourt: number; // Cumul 7 jours
+  physioCalls: number; // Appels kiné derniers matchs
+  fatigueScore: number; // 0 (Frais) - 100 (Épuisé)
+}
+
+// 4. Module Météo & Conditions (Geo)
+export interface GeoCondition {
+  altitude: number; // Mètres (impacte vitesse balle)
+  humidity: number; // %
+  windSpeed: number; // km/h
+  courtSpeedIndex: number; // 1-100 (Calculé via météo + surface)
+  ballType: string; // "Wilson US Open", "Dunlop Fort"...
+  isIndoor: boolean;
+}
+
+// 5. Profilage Stylistique
+export type PlayerArchetype = 'BIG_SERVER' | 'DEFENSIVE_GRINDER' | 'AGGRESSIVE_BASELINER' | 'ALL_ROUNDER' | 'SERVE_VOLLEY';
+
+export interface StyleMatchup {
+  p1Style: PlayerArchetype;
+  p2Style: PlayerArchetype;
+  compatibilityNote: string; // ex: "Le serveur est désavantagé par le retourneur sur terre battue"
+  tacticalAdvantage: 'P1' | 'P2' | 'NEUTRAL';
+}
+
+// --- MISE À JOUR DU MATCH (Extension) ---
+// On ajoute ces champs optionnels à AIPrediction dans src/engine/types.ts
+// (Tu n'as pas besoin de remplacer tout le fichier, juste d'ajouter ces champs à l'interface AIPrediction existante)
+/*
+export interface AIPrediction {
+  // ... tes champs existants ...
+  
+  // Nouveaux champs GOD MODE :
+  godModeAnalysis?: {
+    press?: PressAnalysis;
+    social?: SocialSentiment;
+    fatigue?: { p1: FatigueData, p2: FatigueData };
+    conditions?: GeoCondition;
+    style?: StyleMatchup;
+    globalConfidence: number; // Score final pondéré
+    noBetReason?: string; // Si Trap Detector activé
+  };
+}
+*/
