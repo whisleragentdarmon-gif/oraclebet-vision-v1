@@ -1,27 +1,9 @@
-// ... imports
-
-export const AnalysisPage: React.FC = () => {
-  const { matches } = useData();
-  
-  // 👇 FILTRE STRICT : On enlève les matchs finis
-  const activeMatches = matches.filter(m => m.status !== 'FINISHED');
-
-  const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
-  
-  useEffect(() => {
-    // Si on a des matchs actifs, on sélectionne le premier par défaut
-    if (activeMatches.length > 0 && !selectedMatch) {
-        setSelectedMatch(activeMatches[0]);
-    }
-  }, [matches]); // Déclenche quand les matchs changent
-
-  // ... (La suite du code reste pareil, mais utilise activeMatches.map au lieu de matches.map dans la liste)
 import React, { useState, useEffect } from 'react';
-import { useData } from '../context/DataContext'; // ✅ Vraies données
+import { useData } from '../context/DataContext';
 import { MatchCard } from '../components/MatchCard';
 import { Match } from '../types';
 import { OracleReactor } from '../components/OracleReactor';
-import { OddsComparator } from '../components/OddsComparator'; // ✅ Comparateur
+import { OddsComparator } from '../components/OddsComparator';
 import { ScandalEngine } from '../engine/market/ScandalEngine';
 import { GeoEngine } from '../engine/market/GeoEngine';
 import { TrapDetector } from '../engine/market/TrapDetector';
@@ -31,15 +13,19 @@ import {
 import { TrendingUp, ShieldAlert, Siren, Globe, Cpu, Wind, Thermometer, Activity, Target, Zap, FileText } from 'lucide-react';
 
 export const AnalysisPage: React.FC = () => {
-  const { matches } = useData(); // On récupère les matchs de l'API
+  const { matches } = useData();
+  
+  // 👇 ICI : On crée la liste filtrée (Uniquement les matchs À VENIR ou LIVE)
+  const activeMatches = matches.filter(m => m.status !== 'FINISHED');
+
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
   const [isComputing, setIsComputing] = useState(false);
   const [godModeData, setGodModeData] = useState<any>(null);
 
-  // Sélectionner le premier match au chargement
+  // Au chargement, on sélectionne le premier match de la liste FILTRÉE
   useEffect(() => {
-    if (matches.length > 0 && !selectedMatch) {
-        setSelectedMatch(matches[0]);
+    if (activeMatches.length > 0 && !selectedMatch) {
+        setSelectedMatch(activeMatches[0]);
     }
   }, [matches]);
 
@@ -57,7 +43,7 @@ export const AnalysisPage: React.FC = () => {
     setIsComputing(false);
   };
 
-  // --- PRÉPARATION DES DONNÉES GRAPHIQUES (SÉCURISÉE) ---
+  // Préparation des graphiques (Sécurisée)
   const winProbData = selectedMatch?.ai ? [
     { name: selectedMatch.player1.name, prob: selectedMatch.ai.winProbA || 50, fill: '#6B7280' },
     { name: selectedMatch.player2.name, prob: selectedMatch.ai.winProbB || 50, fill: '#FF7A00' }
@@ -84,11 +70,13 @@ export const AnalysisPage: React.FC = () => {
       <OracleReactor isVisible={isComputing} onComplete={onComputationComplete} />
 
       <div className="flex flex-col lg:flex-row gap-6 h-full">
-        {/* Colonne Gauche : Liste */}
+        {/* Colonne Gauche : Liste des Matchs */}
         <div className="lg:w-1/3 flex flex-col gap-4">
           <h2 className="text-2xl font-bold mb-2">Sélectionner un Match</h2>
           <div className="overflow-y-auto pr-2 space-y-3 max-h-[80vh]">
-            {matches.map((match) => (
+            
+            {/* 👇 ICI : On utilise activeMatches pour l'affichage (le JSX) */}
+            {activeMatches.map((match) => (
               <MatchCard 
                 key={match.id} 
                 match={match} 
@@ -97,16 +85,20 @@ export const AnalysisPage: React.FC = () => {
                 compact 
               />
             ))}
-            {matches.length === 0 && <p className="text-gray-500">Aucun match disponible.</p>}
+            
+            {activeMatches.length === 0 && (
+                <p className="text-gray-500 text-sm border border-dashed border-neutral-800 p-4 rounded text-center">
+                    Aucun match à venir disponible pour l'analyse.
+                </p>
+            )}
           </div>
         </div>
 
-        {/* Colonne Droite : Analyse */}
+        {/* Colonne Droite : Détail (Reste inchangé) */}
         <div className="lg:w-2/3">
           {selectedMatch && selectedMatch.ai ? (
             <div className="bg-surface border border-neutral-800 rounded-2xl p-6 h-full shadow-2xl animate-fade-in overflow-y-auto">
               
-              {/* Header Match */}
               <div className="flex justify-between items-start mb-6 border-b border-neutral-800 pb-4">
                  <div>
                     <div className="flex items-center gap-2 mb-1">
@@ -131,7 +123,6 @@ export const AnalysisPage: React.FC = () => {
                     <div className="bg-purple-900/10 border border-purple-500/30 p-4 rounded-xl">
                         <h3 className="text-purple-400 font-bold mb-4 flex items-center gap-2"><Activity /> DEEP DATA MARKET ANALYSIS</h3>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            {/* Météo */}
                             <div className="bg-black/40 p-3 rounded border border-purple-500/20">
                                 <p className="text-gray-500 text-xs uppercase mb-1">Conditions</p>
                                 <div className="flex items-center gap-2 text-white font-bold">
@@ -141,7 +132,6 @@ export const AnalysisPage: React.FC = () => {
                                     <Globe size={16} className="text-green-400"/> {godModeData.geo.altitude}m Alt.
                                 </div>
                             </div>
-                            {/* Social */}
                             <div className="bg-black/40 p-3 rounded border border-purple-500/20">
                                 <p className="text-gray-500 text-xs uppercase mb-1">Social & Mental</p>
                                 <div className="flex justify-between items-center mb-1">
@@ -152,7 +142,6 @@ export const AnalysisPage: React.FC = () => {
                                 </div>
                                 <p className="text-xs text-gray-300">Trend: <span className="text-neon">{godModeData.social.socialTrend}</span></p>
                             </div>
-                            {/* Trap Detector */}
                             <div className="bg-black/40 p-3 rounded border border-purple-500/20">
                                 <p className="text-gray-500 text-xs uppercase mb-1">Trap Detector</p>
                                 {godModeData.trap.isTrap ? (
@@ -166,7 +155,7 @@ export const AnalysisPage: React.FC = () => {
                 </div>
               )}
 
-              {/* Analyse Standard & Bannière */}
+              {/* Analyse Standard */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                  <div className="bg-surfaceHighlight p-5 rounded-xl border border-neutral-800">
                     <p className="text-gray-400 text-xs uppercase mb-2">Prédiction Standard</p>
@@ -184,7 +173,6 @@ export const AnalysisPage: React.FC = () => {
                  </div>
               </div>
 
-              {/* Comparateur de Cotes (IMPORTANT) */}
               {selectedMatch.ai.oddsAnalysis && selectedMatch.ai.fairOdds && (
                 <div className="mb-8">
                     <OddsComparator 
@@ -196,7 +184,6 @@ export const AnalysisPage: React.FC = () => {
                 </div>
               )}
 
-              {/* Graphiques (Probabilité & Radar) */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                  <div className="bg-surfaceHighlight rounded-xl p-4 border border-neutral-800">
                    <h4 className="text-gray-400 text-xs uppercase mb-4 text-center">Probabilité de Victoire</h4>
@@ -235,7 +222,7 @@ export const AnalysisPage: React.FC = () => {
             </div>
           ) : (
             <div className="flex items-center justify-center h-full text-gray-500 border border-dashed border-neutral-800 rounded-xl m-4">
-                Sélectionnez un match pour voir l'analyse complète.
+                Sélectionnez un match à venir pour lancer l'analyse.
             </div>
           )}
         </div>
