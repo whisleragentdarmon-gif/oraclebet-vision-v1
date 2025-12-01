@@ -1,36 +1,36 @@
 import { Match, MatchStatus } from '../types';
 import { OracleAI } from '../engine';
 
-// Traduction SportScore -> OracleBet
-const mapStatus = (status: string): MatchStatus => {
-  const s = status ? status.toLowerCase() : '';
-  if (s.includes('progress') || s.includes('live') || s === 'inplay') return 'LIVE';
-  if (s.includes('finish') || s.includes('ended')) return 'FINISHED';
-  if (s.includes('not') || s.includes('upcoming')) return 'UPCOMING';
+const mapStatus = (status: any): MatchStatus => {
+  // SportScore renvoie parfois des objets ou des strings
+  const s = (typeof status === 'string' ? status : status?.slug || '').toLowerCase();
+  
+  // LIVE : En cours, set 1, set 2, etc.
+  if (s === 'inprogress' || s.includes('set') || s === 'live') return 'LIVE';
+  
+  // FINI : Terminé, Abandon, Annulé
+  if (s === 'finished' || s === 'ended' || s === 'retired' || s === 'cancelled' || s === 'walkover') return 'FINISHED';
+  
+  // A VENIR
+  if (s === 'notstarted' || s === 'scheduled') return 'UPCOMING';
+  
+  // Par défaut (si on sait pas, on dit à venir)
   return 'SCHEDULED';
 };
 
 export const MatchService = {
   getTodaysMatches: async (): Promise<Match[]> => {
     try {
-      // On appelle NOTRE serveur (celui à la racine)
-      // Note: Sur localhost, cela peut nécessiter l'URL complète http://localhost:3000/api/matches
-      // Mais sur Vercel, /api/matches suffit.
       const response = await fetch('/api/matches');
-      
-      if (!response.ok) {
-          throw new Error(`Erreur HTTP: ${response.status}`);
-      }
-
       const json = await response.json();
 
       if (!json.data) return [];
 
-      // On transforme les données SportScore en format OracleBet
       const realMatches: Match[] = json.data.map((m: any) => {
-        const p1Name = m.home_team?.name || "Joueur 1";
-        const p2Name = m.away_team?.name || "Joueur 2";
-        
+        const p1Name = m.home_team?.name || "TBA";
+        const p2Name = m.away_team?.name || "TBA";
+        const status = mapStatus(m.status);
+
         // Simulation IA sur les vrais noms
         const aiData = {
             winner: Math.random() > 0.5 ? p1Name : p2Name,
@@ -49,7 +49,7 @@ export const MatchService = {
           tournament: m.league?.name || "Tournoi",
           date: m.start_at ? new Date(m.start_at).toLocaleDateString() : "Auj.",
           time: m.start_at ? new Date(m.start_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : "00:00",
-          status: mapStatus(m.status),
+          status: status, // Utilise le nouveau mapping strict
           surface: 'Hard', 
           score: m.home_score?.display ? `${m.home_score.display}-${m.away_score.display}` : undefined,
           player1: { name: p1Name, rank: 0, country: 'WLD', form: 50, surfacePrefs: { hard: 50, clay: 50, grass: 50 } },
@@ -60,9 +60,9 @@ export const MatchService = {
       });
 
       return realMatches;
-    } catch (e: any) {
+    } catch (e) {
       console.error("Erreur API:", e);
-      throw new Error(e.message || "Erreur inconnue");
+      return [];
     }
   }
 };
