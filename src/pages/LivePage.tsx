@@ -1,10 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { MOCK_MATCHES } from '../constants';
 import { MatchCard } from '../components/MatchCard';
 import { MatchDetailModal } from '../components/MatchDetailModal';
 import { Match, Circuit } from '../types';
-import { Clock, Filter, Trophy, Zap } from 'lucide-react';
-import { AutoValidator } from '../engine/AutoValidator';
+import { Clock, Filter } from 'lucide-react';
 
 interface LivePageProps {
   filter: 'LIVE' | 'TODAY' | 'UPCOMING';
@@ -15,18 +14,6 @@ export const LivePage: React.FC<LivePageProps> = ({ filter, title }) => {
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
   const [timeFilter, setTimeFilter] = useState<'ALL' | '6H' | '12H' | '24H'>('ALL');
   const [circuitFilter, setCircuitFilter] = useState<'ALL' | Circuit>('ALL');
-  const [autoLogs, setAutoLogs] = useState<string[]>([]);
-
-  // Fonction pour lancer l'Auto-Validation (God Mode)
-  const runAutoValidate = () => {
-      const logs = AutoValidator.run(MOCK_MATCHES);
-      if (logs.length > 0) {
-          setAutoLogs(logs);
-          setTimeout(() => setAutoLogs([]), 5000); // Efface après 5s
-      } else {
-          alert("Aucun match terminé en attente de validation.");
-      }
-  };
 
   const getFilteredMatches = () => {
       let matches = MOCK_MATCHES.filter(m => {
@@ -35,7 +22,7 @@ export const LivePage: React.FC<LivePageProps> = ({ filter, title }) => {
         if (filter === 'TODAY' && (m.status !== 'TODAY' && m.status !== 'SCHEDULED')) return false;
         if (filter === 'UPCOMING' && (m.status !== 'UPCOMING' && m.status !== 'SCHEDULED')) return false;
         
-        // Filtre Circuit (ATP/WTA...)
+        // Filtre Circuit
         if (circuitFilter !== 'ALL' && m.ai?.circuit !== circuitFilter) return false;
 
         return true;
@@ -47,20 +34,11 @@ export const LivePage: React.FC<LivePageProps> = ({ filter, title }) => {
 
   return (
     <div>
-      {/* En-tête avec Bouton Auto-Validate */}
+      {/* En-tête simple */}
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
         <div>
             <h2 className="text-2xl font-bold border-l-4 border-neon pl-4 flex items-center gap-3">
                 {title}
-                {filter === 'LIVE' && (
-                    <button 
-                        onClick={runAutoValidate}
-                        className="text-[10px] bg-purple-900/50 text-purple-300 px-2 py-1 rounded border border-purple-500/50 hover:bg-purple-500 hover:text-white transition-colors flex items-center gap-1"
-                        title="Vérifier les résultats finis et mettre à jour l'IA"
-                    >
-                        <Zap size={10} /> Auto-Detect
-                    </button>
-                )}
             </h2>
             <span className="text-sm text-gray-500 font-mono ml-5">{matches.length} Matchs</span>
         </div>
@@ -95,15 +73,6 @@ export const LivePage: React.FC<LivePageProps> = ({ filter, title }) => {
             )}
         </div>
       </div>
-
-      {/* Logs Auto-Validation */}
-      {autoLogs.length > 0 && (
-          <div className="mb-4 p-3 bg-purple-900/20 border border-purple-500/50 rounded-lg animate-fade-in">
-              {autoLogs.map((log, i) => (
-                  <p key={i} className="text-xs text-purple-300 font-mono">🤖 {log}</p>
-              ))}
-          </div>
-      )}
 
       {matches.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
