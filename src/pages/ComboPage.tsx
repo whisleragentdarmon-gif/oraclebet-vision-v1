@@ -3,22 +3,64 @@ import { OracleAI } from '../engine';
 import { useConfig } from '../context/ConfigContext';
 import { useBankroll } from '../context/BankrollContext';
 import { useData } from '../context/DataContext';
+import { useAnalysis } from '../context/AnalysisContext'; // On utilise la mémoire
 import { BetRecord } from '../engine/types';
 import { jsPDF } from 'jspdf';
-import { ShieldCheck, Scale, DollarSign, Star, Copy, Send, FileText, Save, ExternalLink, RefreshCw } from 'lucide-react';
+import { ShieldCheck, Scale, DollarSign, Star, Copy, Send, FileText, Save, ExternalLink, RefreshCw, Cpu, CheckCircle } from 'lucide-react';
 
 export const ComboPage: React.FC = () => {
   const { matches } = useData();
   const { telegramConfig } = useConfig();
   const { addPendingTicket } = useBankroll();
+  const { saveAnalysis, getAnalysis } = useAnalysis(); // Pour stocker les scans
 
-  // On ne garde que les matchs futurs pour les combinés
-  const upcomingMatches = matches.filter(m => m.status === 'UPCOMING' || m.status === 'LIVE');
+  const [scanning, setScanning] = useState(false);
+  const [scanComplete, setScanComplete] = useState(false);
+
+  // 1. ENRICHISSEMENT DES DONNÉES
+  // On prend les matchs et on regarde si une analyse God Mode existe en mémoire
+  const enrichedMatches = matches.map(m => {
+      const savedAnalysis = getAnalysis(m.id);
+      if (savedAnalysis) {
+          // Si analyse existe, on l'injecte dans le match pour que le générateur le voie
+          return { ...m, ai: { ...m.ai, godModeAnalysis: savedAnalysis } };
+      }
+      return m;
+  });
+
+  // On ne garde que les matchs futurs
+  const upcomingMatches = enrichedMatches.filter(m => m.status === 'UPCOMING' || m.status === 'LIVE');
+  
+  // 2. GÉNÉRATION DES STRATÉGIES (Basée sur les données enrichies)
   const strategies = OracleAI.combo.generateStrategies(upcomingMatches);
 
   const [activeTab, setActiveTab] = useState<'Safe' | 'Balanced' | 'Value' | 'Oracle Ultra Premium'>('Balanced');
   const activeStrategy = strategies.find(s => s.type === activeTab);
 
+  // --- FONCTION DE SCAN MASSIF ---
+  const runBatchScan = async () => {
+      setScanning(true);
+      
+      // On simule un scan rapide sur tous les matchs (sans l'API Web pour aller vite, juste les moteurs internes)
+      // Dans le futur, on pourrait faire l'appel Web sur les 3-4 meilleurs matchs seulement
+      for (const match of upcomingMatches) {
+          // On lance les moteurs internes (rapide)
+          const analysis = OracleAI.predictor.runGodModeAnalysis(match);
+          
+          // On sauvegarde dans la mémoire globale
+          saveAnalysis(match.id, analysis);
+          
+          // Petit délai pour l'effet visuel
+          await new Promise(r => setTimeout(r, 50));
+      }
+
+      setScanning(false);
+      setScanComplete(true);
+      // On bascule auto sur l'onglet Premium si dispo
+      setActiveTab('Oracle Ultra Premium');
+  };
+
+  // --- ACTIONS (Copy, Telegram, etc.) ---
   const handleCopy = () => {
     if (!activeStrategy) return;
     let msg = `🔥 OracleBet Ticket ${activeStrategy.type} 🔥\n\n`;
@@ -33,7 +75,7 @@ export const ComboPage: React.FC = () => {
   const handleTelegram = async () => {
     if (!activeStrategy) return;
     if (!telegramConfig.botToken || !telegramConfig.chatId) {
-      alert('⚠️ Config Telegram manquante (Page VIP).');
+      alert('⚠️ Config Telegram manquante.');
       return;
     }
     let msg = `🔥 <b>OracleBet - Ticket ${activeStrategy.type}</b> 🔥\n\n`;
@@ -49,10 +91,7 @@ export const ComboPage: React.FC = () => {
           body: JSON.stringify({ chat_id: telegramConfig.chatId, text: msg, parse_mode: 'HTML' })
       });
       alert('🚀 Envoyé sur Telegram !');
-    } catch (err) {
-      console.error(err);
-      alert('❌ Erreur Telegram.');
-    }
+    } catch (err) { console.error(err); alert('❌ Erreur Telegram.'); }
   };
 
   const handleArchive = () => {
@@ -83,11 +122,28 @@ export const ComboPage: React.FC = () => {
 
   return (
     <div className="flex flex-col h-full space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold mb-2">Générateur de Combinés IA</h2>
-        <p className="text-sm text-gray-400">Analyse de {upcomingMatches.length} matchs à venir pour trouver les meilleures combinaisons.</p>
+      
+      {/* HEADER AVEC LE BOUTON SCAN */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-2xl font-bold mb-1">Générateur de Combinés IA</h2>
+            <p className="text-sm text-gray-400">Analyse de {upcomingMatches.length} matchs à venir.</p>
+          </div>
+
+          <button 
+            onClick={runBatchScan}
+            disabled={scanning}
+            className={`
+                px-6 py-3 rounded-xl font-bold flex items-center gap-2 shadow-lg transition-all
+                ${scanning ? 'bg-neutral-800 text-gray-400' : scanComplete ? 'bg-green-900/50 text-green-400 border border-green-500/50' : 'bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:scale-105'}
+            `}
+          >
+            {scanning ? <RefreshCw className="animate-spin"/> : scanComplete ? <CheckCircle/> : <Cpu/>}
+            {scanning ? 'Analyse du marché...' : scanComplete ? 'Marché Scanné' : 'Scanner le Marché (God Mode)'}
+          </button>
       </div>
 
+      {/* Onglets */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {tabs.map((tab) => (
           <button
@@ -101,14 +157,23 @@ export const ComboPage: React.FC = () => {
         ))}
       </div>
 
+      {/* Contenu */}
       {!activeStrategy ? (
         <div className="flex flex-col items-center justify-center h-64 bg-surface rounded-xl border border-neutral-800 border-dashed">
             <Scale size={48} className="text-gray-600 mb-4"/>
-            <p className="text-gray-500">Pas assez de matchs sûrs pour cette stratégie.</p>
+            <p className="text-gray-500">Aucun combiné disponible pour cette stratégie.</p>
+            {activeTab === 'Oracle Ultra Premium' && !scanComplete && (
+                <p className="text-xs text-neon mt-2 animate-pulse">Lancez le Scan God Mode pour débloquer le Premium.</p>
+            )}
         </div>
       ) : (
-        <div className="flex flex-col lg:flex-row gap-8">
+        <div className="flex flex-col lg:flex-row gap-8 animate-fade-in">
             <div className="flex-1 space-y-4">
+                {activeStrategy.analysis && (
+                    <div className="bg-purple-900/20 border border-purple-500/30 p-3 rounded-lg text-xs text-purple-300 mb-4">
+                        💡 <b>IA Insight :</b> {activeStrategy.analysis}
+                    </div>
+                )}
                 {activeStrategy.selections.map((sel, idx) => (
                     <div key={idx} className="bg-surface border border-neutral-800 rounded-xl p-4 flex justify-between items-center hover:border-neon/30 transition-colors">
                         <div>
@@ -136,6 +201,7 @@ export const ComboPage: React.FC = () => {
                 <div className="grid grid-cols-2 gap-2">
                     <button onClick={handleCopy} className="p-3 bg-surface hover:bg-neutral-700 rounded-lg text-white text-xs font-bold flex flex-col items-center gap-1 border border-neutral-800"><Copy size={16} className="text-blue-400"/> Copier</button>
                     <button onClick={handleTelegram} className="p-3 bg-surface hover:bg-neutral-700 rounded-lg text-white text-xs font-bold flex flex-col items-center gap-1 border border-neutral-800"><Send size={16} className="text-blue-500"/> Telegram</button>
+                    <button onClick={() => {}} className="p-3 bg-surface hover:bg-neutral-700 rounded-lg text-white text-xs font-bold flex flex-col items-center gap-1 border border-neutral-800"><FileText size={16} className="text-red-400"/> PDF</button>
                     <button onClick={handleArchive} className="p-3 bg-surface hover:bg-neutral-700 rounded-lg text-white text-xs font-bold flex flex-col items-center gap-1 border border-neutral-800"><Save size={16} className="text-green-400"/> Archiver</button>
                 </div>
             </div>
