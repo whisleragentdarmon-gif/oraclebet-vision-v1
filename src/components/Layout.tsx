@@ -21,6 +21,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
     { id: 'combos', label: 'Combinés IA', icon: Share2 },
     { id: 'bankroll', label: 'Ma Bankroll & Config', icon: Wallet }, // Renommé
     { id: 'vip', label: 'VIP Telegram', icon: ShieldCheck },
+    { id: 'ai-history', label: 'Historique IA', icon: BrainCircuit }, // Importe BrainCircuit de lucide-react
     // Admin supprimé ici
   ];
 
