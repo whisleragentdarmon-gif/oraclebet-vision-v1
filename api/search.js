@@ -1,6 +1,6 @@
 export default async function handler(req, res) {
   // 👇 COLLE TA CLÉ SERPER ICI
-  const API_KEY = 'TA_CLE_SERPER_ICI'; 
+  const API_KEY = 'da8db13df8b4724e5b2588f0df9a1962f2b5274a'; 
 
   const { query } = req.body;
 
