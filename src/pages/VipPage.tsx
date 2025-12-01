@@ -1,55 +1,36 @@
 import React, { useState } from 'react';
-import { Send, History, ShieldCheck, Key, Save, Edit3, Trash2 } from 'lucide-react';
+import { Send, History, ShieldCheck, Key, Save, Edit3, CheckCircle, AlertTriangle } from 'lucide-react';
 import { useConfig } from '../context/ConfigContext';
+import { TelegramService } from '../services/telegram';
 
 interface HistoryItem {
   id: number;
   message: string;
   date: string;
-  status: 'SENT' | 'DRAFT';
+  status: 'SENT' | 'ERROR';
 }
 
 export const VipPage: React.FC = () => {
   const { telegramConfig, updateTelegramConfig, saveConfig } = useConfig();
-  const [message, setMessage] = useState(`🔥 **ALERTE VIP ORACLE** 🔥\n\n🎾 Rune vs Zverev\n👉 **Zverev Vainqueur @ 1.72**\n\n💎 Confiance: 8/10\n📊 Analyse: Zverev impérial au service (90% 1st serve won).\n\n#Tennis #Betting`);
-  
-  const [history, setHistory] = useState<HistoryItem[]>([
-    { id: 1, message: "🎾 Alcaraz vs Medvedev : Alcaraz @ 1.45", date: "Aujourd'hui, 10:42", status: 'SENT' }
-  ]);
+  const [message, setMessage] = useState(`🔥 **ALERTE VIP** 🔥\n\n🎾 Match: ...\n👉 Pari: ...\n\n#OracleBet`);
+  const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [isSending, setIsSending] = useState(false);
 
-  const handleSend = () => {
-    if (!telegramConfig.botToken || !telegramConfig.chatId) {
-      alert("❌ Erreur: Veuillez configurer le Token Bot et l'ID Canal avant d'envoyer.");
-      return;
+  const handleSend = async () => {
+    setIsSending(true);
+    
+    // Envoi réel via le service
+    const result = await TelegramService.sendMessage(message);
+
+    if (result.success) {
+        alert("✅ Message envoyé au canal Telegram !");
+        setHistory([{ id: Date.now(), message, date: new Date().toLocaleTimeString(), status: 'SENT' }, ...history]);
+    } else {
+        alert(`❌ Erreur: ${result.error}`);
+        setHistory([{ id: Date.now(), message, date: new Date().toLocaleTimeString(), status: 'ERROR' }, ...history]);
     }
     
-    // Simulate API Call
-    console.log(`Sending to Telegram: https://api.telegram.org/bot${telegramConfig.botToken}/sendMessage?chat_id=${telegramConfig.chatId}&text=${encodeURIComponent(message)}`);
-    
-    alert("✅ Message envoyé avec succès au canal Telegram !");
-    
-    const newItem: HistoryItem = {
-      id: Date.now(),
-      message: message.split('\n')[2] || "Message VIP",
-      date: new Date().toLocaleString(),
-      status: 'SENT'
-    };
-    setHistory([newItem, ...history]);
-  };
-
-  const handleSaveDraft = () => {
-    const newItem: HistoryItem = {
-      id: Date.now(),
-      message: message.split('\n')[2] || "Brouillon",
-      date: new Date().toLocaleString(),
-      status: 'DRAFT'
-    };
-    setHistory([newItem, ...history]);
-    alert("📝 Brouillon sauvegardé localement.");
-  };
-
-  const restoreDraft = (msg: string) => {
-    setMessage(msg);
+    setIsSending(false);
   };
 
   return (
@@ -60,7 +41,7 @@ export const VipPage: React.FC = () => {
          </div>
          <div>
            <h2 className="text-3xl font-bold">VIP Telegram Center</h2>
-           <p className="text-gray-400">Gérez votre canal privé et envoyez des signaux</p>
+           <p className="text-gray-400">Configurez votre Bot et envoyez vos signaux.</p>
          </div>
        </div>
 
@@ -71,7 +52,8 @@ export const VipPage: React.FC = () => {
            <div className="flex justify-between mb-4">
              <h3 className="font-bold text-white">Nouveau Signal</h3>
              <span className={`text-xs flex items-center gap-1 ${telegramConfig.botToken ? 'text-green-500' : 'text-red-500'}`}>
-                {telegramConfig.botToken ? '● Prêt' : '● Non Configuré'}
+                {telegramConfig.botToken ? <CheckCircle size={10}/> : <AlertTriangle size={10}/>}
+                {telegramConfig.botToken ? 'Bot Connecté' : 'Non Configuré'}
              </span>
            </div>
            
@@ -81,87 +63,67 @@ export const VipPage: React.FC = () => {
              onChange={(e) => setMessage(e.target.value)}
            ></textarea>
 
-           <div className="flex gap-4">
-             <button 
-                onClick={handleSend}
-                className="flex-1 bg-neon hover:bg-neonHover text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-transform active:scale-95 shadow-lg shadow-neon/20"
-             >
-               <Send size={18} /> Envoyer
-             </button>
-             <button 
-                onClick={handleSaveDraft}
-                className="px-4 py-3 bg-neutral-800 hover:bg-neutral-700 text-white rounded-xl flex items-center gap-2"
-                title="Sauvegarder Brouillon"
-             >
-               <Save size={18} />
-             </button>
-           </div>
+           <button 
+              onClick={handleSend}
+              disabled={isSending || !telegramConfig.botToken}
+              className="w-full bg-neon hover:bg-neonHover disabled:opacity-50 text-black font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-transform active:scale-95 shadow-lg shadow-neon/20"
+           >
+             <Send size={18} /> {isSending ? 'Envoi...' : 'Envoyer maintenant'}
+           </button>
          </div>
 
-         {/* Configuration & History */}
+         {/* Configuration */}
          <div className="space-y-6">
-           
            <div className="bg-surface border border-neutral-800 rounded-2xl p-6">
              <div className="flex justify-between items-center mb-4">
                 <h3 className="font-bold text-white flex items-center gap-2">
-                    <Key size={18} className="text-neon" /> Configuration
+                    <Key size={18} className="text-neon" /> Configuration Bot
                 </h3>
-                <button onClick={saveConfig} className="text-xs text-neon hover:underline">Sauvegarder</button>
+                <button onClick={saveConfig} className="text-xs text-neon hover:underline flex items-center gap-1"><Save size={12}/> Sauver</button>
              </div>
              
              <div className="space-y-4">
                <div>
-                 <label className="text-xs text-gray-500 uppercase font-bold">Bot Token</label>
+                 <label className="text-xs text-gray-500 uppercase font-bold">Bot Token (BotFather)</label>
                  <input 
                     type="password" 
                     value={telegramConfig.botToken} 
                     onChange={(e) => updateTelegramConfig({...telegramConfig, botToken: e.target.value})}
-                    placeholder="123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11"
+                    placeholder="Ex: 123456:ABC-DEF..."
                     className="w-full bg-black/40 border border-neutral-800 rounded p-2 text-white text-sm mt-1 focus:border-neon outline-none" 
                  />
                </div>
                <div>
-                 <label className="text-xs text-gray-500 uppercase font-bold">ID Canal</label>
+                 <label className="text-xs text-gray-500 uppercase font-bold">Chat ID (Canal)</label>
                  <input 
                     type="text" 
                     value={telegramConfig.chatId} 
                     onChange={(e) => updateTelegramConfig({...telegramConfig, chatId: e.target.value})}
-                    placeholder="-100xxxxxxxx"
+                    placeholder="Ex: -100123456789"
                     className="w-full bg-black/40 border border-neutral-800 rounded p-2 text-white text-sm mt-1 focus:border-neon outline-none" 
                  />
+                 <p className="text-[10px] text-gray-600 mt-1">N'oubliez pas d'ajouter le bot comme Admin du canal.</p>
                </div>
              </div>
            </div>
 
-           <div className="bg-surface border border-neutral-800 rounded-2xl p-6 max-h-[400px] overflow-y-auto">
-             <h3 className="font-bold text-white mb-4 flex items-center gap-2">
-               <History size={18} className="text-neon" /> Historique d'envois
-             </h3>
-             <div className="space-y-3">
+           {/* Historique Rapide */}
+           <div className="bg-surface border border-neutral-800 rounded-2xl p-6 max-h-[300px] overflow-y-auto">
+             <h3 className="font-bold text-white mb-4 flex items-center gap-2"><History size={18} className="text-neon"/> Derniers Envois</h3>
+             <div className="space-y-2">
                {history.map((item) => (
-                   <div key={item.id} className="text-sm bg-black/20 p-3 rounded border border-neutral-800 hover:border-neutral-600 transition-colors group">
-                    <div className="flex justify-between text-xs text-gray-500 mb-1">
-                        <span>{item.date}</span>
-                        <span className={item.status === 'SENT' ? 'text-green-500' : 'text-yellow-500'}>
-                            {item.status === 'SENT' ? 'Envoyé' : 'Brouillon'}
-                        </span>
-                    </div>
-                    <p className="truncate text-gray-300 font-medium mb-2">{item.message}</p>
-                    {item.status === 'DRAFT' && (
-                        <button 
-                            onClick={() => restoreDraft(item.message)}
-                            className="text-xs text-neon flex items-center gap-1 hover:underline"
-                        >
-                            <Edit3 size={10} /> Reprendre
-                        </button>
-                    )}
+                   <div key={item.id} className="text-xs bg-black/20 p-2 rounded border-l-2 border-neutral-700">
+                      <div className="flex justify-between text-gray-500 mb-1">
+                          <span>{item.date}</span>
+                          <span className={item.status === 'SENT' ? 'text-green-500' : 'text-red-500'}>{item.status}</span>
+                      </div>
+                      <p className="truncate text-gray-400">{item.message}</p>
                    </div>
                ))}
+               {history.length === 0 && <p className="text-gray-600 text-xs text-center">Aucun envoi récent.</p>}
              </div>
            </div>
-
          </div>
-
        </div>
     </div>
   );
