@@ -1,3 +1,15 @@
+// ... imports
+
+export const ComboPage: React.FC = () => {
+  const { matches } = useData();
+  
+  // 👇 FILTRE STRICT
+  const upcomingMatches = matches.filter(m => m.status === 'UPCOMING' || m.status === 'LIVE');
+
+  // 👇 On passe les matchs filtrés au générateur
+  const strategies = OracleAI.combo.generateStrategies(upcomingMatches);
+
+  // ... (reste du code)
 import React, { useState } from 'react';
 import { OracleAI } from '../engine';
 import { useConfig } from '../context/ConfigContext';
