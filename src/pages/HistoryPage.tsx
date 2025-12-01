@@ -1,3 +1,14 @@
+// ... imports
+import { useData } from '../context/DataContext'; // Import useData
+
+export const HistoryPage: React.FC = () => {
+  const { state } = useBankroll();
+  const { matches } = useData(); // Récupère les données API
+
+  // 👇 FILTRE STRICT : Que les matchs finis venant de l'API
+  const matchesToValidate = matches.filter(m => m.status === 'FINISHED');
+
+  // ... (reste du code, remplace MOCK_MATCHES par matchesToValidate si besoin)
 import React, { useState } from 'react';
 import { MOCK_MATCHES } from '../constants';
 import { MatchCard } from '../components/MatchCard';
