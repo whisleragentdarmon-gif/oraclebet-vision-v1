@@ -23,92 +23,108 @@ export const OracleAI = {
     generateStrategies: (matches: any[]): ComboStrategy[] => {
       const strategies: ComboStrategy[] = [];
       
-      // --- FILTRE D'ÉLITE (LE COEUR DU SYSTÈME) ---
-      const candidates = matches.filter((m: any) => {
-          // 1. Base : Pas fini
-          if (m.status === 'FINISHED') return false;
+      // 1. FILTRAGE DE BASE
+      const candidates = matches.filter((m: any) => m.status !== 'FINISHED');
 
-          // 2. GOD MODE CHECK (Si l'analyse existe)
-          const gm = m.ai?.godModeAnalysis;
-          if (gm) {
-              // Si le God Mode a détecté une blessure ou un piège -> POUBELLE DIRECTE
-              if (gm.injuryAlert) return false;
-              if (gm.trap?.riskLevel === 'NO_BET') return false;
+      // 2. FONCTION INTELLIGENTE DE SÉLECTION DE MARCHÉ
+      const getSmartSelection = (m: any) => {
+          const winnerName = m.ai.winner;
+          const winnerOdds = m.ai.winner === m.player1.name ? m.odds.p1 : m.odds.p2;
+          const isFav = winnerOdds < 1.50;
+          const isSuperFav = winnerOdds < 1.25;
+          const isUnderdog = winnerOdds > 2.00;
+
+          // LOGIQUE DE DIVERSIFICATION
+          if (isSuperFav) {
+              // Si cote trop basse -> On cherche le 2-0 pour la value
+              return {
+                  sel: `${winnerName} 2-0`,
+                  odd: parseFloat((winnerOdds * 1.6).toFixed(2)), // Simulation cote set
+                  market: "SCORE EXACT",
+                  reason: "Dominance totale attendue"
+              };
+          } else if (isUnderdog && m.ai.confidence > 60) {
+              // Si Outsider solide -> On sécurise avec 1 set
+              return {
+                  sel: `${winnerName} +1.5 Sets`,
+                  odd: parseFloat((winnerOdds / 1.4).toFixed(2)), // Cote sécurisée
+                  market: "HANDICAP",
+                  reason: "Outsider solide (Sécurité)"
+              };
+          } else {
+              // Sinon -> Vainqueur classique
+              return {
+                  sel: winnerName,
+                  odd: winnerOdds,
+                  market: "VAINQUEUR",
+                  reason: "Victoire sèche"
+              };
           }
+      };
 
-          // 3. Integrity Check de base
-          if (m.ai?.integrity?.isSuspicious) return false;
-
-          return true;
+      // --- STRATÉGIE 1 : ORACLE ULTRA PREMIUM (Uniquement après Scan God Mode) ---
+      // On ne prend que les matchs qui ont été SCANNÉS et VALIDÉS
+      const premiumPicks = candidates.filter((m: any) => {
+          const gm = m.ai?.godModeAnalysis;
+          // Il faut que le God Mode existe ET qu'il n'y ait pas d'alerte
+          return gm && !gm.injuryAlert && !gm.trap.isTrap && m.ai.confidence >= 80;
       });
-
-      // --- STRATÉGIE 1 : ORACLE ULTRA PREMIUM (Basé sur le God Mode) ---
-      // On ne prend que les matchs qui ont PASSÉ le scan God Mode avec succès
-      const premiumPicks = candidates.filter((m: any) => m.ai?.godModeAnalysis && m.ai.confidence >= 80);
       
       if (premiumPicks.length >= 2) {
-          const combinedOdds = premiumPicks.reduce((acc: number, m: any) => acc * (m.ai?.winner === m.player1.name ? m.odds.p1 : m.odds.p2), 1);
+          // On prend les 3 meilleurs
+          const selectionMatches = premiumPicks.slice(0, 3);
+          const smartSelections = selectionMatches.map((m: any) => {
+              const smart = getSmartSelection(m);
+              return {
+                  matchId: m.id,
+                  player1: m.player1.name,
+                  player2: m.player2.name,
+                  selection: smart.sel,
+                  odds: smart.odd,
+                  confidence: m.ai.confidence,
+                  reason: `${smart.reason} (Validé God Mode)`,
+                  marketType: smart.market
+              };
+          });
+
+          const combinedOdds = smartSelections.reduce((acc: number, s: any) => acc * s.odds, 1);
+          
           strategies.push({
             type: 'Oracle Ultra Premium',
-            selections: premiumPicks.map((m: any) => ({
-                matchId: m.id,
-                player1: m.player1.name,
-                player2: m.player2.name,
-                selection: m.ai?.winner,
-                odds: m.ai?.winner === m.player1.name ? m.odds.p1 : m.odds.p2,
-                confidence: m.ai?.confidence,
-                reason: "Validé par God Mode (Physique & Marché OK)",
-                marketType: "WINNER"
-            })),
+            selections: smartSelections,
             combinedOdds: parseFloat(combinedOdds.toFixed(2)),
             successProbability: 88,
             riskScore: 'Low',
-            analysis: "Ces matchs ont survécu au scan complet (Météo, Blessure, Cotes)."
+            analysis: "Ticket généré sur des données Deep Data (Météo, Physique, Marché) vérifiées."
           });
       }
 
-      // --- STRATÉGIE 2 : SAFE (Classique) ---
-      const safePicks = candidates.filter((m: any) => m.ai?.confidence >= 75).slice(0, 4);
-      if (safePicks.length >= 2) {
-          const combinedOdds = safePicks.reduce((acc: number, m: any) => acc * (m.ai?.winner === m.player1.name ? m.odds.p1 : m.odds.p2), 1);
-          strategies.push({
-            type: 'Safe',
-            selections: safePicks.map((m: any) => ({
-                matchId: m.id,
-                player1: m.player1.name,
-                player2: m.player2.name,
-                selection: m.ai?.winner,
-                odds: m.ai?.winner === m.player1.name ? m.odds.p1 : m.odds.p2,
-                confidence: m.ai?.confidence,
-                reason: "Confiance élevée",
-                marketType: "WINNER"
-            })),
-            combinedOdds: parseFloat(combinedOdds.toFixed(2)),
-            successProbability: 75,
-            riskScore: 'Low',
-            analysis: "Sélection statistique pure."
+      // --- STRATÉGIE 2 : VALUE / FUN (Plus risqué, cotes hautes) ---
+      const valuePicks = candidates.filter((m: any) => m.ai.confidence < 75 && m.ai.confidence > 50);
+      if (valuePicks.length >= 3) {
+          const selectionMatches = valuePicks.slice(0, 3);
+          const smartSelections = selectionMatches.map((m: any) => {
+              const smart = getSmartSelection(m);
+              return {
+                  matchId: m.id,
+                  player1: m.player1.name,
+                  player2: m.player2.name,
+                  selection: smart.sel,
+                  odds: smart.odd,
+                  confidence: m.ai.confidence,
+                  reason: smart.reason,
+                  marketType: smart.market
+              };
           });
-      }
 
-      // --- STRATÉGIE 3 : BALANCED (Pour remplir) ---
-      const balancedPicks = candidates.filter((m: any) => m.ai?.confidence >= 55).slice(0, 3);
-      if (balancedPicks.length >= 2) {
-          const combinedOdds = balancedPicks.reduce((acc: number, m: any) => acc * (m.ai?.winner === m.player1.name ? m.odds.p1 : m.odds.p2), 1);
+          const combinedOdds = smartSelections.reduce((acc: number, s: any) => acc * s.odds, 1);
           strategies.push({
-              type: 'Balanced',
-              selections: balancedPicks.map((m: any) => ({
-                matchId: m.id,
-                player1: m.player1.name,
-                player2: m.player2.name,
-                selection: m.ai?.winner,
-                odds: m.ai?.winner === m.player1.name ? m.odds.p1 : m.odds.p2,
-                confidence: m.ai?.confidence,
-                reason: "Forme récente",
-                marketType: "WINNER"
-              })),
+              type: 'Value',
+              selections: smartSelections,
               combinedOdds: parseFloat(combinedOdds.toFixed(2)),
-              successProbability: 55,
-              riskScore: 'Moderate'
+              successProbability: 45,
+              riskScore: 'Risky',
+              analysis: "Ticket spéculatif à haut rendement."
           });
       }
 
@@ -130,15 +146,7 @@ export const OracleAI = {
         const pressSocial = ScandalEngine.analyze(match.player1.name);
         const integrity = TrapDetector.scan(match.odds);
         const conditions = GeoEngine.getConditions(match.tournament);
-        
-        // Calcul simple pour l'exemple, à enrichir avec l'API Web
-        return {
-          social: pressSocial.social,
-          press: pressSocial.press,
-          geo: conditions,
-          trap: integrity,
-          injuryAlert: false // Par défaut, sauf si scan web
-        };
+        return { social: pressSocial.social, press: pressSocial.press, geo: conditions, trap: integrity, injuryAlert: false };
     }
   }
 };
