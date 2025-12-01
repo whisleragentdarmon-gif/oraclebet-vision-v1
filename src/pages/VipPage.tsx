@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Send, History, ShieldCheck, Key, Save, Edit3, CheckCircle, AlertTriangle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Send, History, ShieldCheck, Key, Save, Edit3, CheckCircle, AlertTriangle, X } from 'lucide-react';
 import { useConfig } from '../context/ConfigContext';
 import { TelegramService } from '../services/telegram';
 
@@ -15,26 +15,53 @@ export const VipPage: React.FC = () => {
   const [message, setMessage] = useState(`🔥 **ALERTE VIP** 🔥\n\n🎾 Match: ...\n👉 Pari: ...\n\n#OracleBet`);
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [isSending, setIsSending] = useState(false);
+  
+  // État pour la notification visuelle (plus de popup blanc)
+  const [notification, setNotification] = useState<{type: 'success'|'error', text: string} | null>(null);
+
+  // Effacer la notif après 3 secondes
+  useEffect(() => {
+    if (notification) {
+        const timer = setTimeout(() => setNotification(null), 3000);
+        return () => clearTimeout(timer);
+    }
+  }, [notification]);
 
   const handleSend = async () => {
     setIsSending(true);
-    
-    // Envoi réel via le service
     const result = await TelegramService.sendMessage(message);
 
     if (result.success) {
-        alert("✅ Message envoyé au canal Telegram !");
+        // ✅ Notification Pro au lieu de alert()
+        setNotification({ type: 'success', text: "Message envoyé avec succès au canal !" });
         setHistory([{ id: Date.now(), message, date: new Date().toLocaleTimeString(), status: 'SENT' }, ...history]);
     } else {
-        alert(`❌ Erreur: ${result.error}`);
+        // ❌ Notification Erreur
+        setNotification({ type: 'error', text: `Erreur: ${result.error}` });
         setHistory([{ id: Date.now(), message, date: new Date().toLocaleTimeString(), status: 'ERROR' }, ...history]);
     }
     
     setIsSending(false);
   };
 
+  const handleSaveConfig = () => {
+      saveConfig();
+      // On ajoute une petite notif visuelle pour la sauvegarde aussi
+      setNotification({ type: 'success', text: "Configuration du Bot sauvegardée." });
+  };
+
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-4xl mx-auto relative">
+       
+       {/* NOTIFICATION FLOTTANTE (Le remplaçant du popup blanc) */}
+       {notification && (
+           <div className={`fixed top-4 right-4 z-50 px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 animate-fade-in border ${notification.type === 'success' ? 'bg-green-900/90 border-green-500 text-white' : 'bg-red-900/90 border-red-500 text-white'}`}>
+               {notification.type === 'success' ? <CheckCircle size={20} /> : <AlertTriangle size={20} />}
+               <span className="font-bold">{notification.text}</span>
+               <button onClick={() => setNotification(null)} className="ml-2 opacity-70 hover:opacity-100"><X size={16}/></button>
+           </div>
+       )}
+
        <div className="flex items-center gap-3 mb-8">
          <div className="p-3 bg-neon/10 rounded-full text-neon">
            <ShieldCheck size={32} />
@@ -79,30 +106,28 @@ export const VipPage: React.FC = () => {
                 <h3 className="font-bold text-white flex items-center gap-2">
                     <Key size={18} className="text-neon" /> Configuration Bot
                 </h3>
-                <button onClick={saveConfig} className="text-xs text-neon hover:underline flex items-center gap-1"><Save size={12}/> Sauver</button>
+                {/* On utilise notre nouvelle fonction sans popup */}
+                <button onClick={handleSaveConfig} className="text-xs text-neon hover:underline flex items-center gap-1"><Save size={12}/> Sauver</button>
              </div>
              
              <div className="space-y-4">
                <div>
-                 <label className="text-xs text-gray-500 uppercase font-bold">Bot Token (BotFather)</label>
+                 <label className="text-xs text-gray-500 uppercase font-bold">Bot Token</label>
                  <input 
                     type="password" 
                     value={telegramConfig.botToken} 
                     onChange={(e) => updateTelegramConfig({...telegramConfig, botToken: e.target.value})}
-                    placeholder="Ex: 123456:ABC-DEF..."
                     className="w-full bg-black/40 border border-neutral-800 rounded p-2 text-white text-sm mt-1 focus:border-neon outline-none" 
                  />
                </div>
                <div>
-                 <label className="text-xs text-gray-500 uppercase font-bold">Chat ID (Canal)</label>
+                 <label className="text-xs text-gray-500 uppercase font-bold">Chat ID</label>
                  <input 
                     type="text" 
                     value={telegramConfig.chatId} 
                     onChange={(e) => updateTelegramConfig({...telegramConfig, chatId: e.target.value})}
-                    placeholder="Ex: -100123456789"
                     className="w-full bg-black/40 border border-neutral-800 rounded p-2 text-white text-sm mt-1 focus:border-neon outline-none" 
                  />
-                 <p className="text-[10px] text-gray-600 mt-1">N'oubliez pas d'ajouter le bot comme Admin du canal.</p>
                </div>
              </div>
            </div>
