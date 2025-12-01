@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Activity, Calendar, Zap, Brain, Share2, ShieldCheck, Menu, X, Wallet, LogOut, History } from 'lucide-react';
+import { Activity, Calendar, Zap, Brain, Share2, ShieldCheck, Menu, X, Wallet, LogOut, History, BrainCircuit } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 interface LayoutProps {
