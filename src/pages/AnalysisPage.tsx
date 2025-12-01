@@ -1,3 +1,21 @@
+// ... imports
+
+export const AnalysisPage: React.FC = () => {
+  const { matches } = useData();
+  
+  // 👇 FILTRE STRICT : On enlève les matchs finis
+  const activeMatches = matches.filter(m => m.status !== 'FINISHED');
+
+  const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
+  
+  useEffect(() => {
+    // Si on a des matchs actifs, on sélectionne le premier par défaut
+    if (activeMatches.length > 0 && !selectedMatch) {
+        setSelectedMatch(activeMatches[0]);
+    }
+  }, [matches]); // Déclenche quand les matchs changent
+
+  // ... (La suite du code reste pareil, mais utilise activeMatches.map au lieu de matches.map dans la liste)
 import React, { useState, useEffect } from 'react';
 import { useData } from '../context/DataContext'; // ✅ Vraies données
 import { MatchCard } from '../components/MatchCard';
