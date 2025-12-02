@@ -1,6 +1,6 @@
 import React from 'react';
 import { H2HFullProfile } from '../engine/types';
-import { User, Cloud, Activity, ExternalLink, Brain, Shield, Swords } from 'lucide-react';
+import { User, Cloud, Activity, ExternalLink, Brain, HeartPulse, MessageCircle, Eye } from 'lucide-react';
 
 interface Props {
   data: H2HFullProfile;
@@ -12,85 +12,88 @@ export const DetailedH2H: React.FC<Props> = ({ data, p1Name, p2Name }) => {
   return (
     <div className="space-y-6 animate-fade-in mt-6">
       
-      {/* 1. PROFIL ATHLÉTIQUE & MAIN */}
+      {/* 1. PROFIL & PHYSIQUE */}
       <div className="bg-surface border border-neutral-700 rounded-xl overflow-hidden">
         <div className="bg-neutral-900 p-3 border-b border-neutral-700 flex items-center gap-2">
            <User size={16} className="text-neon" />
-           <h4 className="text-xs font-bold text-white uppercase">Identité & Physique</h4>
+           <h4 className="text-xs font-bold text-white uppercase">Identité & Profil</h4>
         </div>
         <div className="grid grid-cols-3 text-xs text-center divide-x divide-neutral-800 bg-black/20">
             <div className="p-2 font-bold text-white truncate">{p1Name}</div>
-            <div className="p-2 text-gray-500 font-mono">VS</div>
+            <div className="p-2 text-gray-500">VS</div>
             <div className="p-2 font-bold text-white truncate">{p2Name}</div>
 
-            {/* Main */}
-            <div className={`p-2 font-bold ${data.p1.hand === 'GAUCHER' ? 'text-red-400' : 'text-gray-300'}`}>{data.p1.hand}</div>
-            <div className="p-2 text-gray-600">Main</div>
-            <div className={`p-2 font-bold ${data.p2.hand === 'GAUCHER' ? 'text-red-400' : 'text-gray-300'}`}>{data.p2.hand}</div>
+            <div className="p-2 text-neon">{data.p1.rank}</div>
+            <div className="p-2 text-gray-600">Classement</div>
+            <div className="p-2 text-neon">{data.p2.rank}</div>
 
-            {/* Age/Taille */}
-            <div className="p-2 text-gray-300">{data.p1.age} / {data.p1.height}</div>
-            <div className="p-2 text-gray-600">Age / Taille</div>
-            <div className="p-2 text-gray-300">{data.p2.age} / {data.p2.height}</div>
-
-            {/* Classement */}
-            <div className="p-2 text-neon">{data.p1.rank} (Best: {data.p1.bestRank})</div>
-            <div className="p-2 text-gray-600">Rank</div>
-            <div className="p-2 text-neon">{data.p2.rank} (Best: {data.p2.bestRank})</div>
+            <div className="p-2 text-gray-300">{data.p1.style}</div>
+            <div className="p-2 text-gray-600">Style</div>
+            <div className="p-2 text-gray-300">{data.p2.style}</div>
         </div>
       </div>
 
-      {/* 2. MENTAL & CLUTCH (NOUVEAU) */}
+      {/* 2. FACTEURS HUMAINS (Mental, Blessures, Social) */}
       <div className="bg-surface border border-neutral-700 rounded-xl overflow-hidden">
-        <div className="bg-neutral-900 p-3 border-b border-neutral-700 flex items-center gap-2">
-           <Brain size={16} className="text-purple-500" />
-           <h4 className="text-xs font-bold text-white uppercase">Mental & Pression</h4>
-        </div>
-        <div className="grid grid-cols-2 gap-4 p-4">
-            <div>
-                <p className="text-xs text-gray-500 mb-1 text-center">{p1Name}</p>
-                <div className="bg-black/40 p-2 rounded border border-neutral-800 text-center">
-                    <p className="text-[10px] text-gray-400 uppercase">Balles de Break Sauvées</p>
-                    <p className="text-lg font-bold text-white">{data.stats.p1.breakPointsSaved}</p>
-                </div>
-                <div className="mt-2 text-xs text-center text-gray-400">
-                    Comportement: <span className="text-white">{data.behavior.p1VsHand}</span>
-                </div>
-            </div>
-            <div>
-                <p className="text-xs text-gray-500 mb-1 text-center">{p2Name}</p>
-                <div className="bg-black/40 p-2 rounded border border-neutral-800 text-center">
-                    <p className="text-[10px] text-gray-400 uppercase">Balles de Break Sauvées</p>
-                    <p className="text-lg font-bold text-white">{data.stats.p2.breakPointsSaved}</p>
-                </div>
-                <div className="mt-2 text-xs text-center text-gray-400">
-                    Comportement: <span className="text-white">{data.behavior.p2VsHand}</span>
-                </div>
-            </div>
-        </div>
+         <div className="bg-neutral-900 p-3 border-b border-neutral-700 flex items-center gap-2">
+            <Eye size={16} className="text-purple-500" />
+            <h4 className="text-xs font-bold text-white uppercase">Analyse Humaine & Sociale (Deep Web)</h4>
+         </div>
+         
+         <div className="grid grid-cols-2 divide-x divide-neutral-800">
+             {/* P1 */}
+             <div className="p-3 space-y-3">
+                 <p className="text-xs font-bold text-center mb-2 text-gray-400">{p1Name}</p>
+                 
+                 <div className={`p-2 rounded border ${data.human.p1.physical.injuryStatus.includes("ALERTE") ? 'bg-red-900/20 border-red-500/50 text-red-300' : 'bg-green-900/10 border-green-500/30 text-green-400'}`}>
+                     <div className="flex items-center gap-2 mb-1"><HeartPulse size={12}/> <span className="text-[10px] font-bold uppercase">Physique</span></div>
+                     <p className="text-xs">{data.human.p1.physical.injuryStatus}</p>
+                 </div>
+
+                 <div className="p-2 rounded bg-black/30 border border-neutral-700">
+                     <div className="flex items-center gap-2 mb-1 text-blue-400"><Brain size={12}/> <span className="text-[10px] font-bold uppercase">Mental</span></div>
+                     <p className="text-xs text-gray-300">{data.human.p1.mental.state}</p>
+                 </div>
+
+                 <div className="p-2 rounded bg-black/30 border border-neutral-700">
+                     <div className="flex items-center gap-2 mb-1 text-orange-400"><MessageCircle size={12}/> <span className="text-[10px] font-bold uppercase">Social / Hype</span></div>
+                     <p className="text-xs text-gray-300">{data.human.p1.social.redditMood}</p>
+                 </div>
+             </div>
+
+             {/* P2 */}
+             <div className="p-3 space-y-3">
+                 <p className="text-xs font-bold text-center mb-2 text-gray-400">{p2Name}</p>
+                 
+                 <div className={`p-2 rounded border ${data.human.p2.physical.injuryStatus.includes("ALERTE") ? 'bg-red-900/20 border-red-500/50 text-red-300' : 'bg-green-900/10 border-green-500/30 text-green-400'}`}>
+                     <div className="flex items-center gap-2 mb-1"><HeartPulse size={12}/> <span className="text-[10px] font-bold uppercase">Physique</span></div>
+                     <p className="text-xs">{data.human.p2.physical.injuryStatus}</p>
+                 </div>
+
+                 <div className="p-2 rounded bg-black/30 border border-neutral-700">
+                     <div className="flex items-center gap-2 mb-1 text-blue-400"><Brain size={12}/> <span className="text-[10px] font-bold uppercase">Mental</span></div>
+                     <p className="text-xs text-gray-300">{data.human.p2.mental.state}</p>
+                 </div>
+
+                 <div className="p-2 rounded bg-black/30 border border-neutral-700">
+                     <div className="flex items-center gap-2 mb-1 text-orange-400"><MessageCircle size={12}/> <span className="text-[10px] font-bold uppercase">Social / Hype</span></div>
+                     <p className="text-xs text-gray-300">{data.human.p2.social.redditMood}</p>
+                 </div>
+             </div>
+         </div>
       </div>
 
-      {/* 3. CONTEXTE & H2H */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-surface border border-neutral-700 rounded-xl p-4">
-              <div className="flex items-center gap-2 mb-2 text-blue-400">
-                  <Cloud size={16} /> <span className="text-xs font-bold uppercase">Météo & Court</span>
+      {/* 3. CONTEXTE */}
+      <div className="bg-surface border border-neutral-700 rounded-xl p-4 flex items-center justify-between">
+          <div>
+              <div className="flex items-center gap-2 mb-1 text-blue-400">
+                  <Cloud size={16} /> <span className="text-xs font-bold uppercase">Conditions de Jeu</span>
               </div>
               <p className="text-sm text-gray-300">{data.context.weather}</p>
-              <p className="text-xs text-gray-500 mt-1">Vitesse estimée : {data.context.surfaceSpeed}</p>
           </div>
-          <div className="bg-surface border border-neutral-700 rounded-xl p-4">
-              <div className="flex items-center gap-2 mb-2 text-red-400">
-                  <Swords size={16} /> <span className="text-xs font-bold uppercase">H2H Direct</span>
-              </div>
-              <div className="text-sm text-gray-300 space-y-1">
-                  {data.h2hMatches.length > 0 ? data.h2hMatches.map((m, i) => (
-                      <div key={i} className="flex justify-between border-b border-neutral-800 pb-1">
-                          <span>{m.date}</span>
-                          <span className="text-white">{m.score}</span>
-                      </div>
-                  )) : <span className="text-xs text-gray-500">Aucune confrontation récente trouvée.</span>}
-              </div>
+          <div className="text-right">
+              <p className="text-[10px] text-gray-500 uppercase">Type Balle / Court</p>
+              <p className="text-xs text-white font-bold">{data.context.conditions}</p>
           </div>
       </div>
 
@@ -101,7 +104,6 @@ export const DetailedH2H: React.FC<Props> = ({ data, p1Name, p2Name }) => {
               </a>
           ))}
       </div>
-
     </div>
   );
 };
