@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useData } from '../context/DataContext';
-import { ListChecks, BrainCircuit, CheckCircle, Activity, Zap, RefreshCw } from 'lucide-react'; // ✅ Ajouté ici
+// ✅ ICI : J'ai ajouté Check, XCircle, Search, Trophy, ChevronDown, ChevronUp qui manquaient
+import { ListChecks, BrainCircuit, CheckCircle, Activity, Zap, Search, Trophy, ChevronDown, ChevronUp, XCircle, Check, RefreshCw } from 'lucide-react';
 import { useBankroll } from '../context/BankrollContext';
 import { AreaChart, Area, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { BacktestEngine } from '../engine/BacktestEngine';
@@ -18,8 +19,6 @@ export const HistoryPage: React.FC = () => {
   const [isTraining, setIsTraining] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   
-  // --- LOGIQUE DE FILTRAGE ET REGROUPEMENT ---
-  
   // 1. On ne garde que les matchs finis NON validés
   const matchesToValidate = matches.filter(m => 
     m.status === 'FINISHED' && 
@@ -29,7 +28,7 @@ export const HistoryPage: React.FC = () => {
      m.tournament.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  // 2. On regroupe par Tournoi (C'est ça qui nettoie l'affichage)
+  // 2. On regroupe par Tournoi
   const matchesByTournament = useMemo(() => {
       const groups: Record<string, Match[]> = {};
       matchesToValidate.forEach(m => {
@@ -40,7 +39,6 @@ export const HistoryPage: React.FC = () => {
   }, [matchesToValidate]);
 
   // --- ACTIONS ---
-
   const runBacktest = () => {
       if (matchesToValidate.length === 0) {
           alert("Aucun match terminé disponible pour l'entraînement.");
@@ -59,7 +57,7 @@ export const HistoryPage: React.FC = () => {
       validateBet(match, match.ai?.recommendedBet || "Pari IA", oddsPlayed, isWin);
   };
 
-  // --- COMPOSANT DE LIGNE (Compact) ---
+  // --- COMPOSANT DE LIGNE ---
   const MatchRow = ({ match }: { match: Match }) => (
       <div className="flex items-center justify-between p-3 border-b border-neutral-800 hover:bg-white/5 transition-colors group">
           <div className="flex items-center gap-4 flex-1">
@@ -103,7 +101,7 @@ export const HistoryPage: React.FC = () => {
   return (
     <div className="space-y-8">
       
-      {/* SECTION 1 : PERFORMANCE & ENTRAÎNEMENT (Salle du Temps) */}
+      {/* SECTION 1 : PERFORMANCE & ENTRAÎNEMENT */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
          <div className="lg:col-span-2 bg-surface border border-neutral-800 rounded-xl p-6 relative overflow-hidden">
             <div className="flex items-center gap-3 mb-6 relative z-10">
@@ -129,15 +127,13 @@ export const HistoryPage: React.FC = () => {
                     </AreaChart>
                 </ResponsiveContainer>
             </div>
-            {/* Fond décoratif */}
-            <div className="absolute top-0 right-0 w-64 h-64 bg-purple-600/5 blur-3xl rounded-full pointer-events-none"></div>
          </div>
 
          <div className="bg-surface border border-neutral-800 rounded-xl p-6 flex flex-col justify-center items-center text-center relative overflow-hidden">
             <Activity size={48} className="text-neon mb-4"/>
             <h3 className="font-bold text-lg text-white mb-2">Salle du Temps</h3>
             <p className="text-xs text-gray-400 mb-6">
-                {matchesToValidate.length} matchs terminés en attente d'analyse rétroactive.
+                {matchesToValidate.length} matchs terminés en attente.
             </p>
             <button 
                 onClick={runBacktest}
@@ -157,7 +153,7 @@ export const HistoryPage: React.FC = () => {
          </div>
       </div>
 
-      {/* SECTION 2 : VALIDATION GROUPÉE (NOUVEAU DESIGN) */}
+      {/* SECTION 2 : VALIDATION GROUPÉE */}
       <div>
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
             <div className="flex items-center gap-3">
@@ -168,7 +164,6 @@ export const HistoryPage: React.FC = () => {
                 </div>
             </div>
             
-            {/* Barre de recherche */}
             <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" size={16} />
                 <input 
@@ -185,7 +180,6 @@ export const HistoryPage: React.FC = () => {
             <div className="space-y-6">
                 {Object.entries(matchesByTournament).map(([tournament, tournamentMatches]) => (
                     <div key={tournament} className="bg-surface border border-neutral-800 rounded-xl overflow-hidden animate-fade-in">
-                        {/* En-tête Tournoi */}
                         <div className="bg-surfaceHighlight px-4 py-3 border-b border-neutral-800 flex items-center justify-between">
                             <div className="flex items-center gap-2 text-white font-bold text-sm">
                                 <Trophy size={14} className="text-neon" />
@@ -193,8 +187,6 @@ export const HistoryPage: React.FC = () => {
                             </div>
                             <span className="text-xs text-gray-500 bg-black/30 px-2 py-0.5 rounded">{tournamentMatches.length} matchs</span>
                         </div>
-                        
-                        {/* Liste des matchs du tournoi */}
                         <div className="divide-y divide-neutral-800">
                             {tournamentMatches.map(match => (
                                 <MatchRow key={match.id} match={match} />
@@ -210,9 +202,6 @@ export const HistoryPage: React.FC = () => {
             </div>
         )}
       </div>
-
-      {/* SECTION 3 : HISTORIQUE (L'ancien tableau des paris validés reste en bas) */}
-      {/* ... (On peut laisser le tableau d'historique financier ici si tu veux, ou le retirer pour alléger) ... */}
     </div>
   );
 };
