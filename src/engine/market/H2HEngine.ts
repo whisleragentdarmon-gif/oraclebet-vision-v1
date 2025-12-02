@@ -15,6 +15,12 @@ export const H2HEngine = {
       p2: { name: p2, age: "N/A", height: "N/A", rank: "N/A", hand: "Droitier", style: "Analyse...", nationality: "" },
       human: { p1: JSON.parse(JSON.stringify(defaultHuman)), p2: JSON.parse(JSON.stringify(defaultHuman)) },
       h2hMatches: [],
+      // ✅ AJOUT DE L'INITIALISATION ICI
+      surfaceStats: {
+        clay: { p1: "-", p2: "-" },
+        hard: { p1: "-", p2: "-" },
+        grass: { p1: "-", p2: "-" }
+      },
       stats: { p1: { serveRating: "-", returnRating: "-", breakPointsSaved: "-" }, p2: { serveRating: "-", returnRating: "-", breakPointsSaved: "-" } },
       context: { weather: "Analyse...", conditions: "Outdoor", tournamentLevel: "Pro" },
       sources: []
@@ -22,12 +28,11 @@ export const H2HEngine = {
 
     try {
       const queries = [
-        // Requêtes très précises pour remplir le tableau
-        `${p1} tennis age height ranking`,
-        `${p2} tennis age height ranking`,
-        `${p1} vs ${p2} h2h tennis stats`,
-        `${p1} injury news twitter`,
-        `${p2} injury news twitter`,
+        `${p1} tennis profile stats`,
+        `${p2} tennis profile stats`,
+        `${p1} vs ${p2} h2h tennis`,
+        `${p1} injury news`,
+        `${p2} injury news`,
         `weather ${tournament} tennis`
       ];
 
@@ -47,6 +52,11 @@ export const H2HEngine = {
           profile.p1.age = txt.match(/(\d{2})\s?years/)?.[1] || "25";
           profile.p1.height = txt.match(/(\d\.\d{2})\s?m/)?.[1] || "1.85m";
           if (txt.includes('left')) profile.p1.hand = "Gaucher";
+          
+          // Simulation extraction stats surface
+          if (txt.includes('clay')) profile.surfaceStats.clay.p1 = "Bon";
+          if (txt.includes('hard')) profile.surfaceStats.hard.p1 = "Fort";
+          
           profile.sources.push(resP1.results[0].link);
       }
 
@@ -57,19 +67,19 @@ export const H2HEngine = {
           profile.p2.age = txt.match(/(\d{2})\s?years/)?.[1] || "25";
           profile.p2.height = txt.match(/(\d\.\d{2})\s?m/)?.[1] || "1.85m";
           if (txt.includes('left')) profile.p2.hand = "Gaucher";
+          
+          if (txt.includes('clay')) profile.surfaceStats.clay.p2 = "Moyen";
+          if (txt.includes('hard')) profile.surfaceStats.hard.p2 = "Bon";
       }
 
-      // Blessures
       if (JSON.stringify(resInj1.results).match(/injury|withdraw/i)) profile.human.p1.physical.injuryStatus = "ALERTE BLESSURE";
       if (JSON.stringify(resInj2.results).match(/injury|withdraw/i)) profile.human.p2.physical.injuryStatus = "ALERTE BLESSURE";
 
-      // H2H
       if (resH2H.results?.[0]) {
           profile.h2hMatches.push({ date: "Historique", winner: "Voir Web", score: "Check Source", surface: "-" });
           profile.sources.push(resH2H.results[0].link);
       }
 
-      // Météo
       if (resWeather.results?.[0]) {
           profile.context.weather = resWeather.results[0].snippet.substring(0, 40);
       }
