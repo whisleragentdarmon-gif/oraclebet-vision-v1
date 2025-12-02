@@ -1,73 +1,56 @@
 // Fichier : src/engine/types.ts
 
-// --- Types de base ---
 export type Circuit = 'ATP' | 'WTA' | 'CHALLENGER' | 'ITF';
 export type RiskLevel = 'SAFE' | 'MODERATE' | 'RISKY' | 'Safe' | 'Moderate' | 'Risky' | 'NO_BET';
 export type PlayerStyle = 'Aggressive' | 'Defensive' | 'ServeVolley' | 'Balanced';
 
-// --- Données Scrapées sur le Web (God Mode) ---
-export interface WebScrapedData {
-  playerProfile: {
-    p1: { style: string; strengths: string; weaknesses: string; mental: string };
-    p2: { style: string; strengths: string; weaknesses: string; mental: string };
-  };
-  h2hReal: {
-    totalMatches: number;
-    p1Wins: number;
-    p2Wins: number;
-    lastMeeting: string;
-    surfaceFavorite: string;
-  };
-  surfaceStats: {
-    p1WinRate: number;
-    p2WinRate: number;
-    trend: string;
-  };
-  context: {
-    weather: string;
-    fatigueP1: string; // "Frais", "Modéré", "Épuisé"
-    fatigueP2: string;
-    scandal: string | null;
-  };
-  social: {
-    sentimentP1: 'POSITIVE' | 'NEGATIVE' | 'NEUTRAL';
-    sentimentP2: 'POSITIVE' | 'NEGATIVE' | 'NEUTRAL';
-  };
-}
-
-// --- Structure du Profil H2H (Pour le tableau d'affichage) ---
+// --- PROFIL H2H COMPLET (GOD MODE) ---
 export interface H2HFullProfile {
   p1: {
-    age: string;
-    height: string;
+    name: string;
     rank: string;
-    plays: string;
-    style: string;
+    bestRank: string; // Ex-Top 10 ?
+    age: string;
+    hand: string; // Droitier/Gaucher
+    height: string;
     nationality: string;
   };
   p2: {
-    age: string;
-    height: string;
+    name: string;
     rank: string;
-    plays: string;
-    style: string;
+    bestRank: string;
+    age: string;
+    hand: string;
+    height: string;
     nationality: string;
   };
-  h2hMatches: { date: string; winner: string; score: string; surface: string }[];
-  surfaceStats: {
-    clay: { p1: string, p2: string };
-    hard: { p1: string, p2: string };
-    grass: { p1: string, p2: string };
+  
+  // Statistiques Mentales & Service
+  stats: {
+    p1: { serveRating: string; returnRating: string; mentalRating: string; breakPointsSaved: string };
+    p2: { serveRating: string; returnRating: string; mentalRating: string; breakPointsSaved: string };
   };
+
+  // Comportement (Vs profils spécifiques)
+  behavior: {
+    p1VsHand: string; // P1 vs Gauchers (si P2 est gaucher)
+    p2VsHand: string;
+    p1VsRank: string; // P1 vs Top 50
+    p2VsRank: string;
+  };
+
+  h2hMatches: { date: string; winner: string; score: string; surface: string }[];
+  
   context: {
     weather: string;
-    altitude: string;
-    motivation: string;
+    surfaceSpeed: string; // Rapide/Lent
+    motivation: string; // Enjeu du tournoi
   };
+  
   sources: string[];
 }
 
-// --- IA & Apprentissage ---
+// --- Structures IA & Apprentissage ---
 export interface AIModelWeights {
   surfaceWeight: number;
   formWeight: number;
@@ -91,7 +74,7 @@ export interface LearningExperience {
   weightsUsed?: any;
 }
 
-// --- Joueurs & Matchs Passés ---
+// --- Joueurs de base ---
 export interface PastMatch {
   date: string;
   tournament: string;
@@ -99,16 +82,6 @@ export interface PastMatch {
   opponent: string;
   score: string;
   result: 'W' | 'L';
-}
-
-export interface PlayerAttributes {
-  power: number;
-  serve: number;
-  return: number;
-  mental: number;
-  form: number;
-  stamina?: number;
-  speed?: number;
 }
 
 export interface Player {
@@ -120,9 +93,8 @@ export interface Player {
   lastMatches?: PastMatch[]; 
 }
 
-// --- Cotes & Bookmakers ---
+// --- Cotes ---
 export type BookmakerName = 'Winamax' | 'Betclic' | 'Unibet' | 'Pinnacle' | 'Bwin';
-
 export interface BookmakerOdds {
   name: BookmakerName;
   p1: number;
@@ -151,52 +123,7 @@ export interface OddsAnalysis {
   bookmakers: BookmakerOdds[];
 }
 
-// --- Bankroll ---
-export interface BankrollSimulationMetric {
-  finalBankroll: number;
-  riskOfRuin: number;
-  volatility: number | string;
-  maxBankroll: number;
-  minBankroll: number;
-  paths?: { x: number; y: number }[][];
-}
-
-export type SimulationResult = BankrollSimulationMetric; 
-
-export interface BetRecord {
-    id: string;
-    matchId: string;
-    matchTitle: string;
-    selection: string;
-    odds: number;
-    stake: number;
-    status: 'PENDING' | 'WON' | 'LOST' | 'VOID';
-    profit: number;
-    date: string;
-    confidenceAtTime: number;
-}
-
-export interface BankrollState {
-    currentBalance: number;
-    startBalance: number;
-    totalBets: number;
-    wins: number;
-    losses: number;
-    totalInvested: number;
-    totalReturned: number;
-    roi: number;
-    history: BetRecord[];
-}
-
-// --- Prédictions ---
-export interface DetailedPrediction {
-  winner: string;
-  confidence: number;
-  scorePrediction: string;
-  totalGames: number;
-  riskLevel: RiskLevel;
-}
-
+// --- Analyse IA ---
 export interface AIPrediction {
   winner: string;
   confidence: number;
@@ -208,7 +135,7 @@ export interface AIPrediction {
   winProbA?: number;
   winProbB?: number;
   fairOdds?: { p1: number; p2: number };
-  attributes?: PlayerAttributes[];
+  attributes?: { power: number; serve: number; return: number; mental: number; form: number }[];
   monteCarlo?: { setDistribution: { [key: string]: number } };
   expectedSets?: string;
   tieBreakProbability?: number;
@@ -219,7 +146,6 @@ export interface AIPrediction {
   structuralAnalysis?: string;
   quantitativeAnalysis?: string;
   oddsAnalysis?: OddsAnalysis;
-  // Ajout pour le God Mode
   godModeAnalysis?: {
       social: any;
       geo: any;
@@ -231,51 +157,16 @@ export interface AIPrediction {
   };
 }
 
-export interface LiveUpdatePayload {
-  matchId: string;
-  score: string;
-  pointByPoint: string[];
-  momentum: number;
-}
-
-// --- Combinés ---
-export interface ComboSelection {
-    matchId: string;
-    player1: string;
-    player2: string;
-    selection: string;
-    odds: number;
-    confidence: number;
-    reason: string;
-    valueScore?: number;
-    marketType?: string;
-}
-
-export interface ComboStrategy {
-  type: 'Safe' | 'Balanced' | 'Value' | 'Oracle Ultra Premium' | 'Lotto';
-  selections: ComboSelection[];
-  combinedOdds: number;
-  successProbability: number;
-  riskScore: string;
-  expectedRoi?: number;
-  analysis?: string;
-}
-
-export type ComboStrategyResult = ComboStrategy;
-
-export interface MatchOdds {
-  player1: number;
-  player2: number;
-  p1: number;
-  p2: number;
-}
+// --- Autres ---
+export interface MatchOdds { player1: number; player2: number; p1: number; p2: number; }
+export type MatchStatus = 'SCHEDULED' | 'LIVE' | 'FINISHED' | 'TODAY' | 'UPCOMING';
 
 export interface Match {
   id: string;
   tournament: string;
   date: string;
   time: string;
-  status: 'SCHEDULED' | 'LIVE' | 'FINISHED' | 'TODAY' | 'UPCOMING';
+  status: MatchStatus;
   player1: Player;
   player2: Player;
   score?: string;
@@ -285,4 +176,9 @@ export interface Match {
   validationResult?: 'CORRECT' | 'WRONG' | 'PENDING';
 }
 
-export type MatchStatus = Match['status'];
+// Bankroll & Combo
+export interface BetRecord { id: string; matchId: string; matchTitle: string; selection: string; odds: number; stake: number; status: 'PENDING' | 'WON' | 'LOST' | 'VOID'; profit: number; date: string; confidenceAtTime: number; }
+export interface BankrollState { currentBalance: number; startBalance: number; totalBets: number; wins: number; losses: number; totalInvested: number; totalReturned: number; roi: number; history: BetRecord[]; }
+export interface ComboSelection { matchId: string; player1: string; player2: string; selection: string; odds: number; confidence: number; reason: string; valueScore?: number; marketType?: string; }
+export interface ComboStrategy { type: 'Safe' | 'Balanced' | 'Value' | 'Oracle Ultra Premium' | 'Lotto'; selections: ComboSelection[]; combinedOdds: number; successProbability: number; riskScore: string; expectedRoi?: number; analysis?: string; }
+export interface SimulationResult { finalBankroll: number; riskOfRuin: number; volatility: number | string; maxBankroll: number; minBankroll: number; paths?: { x: number; y: number }[][]; }
