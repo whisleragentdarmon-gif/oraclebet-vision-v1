@@ -1,17 +1,26 @@
-// On importe les définitions depuis le moteur
 import { 
   OddsAnalysis, 
   AIPrediction, 
   PlayerAttributes, 
   Circuit, 
   H2HFullProfile, 
-  HumanFactors, // 👈 IL FAUT L'IMPORTER ICI
-  WebScrapedData, 
+  HumanFactors,
+  WebScrapedData,
   ComboStrategy,
-  ComboSelection
+  ComboSelection,
+  FullMatchDossier,
+  PlayerProfileData,
+  MomentumData,
+  PsychData,
+  BetRecord,          // ✅ Manquait
+  BankrollState,      // ✅ Manquait
+  GeoCondition,       // ✅ Manquait
+  PressAnalysis,      // ✅ Manquait
+  SocialSentiment,    // ✅ Manquait
+  BookmakerOdds,      // ✅ Manquait
+  ArbitrageResult     // ✅ Manquait
 } from './engine/types';
 
-// Structure des matchs passés
 export interface PastMatch {
   date: string;
   tournament: string;
@@ -37,17 +46,28 @@ export interface MatchOdds {
   p2: number;
 }
 
-// 👇 ET IL FAUT L'EXPORTER ICI POUR QUE H2HENGINE LE TROUVE
+// ON RÉ-EXPORTE TOUT LE MONDE
 export type { 
   AIPrediction, 
   OddsAnalysis, 
   PlayerAttributes, 
   Circuit, 
   H2HFullProfile, 
-  HumanFactors, // ✅ Ajouté
+  HumanFactors,
   WebScrapedData,
   ComboStrategy,
-  ComboSelection
+  ComboSelection,
+  FullMatchDossier,
+  PlayerProfileData,
+  MomentumData,
+  PsychData,
+  BetRecord,
+  BankrollState,
+  GeoCondition,
+  PressAnalysis,
+  SocialSentiment,
+  BookmakerOdds,
+  ArbitrageResult
 };
 
 export interface Match {
@@ -63,6 +83,7 @@ export interface Match {
   ai?: AIPrediction;
   surface: 'Hard' | 'Clay' | 'Grass' | 'Indoor';
   validationResult?: 'CORRECT' | 'WRONG' | 'PENDING';
+  dossier?: FullMatchDossier;
 }
 
 export type MatchStatus = Match['status'];
