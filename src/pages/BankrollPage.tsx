@@ -10,6 +10,7 @@ const roiData = [
   { day: 'Jeudi', roi: 12 }, { day: 'Vendredi', roi: 15 }, { day: 'Samedi', roi: 10 }, { day: 'Dimanche', roi: 18 }
 ];
 
+// ✅ Exportation correcte
 export const BankrollPage: React.FC = () => {
   const { state, resetBankroll, updateCurrentBalance, lastLearningLog } = useBankroll();
   const { aiWeights, updateWeights, saveConfig, retrainAI } = useConfig();
@@ -59,7 +60,6 @@ export const BankrollPage: React.FC = () => {
                  <span className="text-neon">€</span>
               </div>
           </div>
-          {/* ... Autres KPIs ... */}
           <div className="bg-surface border border-neutral-800 p-6 rounded-xl">
               <p className="text-gray-500 text-xs uppercase font-bold">ROI Global</p>
               <p className={`text-3xl font-mono font-bold mt-2 ${state.roi >= 0 ? 'text-green-500' : 'text-red-500'}`}>
@@ -73,7 +73,7 @@ export const BankrollPage: React.FC = () => {
               </p>
           </div>
           <div className="bg-surface border border-neutral-800 p-6 rounded-xl relative">
-              <button onClick={() => resetBankroll(newBudget)} className="absolute top-2 right-2 text-gray-600 hover:text-white" title="Reset complet"><RefreshCcw size={14}/></button>
+              <button onClick={() => resetBankroll(newBudget)} className="absolute top-2 right-2 text-gray-600 hover:text-white" title="Reset"><RefreshCcw size={14}/></button>
               <p className="text-gray-500 text-xs uppercase font-bold">Dernier Apprentissage</p>
               <p className="text-xs text-neon mt-3 italic leading-relaxed">
                   {lastLearningLog || "En attente de validation..."}
