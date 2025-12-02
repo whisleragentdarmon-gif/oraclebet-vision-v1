@@ -240,3 +240,40 @@ export interface AIPrediction {
   };
 }
 */
+// --- EXTENSION H2H AUTO-FETCH ---
+export interface H2HFullProfile {
+  p1: {
+    age: string;
+    height: string;
+    rank: string;
+    plays: string; // Droitier/Gaucher
+    style: string;
+    nationality: string;
+  };
+  p2: {
+    age: string;
+    height: string;
+    rank: string;
+    plays: string;
+    style: string;
+    nationality: string;
+  };
+  h2hMatches: { date: string; winner: string; score: string; surface: string }[];
+  surfaceStats: {
+    clay: { p1: string, p2: string };
+    hard: { p1: string, p2: string };
+    grass: { p1: string, p2: string };
+  };
+  context: {
+    weather: string;
+    altitude: string;
+    motivation: string;
+  };
+  sources: string[]; // Liens trouvés
+}
+
+// Mise à jour de l'objet d'analyse pour inclure le H2H
+/*
+ * Note: Ajoute 'h2hProfile?: H2HFullProfile;' dans l'interface AIPrediction existante
+ * si tu veux le typer strictement, sinon on le passera via godModeAnalysis.
+ */
