@@ -1,49 +1,69 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Match } from '../types';
 import { MatchService } from '../services/api';
-import { MOCK_MATCHES } from '../constants';
+import { MatchScraper } from '../engine/MatchScraper'; // Import du Scraper
 
 interface DataContextType {
   matches: Match[];
   loading: boolean;
   refreshData: () => void;
+  scrapeWebMatches: () => void; // Nouvelle fonction
+  markAsFinished: (matchId: string, score?: string) => void; // Nouvelle fonction
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
 export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [matches, setMatches] = useState<Match[]>([]);
-  const [loading, setLoading] = useState(true);
+  // On initialise avec ce qui est en mémoire si possible
+  const [matches, setMatches] = useState<Match[]>(() => {
+      const saved = localStorage.getItem('oracle_matches_db');
+      return saved ? JSON.parse(saved) : [];
+  });
+  const [loading, setLoading] = useState(false);
 
-  const fetchData = async () => {
+  // Sauvegarde automatique
+  useEffect(() => {
+      localStorage.setItem('oracle_matches_db', JSON.stringify(matches));
+  }, [matches]);
+
+  const refreshData = async () => {
     setLoading(true);
     try {
-        // On récupère les vrais matchs
         const realMatches = await MatchService.getTodaysMatches();
-        if (realMatches.length > 0) {
-            setMatches(realMatches);
-        } else {
-            // Si quota dépassé ou erreur, on laisse vide (ou MOCK_MATCHES si tu veux tester)
-            console.log("API vide ou Quota dépassé");
-            setMatches([]); 
-        }
-    } catch (e) {
-        console.error(e);
-        setMatches([]);
-    }
+        // On fusionne avec les matchs existants pour ne pas perdre ceux qu'on a modifiés
+        setMatches(prev => {
+            const newMap = new Map(prev.map(m => [m.id, m]));
+            realMatches.forEach(m => newMap.set(m.id, m)); // Mise à jour ou ajout
+            return Array.from(newMap.values());
+        });
+    } catch (e) { console.error(e); }
     setLoading(false);
   };
 
-  useEffect(() => {
-    fetchData(); // Chargement unique au démarrage
+  // FONCTION GUÉRILLA : Chercher sur le web
+  const scrapeWebMatches = async () => {
+      setLoading(true);
+      const webMatches = await MatchScraper.scanWebForMatches();
+      if (webMatches.length > 0) {
+          setMatches(prev => [...prev, ...webMatches]);
+          alert(`${webMatches.length} matchs trouvés sur le web !`);
+      } else {
+          alert("Le scan web n'a pas trouvé de format compatible. Essayez l'API officielle.");
+      }
+      setLoading(false);
+  };
 
-    // ❌ J'AI SUPPRIMÉ L'AUTO-REFRESH ICI POUR SAUVER TON QUOTA
-    // Si tu veux rafraîchir, tu cliqueras sur le bouton manuel.
-
-  }, []);
+  // FONCTION MANUELLE : Finir un match
+  const markAsFinished = (matchId: string, score: string = "Terminé") => {
+      setMatches(prev => prev.map(m => 
+          m.id === matchId 
+            ? { ...m, status: 'FINISHED', score: score, validationResult: 'PENDING' } 
+            : m
+      ));
+  };
 
   return (
-    <DataContext.Provider value={{ matches, loading, refreshData: fetchData }}>
+    <DataContext.Provider value={{ matches, loading, refreshData, scrapeWebMatches, markAsFinished }}>
       {children}
     </DataContext.Provider>
   );
