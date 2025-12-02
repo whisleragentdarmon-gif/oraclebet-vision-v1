@@ -1,30 +1,41 @@
+// Fichier : src/engine/types.ts
+
 export type Circuit = 'ATP' | 'WTA' | 'CHALLENGER' | 'ITF';
 export type RiskLevel = 'SAFE' | 'MODERATE' | 'RISKY' | 'Safe' | 'Moderate' | 'Risky' | 'NO_BET';
 export type PlayerStyle = 'Aggressive' | 'Defensive' | 'ServeVolley' | 'Balanced' | 'Big Server' | 'Grinder';
 
-// --- NOUVELLES STRUCTURES GOD MODE (HUMAN FACTORS) ---
-export interface HumanFactors {
-  mental: {
-    state: string; // "Stable", "Frustré", "Confiant"
-    motivation: string; // "Faible", "Maximale"
-    pressSentiment: string; // "Positif", "Négatif"
-    scandals: string[];
-  };
-  physical: {
-    fatigue: string; // "Frais", "Épuisé"
-    injuryStatus: string; // "Fit", "MTO récent", "Bandage genou"
-    trainingObservation: string; // "Intense", "Grimace", "Léger"
-  };
-  lifestyle: {
-    recentActivity: string; // "Focus", "Soirée", "Voyage long"
-    travelStress: string;
-  };
-  social: {
-    redditMood: string; // "Bullish", "Bearish"
-    twitterHype: string;
-    fanRumors: string[];
-  };
+// --- TYPES MANQUANTS AJOUTÉS ---
+export interface GeoCondition {
+  altitude: number;
+  humidity: number;
+  windSpeed: number;
+  courtSpeedIndex: number;
+  ballType: string;
+  isIndoor: boolean;
 }
+
+export interface PressAnalysis {
+  sentimentScore: number;
+  scandalAlert: boolean;
+  mentalPressureIndex: number;
+  recentQuotes: any[];
+  rumors: string[];
+}
+
+export interface SocialSentiment {
+  twitterHype: number;
+  redditMood: string;
+  instagramActivity: string;
+  publicBettingTrend: number;
+}
+
+export interface HumanFactors {
+  mental: { state: string; motivation: string; pressSentiment: string; scandals: string[]; };
+  physical: { fatigue: string; injuryStatus: string; trainingObservation: string; };
+  lifestyle: { recentActivity: string; travelStress: string; };
+  social: { redditMood: string; twitterHype: string; fanRumors: string[]; };
+}
+// -------------------------------
 
 export interface WebScrapedData {
   playerProfile: {
@@ -38,48 +49,21 @@ export interface WebScrapedData {
     lastMeeting: string;
     surfaceFavorite: string;
   };
-  surfaceStats: {
-    p1WinRate: number;
-    p2WinRate: number;
-    trend: string;
-  };
-  context: {
-    weather: string;
-    altitude: string;
-    ballType: string;
-  };
-  human: {
-    p1: HumanFactors;
-    p2: HumanFactors;
-  };
+  surfaceStats: { p1WinRate: number; p2WinRate: number; trend: string; };
+  context: { weather: string; fatigueP1: string; fatigueP2: string; scandal: string | null; };
+  social: { sentimentP1: 'POSITIVE' | 'NEGATIVE' | 'NEUTRAL'; sentimentP2: 'POSITIVE' | 'NEGATIVE' | 'NEUTRAL'; };
 }
 
-// --- Structure du Profil H2H (Pour l'affichage) ---
 export interface H2HFullProfile {
   p1: { name: string; age: string; height: string; rank: string; hand: string; style: string; nationality: string; };
   p2: { name: string; age: string; height: string; rank: string; hand: string; style: string; nationality: string; };
-  
-  human: {
-      p1: HumanFactors;
-      p2: HumanFactors;
-  };
-
+  human: { p1: HumanFactors; p2: HumanFactors; };
   h2hMatches: { date: string; winner: string; score: string; surface: string }[];
-  
-  stats: {
-    p1: { serveRating: string; returnRating: string; breakPointsSaved: string };
-    p2: { serveRating: string; returnRating: string; breakPointsSaved: string };
-  };
-
-  context: {
-    weather: string;
-    conditions: string; // Indoor/Outdoor + Vitesse
-    tournamentLevel: string;
-  };
+  stats: { p1: { serveRating: string; returnRating: string; breakPointsSaved: string }; p2: { serveRating: string; returnRating: string; breakPointsSaved: string }; };
+  context: { weather: string; conditions: string; tournamentLevel: string; };
   sources: string[];
 }
 
-// ... (Les autres interfaces existantes restent inchangées : AIModelWeights, BetRecord, etc.)
 export interface AIModelWeights { surfaceWeight: number; formWeight: number; h2hWeight: number; fatigueFactor: number; mentalWeight: number; variance: number; momentumWeight?: number; serveDominance?: number; }
 export interface LearningExperience { matchId: string; date: string; timestamp?: number; prediction: string; outcome: 'WIN' | 'LOSS' | 'VOID'; circuit: Circuit; adjustments: string; result?: string; weightsUsed?: any; }
 export interface PastMatch { date: string; tournament: string; surface: 'Hard' | 'Clay' | 'Grass' | 'Indoor'; opponent: string; score: string; result: 'W' | 'L'; }
@@ -93,7 +77,7 @@ export interface BankrollSimulationMetric { finalBankroll: number; riskOfRuin: n
 export type SimulationResult = BankrollSimulationMetric; 
 export interface BetRecord { id: string; matchId: string; matchTitle: string; selection: string; odds: number; stake: number; status: 'PENDING' | 'WON' | 'LOST' | 'VOID'; profit: number; date: string; confidenceAtTime: number; }
 export interface BankrollState { currentBalance: number; startBalance: number; totalBets: number; wins: number; losses: number; totalInvested: number; totalReturned: number; roi: number; history: BetRecord[]; }
-export interface AIPrediction { winner: string; confidence: number; recommendedBet: string; riskLevel: RiskLevel; marketType: string; circuit: string; totalGamesProjection?: number; winProbA?: number; winProbB?: number; fairOdds?: { p1: number; p2: number }; attributes?: PlayerAttributes[]; monteCarlo?: { setDistribution: { [key: string]: number } }; expectedSets?: string; tieBreakProbability?: number; breaks?: { p1: number; p2: number }; trap?: { isTrap: boolean; verdict?: string; reason?: string }; integrity?: { isSuspicious: boolean; score: number; reason?: string }; qualitativeAnalysis?: string; structuralAnalysis?: string; quantitativeAnalysis?: string; oddsAnalysis?: OddsAnalysis; godModeAnalysis?: { social: any; geo: any; trap: any; injuryAlert: boolean; injuryDetails?: string; h2hProfile?: H2HFullProfile; realProb?: { p1Prob: number, p2Prob: number }; }; }
+export interface AIPrediction { winner: string; confidence: number; recommendedBet: string; riskLevel: RiskLevel; marketType: string; circuit: string; totalGamesProjection?: number; winProbA?: number; winProbB?: number; fairOdds?: { p1: number; p2: number }; attributes?: PlayerAttributes[]; monteCarlo?: { setDistribution: { [key: string]: number } }; expectedSets?: string; tieBreakProbability?: number; breaks?: { p1: number; p2: number }; trap?: { isTrap: boolean; verdict?: string; reason?: string }; integrity?: { isSuspicious: boolean; score: number; reason?: string }; qualitativeAnalysis?: string; structuralAnalysis?: string; quantitativeAnalysis?: string; oddsAnalysis?: OddsAnalysis; godModeAnalysis?: { social: any; geo: any; trap: any; injuryAlert: boolean; injuryDetails?: string; h2hProfile?: H2HFullProfile; realProb?: { p1Prob: number, p2Prob: number }; motivation?: any; }; }
 export interface ComboSelection { matchId: string; player1: string; player2: string; selection: string; odds: number; confidence: number; reason: string; valueScore?: number; marketType?: string; }
 export interface ComboStrategy { type: 'Safe' | 'Balanced' | 'Value' | 'Oracle Ultra Premium' | 'Lotto'; selections: ComboSelection[]; combinedOdds: number; successProbability: number; riskScore: string; expectedRoi?: number; analysis?: string; }
 export type ComboStrategyResult = ComboStrategy;
