@@ -5,19 +5,16 @@ import { MatchCard } from '../components/MatchCard';
 import { Match } from '../types';
 import { OracleReactor } from '../components/OracleReactor';
 import { OddsComparator } from '../components/OddsComparator';
-
-// IMPORTS DES MOTEURS
+import { DetailedH2H } from '../components/DetailedH2H';
+import { H2HEngine } from '../engine/market/H2HEngine';
+import { MonteCarlo } from '../engine/MonteCarlo';
 import { ScandalEngine } from '../engine/market/ScandalEngine';
 import { GeoEngine } from '../engine/market/GeoEngine';
 import { TrapDetector } from '../engine/market/TrapDetector';
-import { H2HEngine } from '../engine/market/H2HEngine'; // ✅ NOUVEAU
-
-// IMPORTS DES COMPOSANTS VISUELS
-import { DetailedH2H } from '../components/DetailedH2H'; // ✅ NOUVEAU
 import { 
   BarChart, Bar, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend 
 } from 'recharts';
-import { TrendingUp, ShieldAlert, Siren, Globe, Cpu, Wind, Activity, Zap, FileText, Search, ExternalLink, Calendar, Lock, CheckCircle2 } from 'lucide-react';
+import { TrendingUp, ShieldAlert, Siren, Globe, Cpu, Wind, Activity, Zap, FileText, Lock } from 'lucide-react';
 
 export const AnalysisPage: React.FC = () => {
   const { matches } = useData();
@@ -45,29 +42,43 @@ export const AnalysisPage: React.FC = () => {
 
   // --- FONCTION PRINCIPALE : LE GOD MODE ---
   const runGodMode = async () => {
-     // Si c'est un match démo, on ne fait rien (ou on affiche une fausse alerte)
-    if (selectedMatch?.id.startsWith('mock-')) {
-        alert("Mode Démo : Pas de scan Web réel sur ce match fictif.");
-        return;
-    }
-
-    setIsComputing(true);
-    // ... suite du code
     setIsComputing(true);
     if (selectedMatch) {
         const p1 = selectedMatch.player1.name;
         const p2 = selectedMatch.player2.name;
         
         try {
-            // 1. APPEL AU NOUVEAU MOTEUR H2H (Il fait les recherches Google pour nous)
+            // 1. APPEL AU MOTEUR H2H (Scraping Web)
+            // C'est lui qui cherche l'âge, le rang, les stats H2H
             const h2hProfile = await H2HEngine.fetchFullProfile(p1, p2, selectedMatch.tournament);
 
-            // 2. APPEL AUX MOTEURS EXISTANTS (Interne)
+            // 2. ANALYSE DES DONNÉES RÉCUPÉRÉES (Pour Monte Carlo)
+            // On convertit le profil scrapé en données utilisables par la simulation
+            const scrapedDataForSim = {
+                playerProfile: {
+                    p1: { style: h2hProfile.p1.style, strengths: "", weaknesses: "", mental: "" },
+                    p2: { style: h2hProfile.p2.style, strengths: "", weaknesses: "", mental: "" }
+                },
+                h2hReal: { totalMatches: h2hProfile.h2hMatches.length, p1Wins: 0, p2Wins: 0, lastMeeting: "", surfaceFavorite: "" },
+                surfaceStats: { p1WinRate: 50, p2WinRate: 50, trend: "" },
+                context: { 
+                    weather: h2hProfile.context.weather, 
+                    fatigueP1: "Analyse...", 
+                    fatigueP2: "Analyse...", 
+                    scandal: null 
+                },
+                social: { sentimentP1: 'NEUTRAL' as const, sentimentP2: 'NEUTRAL' as const }
+            };
+
+            // 3. SIMULATION MONTE CARLO PURE (Basée sur la data, pas les cotes)
+            const trueProbabilities = MonteCarlo.simulateMatchup(scrapedDataForSim);
+
+            // 4. MOTEURS INTERNES
             const social = ScandalEngine.analyze(p1);
             const geo = GeoEngine.getConditions(selectedMatch.tournament);
             const trap = TrapDetector.scan(selectedMatch.odds);
             
-            // 3. RECHERCHE SPÉCIFIQUE BLESSURE (Sécurité supplémentaire)
+            // 5. RECHERCHE SPÉCIFIQUE BLESSURE
             let injuryAlert = false;
             let injuryDetails = "";
             try {
@@ -77,7 +88,6 @@ export const AnalysisPage: React.FC = () => {
                     body: JSON.stringify({ query: `${p1} ${p2} tennis injury news` })
                 });
                 const webNews = (await resNews.json()).results || [];
-                
                 webNews.forEach((n: any) => {
                     if ((n.title + n.snippet).toLowerCase().match(/injury|blessure|forfait|withdraw/)) {
                         injuryAlert = true;
@@ -86,17 +96,18 @@ export const AnalysisPage: React.FC = () => {
                 });
             } catch (err) { console.error("Erreur News", err); }
 
-            // 4. ON RASSEMBLE TOUT
+            // 6. ON RASSEMBLE TOUT
             const newData = { 
                 social, 
                 geo, 
                 trap, 
                 injuryAlert, 
                 injuryDetails,
-                h2hProfile // ✅ On ajoute le profil complet
+                h2hProfile,
+                realProb: trueProbabilities
             };
             
-            // 5. SAUVEGARDE
+            // 7. SAUVEGARDE
             saveAnalysis(selectedMatch.id, newData);
             setCurrentData(newData);
 
@@ -105,11 +116,16 @@ export const AnalysisPage: React.FC = () => {
     setIsComputing(false);
   };
 
-  // Préparation graphiques (inchangée)
-  const winProbData = selectedMatch?.ai ? [
-    { name: selectedMatch.player1.name, prob: selectedMatch.ai.winProbA || 50, fill: '#6B7280' },
-    { name: selectedMatch.player2.name, prob: selectedMatch.ai.winProbB || 50, fill: '#FF7A00' }
-  ] : [];
+  // Préparation graphiques
+  // SI God Mode fait : on utilise la probabilité Monte Carlo
+  // SINON : on utilise une valeur par défaut (50/50) pour ne pas influencer
+  const winProbData = currentData?.realProb ? [
+    { name: selectedMatch?.player1.name, prob: currentData.realProb.p1Prob, fill: '#6B7280' },
+    { name: selectedMatch?.player2.name, prob: currentData.realProb.p2Prob, fill: '#FF7A00' }
+  ] : [
+    { name: selectedMatch?.player1.name || "P1", prob: 50, fill: '#333' },
+    { name: selectedMatch?.player2.name || "P2", prob: 50, fill: '#333' }
+  ];
 
   const attributes = selectedMatch?.ai?.attributes;
   const radarData = attributes && attributes.length >= 2 ? [
@@ -143,6 +159,9 @@ export const AnalysisPage: React.FC = () => {
                 compact 
               />
             ))}
+            {activeMatches.length === 0 && (
+                <p className="text-gray-500 text-sm p-4 border border-dashed border-neutral-800 rounded">Aucun match à analyser.</p>
+            )}
           </div>
         </div>
 
@@ -193,7 +212,7 @@ export const AnalysisPage: React.FC = () => {
               {currentData && (
                 <div className="animate-fade-in space-y-8">
                     
-                    {/* ✅ NOUVEAU : TABLEAU H2H AUTO-REMPLI */}
+                    {/* TABLEAU H2H AUTO-REMPLI */}
                     {currentData.h2hProfile && (
                         <DetailedH2H 
                             data={currentData.h2hProfile} 
@@ -217,15 +236,15 @@ export const AnalysisPage: React.FC = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="bg-surfaceHighlight p-5 rounded-xl border border-neutral-800">
                             <p className="text-gray-400 text-xs uppercase mb-2">Verdict Oracle</p>
-                            <p className="text-3xl font-bold text-white mb-2">{selectedMatch.ai.recommendedBet}</p>
+                            <p className="text-3xl font-bold text-white mb-2">{selectedMatch.ai?.recommendedBet || "Calcul..."}</p>
                             <div className="flex items-center gap-2">
                                 <div className="h-2 w-full bg-gray-700 rounded-full overflow-hidden">
-                                    <div className="h-full bg-neon" style={{width: `${selectedMatch.ai.confidence}%`}}></div>
+                                    <div className="h-full bg-neon" style={{width: `${selectedMatch.ai?.confidence || 0}%`}}></div>
                                 </div>
-                                <span className="text-sm font-bold text-neon">{selectedMatch.ai.confidence}%</span>
+                                <span className="text-sm font-bold text-neon">{selectedMatch.ai?.confidence}%</span>
                             </div>
                         </div>
-                        {selectedMatch.ai.oddsAnalysis && selectedMatch.ai.fairOdds && (
+                        {selectedMatch.ai?.oddsAnalysis && selectedMatch.ai?.fairOdds && (
                             <OddsComparator 
                                 analysis={selectedMatch.ai.oddsAnalysis} 
                                 fairOdds={selectedMatch.ai.fairOdds}
@@ -238,7 +257,7 @@ export const AnalysisPage: React.FC = () => {
                     {/* GRAPHIQUES */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <div className="bg-surfaceHighlight rounded-xl p-4 border border-neutral-800">
-                            <h4 className="text-gray-400 text-xs uppercase mb-4 text-center">Probabilité de Victoire</h4>
+                            <h4 className="text-gray-400 text-xs uppercase mb-4 text-center">Probabilité Réelle (Monte Carlo)</h4>
                             <div className="h-[200px]">
                                 <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={winProbData} layout="vertical">
