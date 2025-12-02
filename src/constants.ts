@@ -1,12 +1,11 @@
 import { Match } from './types';
 
 export const MOCK_MATCHES: Match[] = [
-  // --- 1. RITTRAPAGE MANUEL (Crowder vs Osher) ---
-  // Statut FINISHED pour qu'il apparaisse dans "Résultats" pour validation
+  // --- 1. RATTRAPAGE MANUEL (Crowder vs Osher) ---
   {
     id: 'rattrapage-crowder',
     tournament: 'UTR PTT Oxford',
-    date: '02.12.2025', // Date d'aujourd'hui
+    date: '02.12.2025',
     time: 'FINISHED',
     status: 'FINISHED',
     validationResult: 'PENDING',
@@ -29,9 +28,10 @@ export const MOCK_MATCHES: Match[] = [
     }
   },
 
-  // --- 2. LE DIRECT (Ficovich vs Gomez) ---
+  // --- 2. DÉMO FICTIVE LIVE (Ficovich vs Gomez) ---
+  // ID commencant par 'mock-' pour être ignoré par l'IA
   {
-    id: 'live-bogota-ficovich',
+    id: 'mock-live-bogota',
     tournament: 'Challenger Bogota',
     date: '02.12.2025',
     time: '18:10',
@@ -75,7 +75,7 @@ export const MOCK_MATCHES: Match[] = [
   {
     id: 'upcoming-rune-struff',
     tournament: 'ATP Munich',
-    date: '03.12.2025', // Date future
+    date: '03.12.2025',
     time: '14:00',
     status: 'UPCOMING',
     surface: 'Clay',
@@ -101,7 +101,7 @@ export const MOCK_MATCHES: Match[] = [
   {
     id: 'upcoming-djoko-monfils',
     tournament: 'ATP Cincinnati',
-    date: '03.12.2025', // Date future
+    date: '03.12.2025',
     time: '20:00',
     status: 'UPCOMING',
     surface: 'Hard',
@@ -127,7 +127,7 @@ export const MOCK_MATCHES: Match[] = [
   {
     id: 'upcoming-draper-shelton',
     tournament: 'ATP Queens',
-    date: '04.12.2025', // Date future
+    date: '04.12.2025',
     time: '13:00',
     status: 'UPCOMING',
     surface: 'Grass',
