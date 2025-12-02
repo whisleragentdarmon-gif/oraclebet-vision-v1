@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useData } from '../context/DataContext';
-import { ListChecks, BrainCircuit, CheckCircle, Activity, Zap, Search, Trophy, ChevronDown, ChevronUp, XCircle, Check } from 'lucide-react';
+import { ListChecks, BrainCircuit, CheckCircle, Activity, Zap, RefreshCw } from 'lucide-react'; // ✅ Ajouté ici
 import { useBankroll } from '../context/BankrollContext';
 import { AreaChart, Area, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { BacktestEngine } from '../engine/BacktestEngine';
