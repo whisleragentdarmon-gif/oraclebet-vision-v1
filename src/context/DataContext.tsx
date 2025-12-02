@@ -15,37 +15,35 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchData = async (isAutoRefresh = false) => {
-    if (!isAutoRefresh) setLoading(true); // On ne met le chargement que si c'est manuel
+  const fetchData = async () => {
+    setLoading(true);
     try {
+        // On récupère les vrais matchs
         const realMatches = await MatchService.getTodaysMatches();
         if (realMatches.length > 0) {
             setMatches(realMatches);
         } else {
-            // Si l'API est vide, on garde les anciens ou on met les mocks
-            if (matches.length === 0) setMatches(MOCK_MATCHES);
+            // Si quota dépassé ou erreur, on laisse vide (ou MOCK_MATCHES si tu veux tester)
+            console.log("API vide ou Quota dépassé");
+            setMatches([]); 
         }
     } catch (e) {
         console.error(e);
-        if (matches.length === 0) setMatches(MOCK_MATCHES);
+        setMatches([]);
     }
     setLoading(false);
   };
 
   useEffect(() => {
-    fetchData(); // Chargement initial
+    fetchData(); // Chargement unique au démarrage
 
-    // 👇 AUTO-REFRESH TOUTES LES 60 SECONDES
-    const interval = setInterval(() => {
-        console.log("🔄 Actualisation automatique des scores...");
-        fetchData(true);
-    }, 60000);
+    // ❌ J'AI SUPPRIMÉ L'AUTO-REFRESH ICI POUR SAUVER TON QUOTA
+    // Si tu veux rafraîchir, tu cliqueras sur le bouton manuel.
 
-    return () => clearInterval(interval); // Nettoyage quand on quitte
   }, []);
 
   return (
-    <DataContext.Provider value={{ matches, loading, refreshData: () => fetchData(false) }}>
+    <DataContext.Provider value={{ matches, loading, refreshData: fetchData }}>
       {children}
     </DataContext.Provider>
   );
