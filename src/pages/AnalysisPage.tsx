@@ -45,6 +45,14 @@ export const AnalysisPage: React.FC = () => {
 
   // --- FONCTION PRINCIPALE : LE GOD MODE ---
   const runGodMode = async () => {
+     // Si c'est un match démo, on ne fait rien (ou on affiche une fausse alerte)
+    if (selectedMatch?.id.startsWith('mock-')) {
+        alert("Mode Démo : Pas de scan Web réel sur ce match fictif.");
+        return;
+    }
+
+    setIsComputing(true);
+    // ... suite du code
     setIsComputing(true);
     if (selectedMatch) {
         const p1 = selectedMatch.player1.name;
