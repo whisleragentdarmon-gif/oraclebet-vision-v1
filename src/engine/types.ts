@@ -1,54 +1,23 @@
-// Fichier : src/engine/types.ts
-
 export type Circuit = 'ATP' | 'WTA' | 'CHALLENGER' | 'ITF';
 export type RiskLevel = 'SAFE' | 'MODERATE' | 'RISKY' | 'Safe' | 'Moderate' | 'Risky' | 'NO_BET';
 export type PlayerStyle = 'Aggressive' | 'Defensive' | 'ServeVolley' | 'Balanced' | 'Big Server' | 'Grinder';
 
-// --- TYPES MANQUANTS AJOUTÉS ---
-export interface GeoCondition {
-  altitude: number;
-  humidity: number;
-  windSpeed: number;
-  courtSpeedIndex: number;
-  ballType: string;
-  isIndoor: boolean;
-}
-
-export interface PressAnalysis {
-  sentimentScore: number;
-  scandalAlert: boolean;
-  mentalPressureIndex: number;
-  recentQuotes: any[];
-  rumors: string[];
-}
-
-export interface SocialSentiment {
-  twitterHype: number;
-  redditMood: string;
-  instagramActivity: string;
-  publicBettingTrend: number;
-}
-
+// --- NOUVEAU : HUMAN FACTORS (Manquait ici) ---
 export interface HumanFactors {
   mental: { state: string; motivation: string; pressSentiment: string; scandals: string[]; };
   physical: { fatigue: string; injuryStatus: string; trainingObservation: string; };
   lifestyle: { recentActivity: string; travelStress: string; };
   social: { redditMood: string; twitterHype: string; fanRumors: string[]; };
 }
-// -------------------------------
+
+// --- Geo & Press ---
+export interface GeoCondition { altitude: number; humidity: number; windSpeed: number; courtSpeedIndex: number; ballType: string; isIndoor: boolean; }
+export interface PressAnalysis { sentimentScore: number; scandalAlert: boolean; mentalPressureIndex: number; recentQuotes: any[]; rumors: string[]; }
+export interface SocialSentiment { twitterHype: number; redditMood: string; instagramActivity: string; publicBettingTrend: number; }
 
 export interface WebScrapedData {
-  playerProfile: {
-    p1: { style: string; strengths: string; weaknesses: string; mental: string };
-    p2: { style: string; strengths: string; weaknesses: string; mental: string };
-  };
-  h2hReal: {
-    totalMatches: number;
-    p1Wins: number;
-    p2Wins: number;
-    lastMeeting: string;
-    surfaceFavorite: string;
-  };
+  playerProfile: { p1: { style: string; strengths: string; weaknesses: string; mental: string }; p2: { style: string; strengths: string; weaknesses: string; mental: string }; };
+  h2hReal: { totalMatches: number; p1Wins: number; p2Wins: number; lastMeeting: string; surfaceFavorite: string; };
   surfaceStats: { p1WinRate: number; p2WinRate: number; trend: string; };
   context: { weather: string; fatigueP1: string; fatigueP2: string; scandal: string | null; };
   social: { sentimentP1: 'POSITIVE' | 'NEGATIVE' | 'NEUTRAL'; sentimentP2: 'POSITIVE' | 'NEGATIVE' | 'NEUTRAL'; };
