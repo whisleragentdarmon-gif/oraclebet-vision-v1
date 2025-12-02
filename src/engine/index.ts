@@ -33,7 +33,14 @@ export const OracleAI = {
   combo: {
     generateStrategies: (matches: any[]): ComboStrategy[] => {
       const strategies: ComboStrategy[] = [];
-      const candidates = matches.filter((m: any) => m.status !== 'FINISHED');
+      
+      // 👇 LE FILTRE MAGIQUE : On exclut les matchs finis ET les matchs "mock-"
+      const candidates = matches.filter((m: any) => 
+          m.status !== 'FINISHED' && 
+          !m.id.startsWith('mock-') // <--- AJOUT ICI
+      );
+
+      // ... (Le reste du code ne change pas)
 
       // Moteur de sélection
       const getSmartSelection = (m: any) => {
