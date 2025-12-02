@@ -40,15 +40,24 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setLoading(false);
   };
 
-  // FONCTION GUÉRILLA : Chercher sur le web
+// FONCTION GUÉRILLA : Chercher sur le web
   const scrapeWebMatches = async () => {
       setLoading(true);
-      const webMatches = await MatchScraper.scanWebForMatches();
-      if (webMatches.length > 0) {
-          setMatches(prev => [...prev, ...webMatches]);
-          alert(`${webMatches.length} matchs trouvés sur le web !`);
-      } else {
-          alert("Le scan web n'a pas trouvé de format compatible. Essayez l'API officielle.");
+      try {
+          const webMatches = await MatchScraper.scanWebForMatches();
+          
+          if (webMatches.length > 0) {
+              setMatches(prev => {
+                  // On ajoute les nouveaux matchs sans écraser les existants
+                  const currentIds = new Set(prev.map(m => m.id));
+                  const newUnique = webMatches.filter(m => !currentIds.has(m.id));
+                  return [...prev, ...newUnique];
+              });
+              // PAS D'ALERTE, juste un log
+              console.log(`${webMatches.length} matchs Web ajoutés.`);
+          }
+      } catch (e) {
+          console.error("Erreur Scan", e);
       }
       setLoading(false);
   };
