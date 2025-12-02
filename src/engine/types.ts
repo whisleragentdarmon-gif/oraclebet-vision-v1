@@ -162,7 +162,8 @@ export interface ComboSelection {
 }
 
 export interface ComboStrategy {
-  type: 'Safe' | 'Balanced' | 'Value' | 'Oracle Ultra Premium';
+  // 👇 AJOUT DE 'Lotto' ICI
+  type: 'Safe' | 'Balanced' | 'Value' | 'Oracle Ultra Premium' | 'Lotto';
   selections: ComboSelection[];
   combinedOdds: number;
   successProbability: number;
