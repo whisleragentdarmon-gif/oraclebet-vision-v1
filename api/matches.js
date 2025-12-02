@@ -1,6 +1,6 @@
 export default async function handler(req, res) {
-  const API_KEY = '7dfb0411a7msh9454626accfa550p183513jsn32f03233f2eb'; 
-  const API_HOST = 'sportscore1.p.rapidapi.com';
+  const API_KEY = 'd95f9c6d94msh91b4f8d1ad05d42p1353acjsnc68090e28eb2'; 
+  const API_HOST = 'tennis-api-atp-wta-itf.p.rapidapi.com'
 
   const formatDate = (date) => date.toISOString().split('T')[0];
 
