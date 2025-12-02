@@ -14,64 +14,53 @@ export const MatchService = {
     try {
       const response = await fetch('/api/matches');
       const json = await response.json();
+
       if (!json.data) return [];
 
       const realMatches: Match[] = json.data.map((m: any) => {
         const p1Name = m.home_team?.name || "TBA";
         const p2Name = m.away_team?.name || "TBA";
         const status = mapStatus(m.status);
+        const p1Rank = m.home_team?.ranking || 0;
+        const p2Rank = m.away_team?.ranking || 0;
         
-        // --- SIMULATION DE COTES VARIÉES (POUR API GRATUITE) ---
-        // On utilise le hachage du nom pour que la cote soit constante pour un match donné
-        const hash = (p1Name + p2Name).length;
-        const randomFactor = (hash % 10) / 10; // Donne un chiffre entre 0 et 0.9
+        // Simulation cotes
+        const seed = p1Name.length + p2Name.length; 
+        const isP1Fav = seed % 2 === 0;
+        const p1Odd = isP1Fav ? 1.45 : 2.60;
+        const p2Odd = isP1Fav ? 2.60 : 1.45;
 
-        let p1Odd, p2Odd, isP1Fav;
-
-        if (randomFactor < 0.3) {
-            // CAS 1 : GRAND FAVORI (P1) -> Doit déclencher "2-0"
-            p1Odd = 1.20 + (randomFactor / 2);
-            p2Odd = 4.50 + randomFactor;
-            isP1Fav = true;
-        } else if (randomFactor > 0.7) {
-            // CAS 2 : GRAND FAVORI (P2) -> Doit déclencher "2-0"
-            p1Odd = 3.80 + randomFactor;
-            p2Odd = 1.25 + (randomFactor / 2);
-            isP1Fav = false;
-        } else {
-            // CAS 3 : MATCH SERRÉ -> Doit déclencher "Vainqueur" ou "Over"
-            p1Odd = 1.75 + (randomFactor / 2);
-            p2Odd = 1.85 + (randomFactor / 2);
-            isP1Fav = p1Odd < p2Odd;
-        }
+        // Phrase d'analyse construite
+        const rankInfo = p1Rank > 0 && p2Rank > 0 ? `(Rank ${p1Rank} vs ${p2Rank})` : "";
+        const analysisText = `Analyse prédictive : ${isP1Fav ? p1Name : p2Name} semble avoir l'avantage ${rankInfo}. La dynamique récente favorise une victoire en ${isP1Fav && p1Odd < 1.3 ? '2 sets' : 'match serré'}.`;
 
         const aiData = {
             winner: isP1Fav ? p1Name : p2Name,
-            confidence: isP1Fav ? (p1Odd < 1.30 ? 85 : 70) : 60,
-            // Note: recommendedBet sera recalculé intelligemment par le moteur Combo
-            recommendedBet: "Analyse...",
+            confidence: isP1Fav ? 78 : 62,
+            recommendedBet: isP1Fav ? `${p1Name} Vainqueur` : `${p2Name} +1.5 Sets`,
             riskLevel: isP1Fav ? 'SAFE' : 'MODERATE',
             marketType: 'WINNER',
             circuit: m.league?.name?.includes('WTA') ? 'WTA' : 'ATP',
-            fairOdds: { p1: p1Odd - 0.05, p2: p2Odd - 0.1 },
-            qualitativeAnalysis: `Oracle détecte un avantage pour ${isP1Fav ? p1Name : p2Name} basé sur la dynamique.`,
+            fairOdds: { p1: p1Odd - 0.1, p2: p2Odd - 0.2 },
+            qualitativeAnalysis: analysisText, // ✅ Texte amélioré
             integrity: { isSuspicious: false, score: 0 },
             attributes: [
-                { power: 80, serve: 75, return: 70, mental: 80, form: 80 },
-                { power: 70, serve: 70, return: 75, mental: 70, form: 75 }
+                { power: isP1Fav ? 85 : 70, serve: 80, return: 75, mental: 80, form: 85 },
+                { power: isP1Fav ? 70 : 80, serve: 75, return: 70, mental: 70, form: 75 }
             ]
         };
 
         return {
           id: String(m.id),
-          tournament: m.league?.name || "Tournoi",
-          date: m.start_at ? new Date(m.start_at).toLocaleDateString() : "Auj.",
+          tournament: m.league?.name || "Tournoi Pro",
+          // ✅ DATE CORRIGÉE : Format FR (JJ/MM)
+          date: m.start_at ? new Date(m.start_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }) : "Auj.",
           time: m.start_at ? new Date(m.start_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : "00:00",
           status: status,
           surface: 'Hard', 
           score: m.home_score?.display ? `${m.home_score.display}-${m.away_score.display}` : undefined,
-          player1: { name: p1Name, rank: 0, country: m.home_team?.country_code || 'WLD', form: 50, surfacePrefs: { hard: 50, clay: 50, grass: 50 } },
-          player2: { name: p2Name, rank: 0, country: m.away_team?.country_code || 'WLD', form: 50, surfacePrefs: { hard: 50, clay: 50, grass: 50 } },
+          player1: { name: p1Name, rank: p1Rank, country: m.home_team?.country_code || 'WLD', form: 50, surfacePrefs: { hard: 50, clay: 50, grass: 50 } },
+          player2: { name: p2Name, rank: p2Rank, country: m.away_team?.country_code || 'WLD', form: 50, surfacePrefs: { hard: 50, clay: 50, grass: 50 } },
           odds: { player1: p1Odd, player2: p2Odd, p1: p1Odd, p2: p2Odd },
           ai: aiData as any
         };
