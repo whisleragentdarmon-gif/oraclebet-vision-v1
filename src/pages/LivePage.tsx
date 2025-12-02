@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { MatchCard } from '../components/MatchCard';
 import { MatchDetailModal } from '../components/MatchDetailModal';
 import { Match, Circuit } from '../types';
-import { Filter, RefreshCw, CheckCircle, AlertTriangle, Trophy } from 'lucide-react';
+import { Filter, RefreshCw, CheckCircle, AlertTriangle, Trophy, Globe } from 'lucide-react';
 import { useData } from '../context/DataContext';
 
 interface LivePageProps {
@@ -11,15 +11,17 @@ interface LivePageProps {
 }
 
 export const LivePage: React.FC<LivePageProps> = ({ filter, title }) => {
-  const { matches, loading, refreshData } = useData();
+  // On récupère scrapeWebMatches ici
+  const { matches, loading, refreshData, scrapeWebMatches } = useData();
+  
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
   const [circuitFilter, setCircuitFilter] = useState<'ALL' | Circuit>('ALL');
+  const [timeFilter, setTimeFilter] = useState<'ALL' | '6H' | '12H' | '24H'>('ALL');
 
   // --- LOGIQUE DE FILTRAGE ---
   const displayedMatches = matches.filter(m => {
-      // 1. Filtre par Circuit (Si demandé)
+      // 1. Filtre par Circuit
       if (circuitFilter !== 'ALL') {
-          // Astuce pour attraper les ITF/WTA125 même si l'API les nomme différemment
           if (circuitFilter === 'ITF' && !m.tournament.includes('ITF')) return false;
           if (circuitFilter === 'CHALLENGER' && !m.tournament.includes('Challenger')) return false;
           if (circuitFilter === 'WTA' && !m.tournament.includes('WTA')) return false;
@@ -32,42 +34,62 @@ export const LivePage: React.FC<LivePageProps> = ({ filter, title }) => {
       
       // Pour "Aujourd'hui", on affiche tout ce qui n'est pas fini hier
       if (filter === 'TODAY') {
-          const isToday = new Date(m.date).getDate() === new Date().getDate();
+          // On simplifie la date pour comparaison
+          const matchDate = new Date(m.date.split('/').reverse().join('-')); // Si format FR
+          const today = new Date();
+          const isToday = matchDate.getDate() === today.getDate() || m.date === "Auj.";
           return isToday || m.status === 'LIVE';
       }
 
       return true;
   });
 
-  // Compteurs pour le diagnostic
   const countLive = matches.filter(m => m.status === 'LIVE').length;
   const countTotal = matches.length;
 
   return (
     <div>
-      {/* BANDEAU DIAGNOSTIC (REMIS À TA DEMANDE) */}
+      {/* BANDEAU DIAGNOSTIC */}
       <div className={`mb-6 p-4 rounded-xl border flex items-center justify-between font-mono text-xs ${countTotal > 0 ? 'bg-green-900/20 border-green-500 text-green-400' : 'bg-red-900/20 border-red-500 text-red-300'}`}>
           <div className="flex items-center gap-2">
               {countTotal > 0 ? <CheckCircle size={16}/> : <AlertTriangle size={16}/>}
               <span>
-                  API STATUS: {loading ? "CHARGEMENT..." : "CONNECTÉ"} | 
-                  TOTAL REÇU: {countTotal} | 
-                  LIVE ACTUEL: {countLive}
+                  SOURCE: {loading ? "CHARGEMENT..." : "CONNECTÉ"} | 
+                  MATCHS EN MÉMOIRE: {countTotal} | 
+                  EN DIRECT: {countLive}
               </span>
           </div>
-          {countTotal === 0 && !loading && <span>Aucun match reçu. Vérifie ta clé API.</span>}
+          {countTotal === 0 && !loading && <span>Aucun match. Lancez un scan.</span>}
       </div>
 
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
         <div>
-            <h2 className="text-2xl font-bold border-l-4 border-neon pl-4 flex items-center gap-3">
-                {title}
-                <button onClick={refreshData} className="p-2 bg-neutral-800 rounded-full hover:bg-neutral-700 transition-colors">
+            <div className="flex items-center gap-3">
+                <h2 className="text-2xl font-bold border-l-4 border-neon pl-4">
+                    {title}
+                </h2>
+                
+                {/* BOUTON API OFFICIELLE */}
+                <button 
+                    onClick={refreshData} 
+                    className="p-2 bg-neutral-800 rounded-full hover:bg-neutral-700 transition-colors"
+                    title="Actualiser via SportScore (API)"
+                >
                     <RefreshCw size={14} className={loading ? "animate-spin text-neon" : "text-gray-400"} />
                 </button>
-            </h2>
-            <span className="text-sm text-gray-500 font-mono ml-5">
-                {displayedMatches.length} Matchs affichés
+
+                {/* BOUTON GUÉRILLA (SCAN WEB) */}
+                <button 
+                    onClick={scrapeWebMatches} 
+                    className="p-2 bg-blue-900/30 border border-blue-500/30 rounded-full hover:bg-blue-900/50 transition-colors"
+                    title="Scanner le Web (Guérilla - Si API vide)"
+                >
+                    <Globe size={14} className="text-blue-400" />
+                </button>
+            </div>
+            
+            <span className="text-sm text-gray-500 font-mono ml-5 mt-1 block">
+                {displayedMatches.length} affichés
             </span>
         </div>
 
@@ -102,7 +124,7 @@ export const LivePage: React.FC<LivePageProps> = ({ filter, title }) => {
         <div className="flex flex-col items-center justify-center h-64 bg-surface rounded-2xl border border-neutral-800 border-dashed">
           <Filter className="text-gray-600 mb-2" size={32} />
           <p className="text-gray-500">Aucun match ne correspond aux filtres.</p>
-          <p className="text-xs text-gray-600 mt-2">Vérifiez si des matchs sont prévus dans cette catégorie.</p>
+          <p className="text-xs text-gray-600 mt-2">Essayez le bouton Globe 🌍 pour chercher sur le web.</p>
         </div>
       )}
 
