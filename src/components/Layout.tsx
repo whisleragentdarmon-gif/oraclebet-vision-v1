@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Activity, Calendar, Zap, Brain, Share2, ShieldCheck, Menu, X, Wallet, LogOut, History, BrainCircuit } from 'lucide-react';
+import { Calendar, Zap, Brain, Share2, ShieldCheck, Menu, X, Wallet, LogOut, History } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 interface LayoutProps {
@@ -13,16 +13,17 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
   const { logout, user } = useAuth();
 
   const menuItems = [
-    { id: 'live', label: 'En Direct', icon: Activity },
-    { id: 'today', label: 'Aujourd\'hui', icon: Calendar },
-    { id: 'upcoming', label: 'Demain', icon: Zap },
-    { id: 'history', label: 'Résultats', icon: History },
+    // 👇 LE NOUVEL ONGLET PRINCIPAL
+    { id: 'program', label: 'Matchs à Venir', icon: Calendar }, 
+    
+    // Les outils d'analyse
     { id: 'analysis', label: 'Analyse IA', icon: Brain },
     { id: 'combos', label: 'Combinés IA', icon: Share2 },
-    { id: 'bankroll', label: 'Ma Bankroll & Config', icon: Wallet }, // Renommé
+    
+    // La gestion
+    { id: 'history', label: 'Résultats & IA', icon: History },
+    { id: 'bankroll', label: 'Ma Bankroll', icon: Wallet },
     { id: 'vip', label: 'VIP Telegram', icon: ShieldCheck },
-    { id: 'ai-history', label: 'Historique IA', icon: BrainCircuit }, // Importe BrainCircuit de lucide-react
-    // Admin supprimé ici
   ];
 
   const handleNavClick = (id: string) => {
@@ -32,6 +33,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
 
   return (
     <div className="min-h-screen bg-carbon text-gray-100 flex font-sans">
+      
       <div className="md:hidden fixed top-0 w-full z-50 bg-carbon border-b border-neutral-800 p-4 flex justify-between items-center">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded bg-gradient-to-br from-neon to-orange-700 flex items-center justify-center">
@@ -88,10 +90,10 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
                 </div>
                 <div>
                 <p className="text-sm font-medium text-white">{user}</p>
-                <p className="text-xs text-green-500">● Admin</p>
+                <p className="text-xs text-green-500">● Connecté</p>
                 </div>
              </div>
-             <button onClick={logout} className="text-gray-500 hover:text-red-500 transition-colors p-2" title="Déconnexion"><LogOut size={18} /></button>
+             <button onClick={logout} className="text-gray-500 hover:text-red-500 transition-colors p-2"><LogOut size={18} /></button>
           </div>
         </div>
       </aside>
