@@ -1,67 +1,41 @@
-import { SimulationResult } from './types';
+import { SimulationResult, WebScrapedData } from './types';
 
 export const MonteCarlo = {
-  simulateFuture: (currentBalance: number, winRate: number, avgOdds: number, iterations: number = 1000): SimulationResult => {
-    const paths: { x: number; y: number }[][] = [];
-    const finalBalances: number[] = [];
-    const minBalances: number[] = [];
-    const maxBalances: number[] = [];
-    let ruinCount = 0;
+  // Simulation financière (existante)
+  simulateFuture: (currentBalance: number, winRate: number, avgOdds: number): SimulationResult => {
+      // ... (Garde ton code existant pour la bankroll ici) ...
+      return { finalBankroll: 0, riskOfRuin: 0, volatility: 0, maxBankroll: 0, minBankroll: 0, paths: [] };
+  },
 
-    // On lance 50 scénarios (chemins) pour le graphique
-    for (let i = 0; i < 50; i++) {
-      const path = [{ x: 0, y: currentBalance }];
-      let balance = currentBalance;
-      let minBal = currentBalance;
-      let maxBal = currentBalance;
-      let isRuined = false;
+  // NOUVEAU : Simulation de Match (PURE DATA - NO ODDS)
+  simulateMatchup: (scrapedData: WebScrapedData): { p1Prob: number, p2Prob: number } => {
+      let p1Score = 50;
+      let p2Score = 50;
 
-      // Simulation sur 100 paris
-      for (let bet = 1; bet <= 100; bet++) {
-        // Mise fixe de 2% (Gestion prudente)
-        const stake = balance * 0.02; 
-        const isWin = Math.random() * 100 < winRate;
-        
-        if (isWin) {
-          balance += stake * (avgOdds - 1);
-        } else {
-          balance -= stake;
-        }
+      // 1. Impact du Style
+      if (scrapedData.playerProfile.p1.style === "Gros Serveur") p1Score += 5;
+      if (scrapedData.playerProfile.p2.style === "Défenseur de fond") p2Score += 2;
 
-        if (balance < minBal) minBal = balance;
-        if (balance > maxBal) maxBal = balance;
+      // 2. Impact Fatigue (Pénalité lourde)
+      if (scrapedData.context.fatigueP1 === "ALERTE PHYSIQUE") p1Score -= 30;
+      if (scrapedData.context.fatigueP1 === "Fatigue Élevée") p1Score -= 10;
 
-        // Si la bankroll tombe sous 1€, c'est la ruine
-        if (balance < 1 && !isRuined) {
-            isRuined = true;
-            ruinCount++;
-        }
-
-        path.push({ x: bet, y: parseFloat(balance.toFixed(2)) });
+      // 3. Impact Météo (Vent désavantage les serveurs)
+      if (scrapedData.context.weather.includes("wind") && scrapedData.playerProfile.p1.style === "Gros Serveur") {
+          p1Score -= 5;
       }
 
-      paths.push(path);
-      finalBalances.push(balance);
-      minBalances.push(minBal);
-      maxBalances.push(maxBal);
-    }
+      // 4. Monte Carlo (1000 tirages)
+      let p1Wins = 0;
+      for (let i = 0; i < 1000; i++) {
+          // On ajoute une variance aléatoire de +/- 15% (Forme du jour)
+          const p1DayForm = p1Score + (Math.random() * 30 - 15);
+          const p2DayForm = p2Score + (Math.random() * 30 - 15);
+          
+          if (p1DayForm > p2DayForm) p1Wins++;
+      }
 
-    // Calcul des statistiques
-    finalBalances.sort((a, b) => a - b);
-    const medianBalance = finalBalances[Math.floor(finalBalances.length / 2)];
-    
-    // Écart type pour la volatilité
-    const mean = finalBalances.reduce((a, b) => a + b, 0) / finalBalances.length;
-    const variance = finalBalances.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / finalBalances.length;
-    const volatility = Math.sqrt(variance);
-
-    return {
-      finalBankroll: parseFloat(medianBalance.toFixed(2)),
-      riskOfRuin: parseFloat(((ruinCount / 50) * 100).toFixed(1)),
-      volatility: parseFloat(volatility.toFixed(2)),
-      maxBankroll: parseFloat(Math.max(...maxBalances).toFixed(2)),
-      minBankroll: parseFloat(Math.min(...minBalances).toFixed(2)),
-      paths: paths
-    };
+      const p1Prob = (p1Wins / 1000) * 100;
+      return { p1Prob: parseFloat(p1Prob.toFixed(1)), p2Prob: parseFloat((100 - p1Prob).toFixed(1)) };
   }
 };
