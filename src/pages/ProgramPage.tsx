@@ -1,3 +1,10 @@
+{/* Zone d'ajout manuel */}
+      <div className="mb-6">
+          <CustomMatchInput />
+      </div>
+
+      {displayedMatches.length > 0 ? (
+          // ... la grille ...
 import React, { useState } from 'react';
 import { MatchCard } from '../components/MatchCard';
 import { MatchDetailModal } from '../components/MatchDetailModal';
