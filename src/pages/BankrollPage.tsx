@@ -1,3 +1,16 @@
+// ... (Dans BankrollPage, partie Header)
+const { state, updateCurrentBalance } = useBankroll(); // Récupère la nouvelle fonction
+// ...
+<div className="flex items-center gap-3 bg-surface p-2 rounded-xl border border-neutral-800">
+    <span className="text-gray-400 text-xs uppercase px-2">Capital Actuel</span>
+    <input 
+        type="number" 
+        value={state.currentBalance} 
+        onChange={(e) => updateCurrentBalance(parseFloat(e.target.value) || 0)}
+        className="w-24 bg-black/40 border border-neutral-700 rounded px-2 py-1 text-white text-sm font-bold text-right"
+    />
+    <span className="text-white text-sm pr-2">€</span>
+</div>
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { Match } from '../types';
 import { BankrollState, BetRecord, Circuit } from '../engine/types';
