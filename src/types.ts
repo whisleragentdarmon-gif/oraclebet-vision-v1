@@ -1,58 +1,53 @@
-import React, { useState } from 'react';
-import { Layout } from './components/Layout';
-import { ProgramPage } from './pages/ProgramPage'; // 👈 C'est la nouvelle page
-import { AnalysisPage } from './pages/AnalysisPage';
-import { ComboPage } from './pages/ComboPage';
-import { VipPage } from './pages/VipPage';
-import { BankrollPage } from './pages/BankrollPage';
-import { LoginPage } from './pages/LoginPage';
-import { HistoryPage } from './pages/HistoryPage';
-import { BankrollProvider } from './context/BankrollContext';
-import { AuthProvider, useAuth } from './context/AuthContext';
-import { ConfigProvider } from './context/ConfigContext';
-import { DataProvider } from './context/DataContext';
-import { AnalysisProvider } from './context/AnalysisContext';
+// Fichier : src/types.ts
 
-const AuthenticatedApp: React.FC = () => {
-  const { isAuthenticated } = useAuth();
-  // On démarre sur le programme
-  const [activeTab, setActiveTab] = useState('program'); 
+// On importe les définitions techniques depuis le moteur
+import { OddsAnalysis, AIPrediction, PlayerAttributes, Circuit, H2HFullProfile } from './engine/types';
 
-  if (!isAuthenticated) return <LoginPage />;
+// Structure des matchs passés (Historique joueur)
+export interface PastMatch {
+  date: string;
+  tournament: string;
+  surface: 'Hard' | 'Clay' | 'Grass' | 'Indoor';
+  opponent: string;
+  score: string;
+  result: 'W' | 'L';
+}
 
-  const renderContent = () => {
-    switch (activeTab) {
-      case 'program': return <ProgramPage />; // 👈 Nouvelle Page Principale
-      case 'history': return <HistoryPage />;
-      case 'analysis': return <AnalysisPage />;
-      case 'combos': return <ComboPage />;
-      case 'bankroll': return <BankrollPage />;
-      case 'vip': return <VipPage />;
-      default: return <ProgramPage />;
-    }
-  };
+// Structure Joueur
+export interface Player {
+  name: string;
+  rank: number;
+  country: string;
+  form: number;
+  surfacePrefs: { hard: number; clay: number; grass: number };
+  lastMatches?: PastMatch[];
+}
 
-  return (
-    <Layout activeTab={activeTab} onTabChange={setActiveTab}>
-      <div className="animate-fade-in">{renderContent()}</div>
-    </Layout>
-  );
-};
+// Structure Cotes simplifiées
+export interface MatchOdds {
+  player1: number;
+  player2: number;
+  p1: number;
+  p2: number;
+}
 
-const App: React.FC = () => {
-  return (
-    <AuthProvider>
-      <ConfigProvider>
-        <BankrollProvider>
-          <DataProvider>
-            <AnalysisProvider>
-               <AuthenticatedApp />
-            </AnalysisProvider>
-          </DataProvider>
-        </BankrollProvider>
-      </ConfigProvider>
-    </AuthProvider>
-  );
-};
+// On ré-exporte pour que les pages puissent les utiliser
+export type { OddsAnalysis, AIPrediction, PlayerAttributes, Circuit, H2HFullProfile };
 
-export default App;
+// Structure Principale du Match
+export interface Match {
+  id: string;
+  tournament: string;
+  date: string;
+  time: string;
+  status: 'SCHEDULED' | 'LIVE' | 'FINISHED' | 'TODAY' | 'UPCOMING';
+  player1: Player;
+  player2: Player;
+  score?: string;
+  odds: MatchOdds;
+  ai?: AIPrediction;
+  surface: 'Hard' | 'Clay' | 'Grass' | 'Indoor';
+  validationResult?: 'CORRECT' | 'WRONG' | 'PENDING';
+}
+
+export type MatchStatus = Match['status'];
