@@ -1,0 +1,52 @@
+export const MotivationEngine = {
+  analyze: async (player: string, tournament: string): Promise<{ score: number, reason: string, risk: boolean }> => {
+    
+    // Par défaut
+    let motivationScore = 80; // 0 = S'en fout, 100 = Veut mourir sur le terrain
+    let reason = "Tournoi standard.";
+    let risk = false;
+
+    // 1. ANALYSE DU CALENDRIER (Simulation logique)
+    // Si c'est un petit tournoi (250) et que le joueur est Top 20
+    // On baisse la motivation car il se préserve pour les Masters 1000
+    const isBigTournament = tournament.includes("Grand Slam") || tournament.includes("1000") || tournament.includes("Finals");
+    const isSmallTournament = tournament.includes("250") || tournament.includes("Challenger");
+    
+    // On simule une recherche Google pour voir s'il défend des points
+    try {
+        const query = `${player} defending points ${tournament}`;
+        const res = await fetch('/api/search', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query })
+        });
+        const data = await res.json();
+        const snippet = JSON.stringify(data.results || "").toLowerCase();
+
+        // Détection de mots clés
+        if (snippet.includes("defending champion") || snippet.includes("defend points")) {
+            motivationScore = 100;
+            reason = "DÉFEND SON TITRE/POINTS. Motivation Max.";
+        } else if (isSmallTournament && snippet.includes("wild card")) {
+            motivationScore = 60;
+            reason = "Wild Card sur petit tournoi (Risque de test).";
+            risk = true;
+        } else if (isSmallTournament && !isBigTournament) {
+            // Risque de tanking avant un gros tournoi
+            motivationScore = 50;
+            reason = "Petit tournoi avant échéance majeure ? Risque de Tanking.";
+            risk = true;
+        }
+        
+        // Vérification "Prize Money" (L'argent motive les petits joueurs)
+        if (tournament.includes("Challenger") && snippet.includes("prize money")) {
+            motivationScore += 10;
+        }
+
+    } catch (e) {
+        console.error("Erreur Motivation", e);
+    }
+
+    return { score: motivationScore, reason, risk };
+  }
+};
