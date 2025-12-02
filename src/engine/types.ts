@@ -2,8 +2,70 @@
 
 // --- Types de base ---
 export type Circuit = 'ATP' | 'WTA' | 'CHALLENGER' | 'ITF';
-export type RiskLevel = 'SAFE' | 'MODERATE' | 'RISKY' | 'Safe' | 'Moderate' | 'Risky';
+export type RiskLevel = 'SAFE' | 'MODERATE' | 'RISKY' | 'Safe' | 'Moderate' | 'Risky' | 'NO_BET';
 export type PlayerStyle = 'Aggressive' | 'Defensive' | 'ServeVolley' | 'Balanced';
+
+// --- Données Scrapées sur le Web (God Mode) ---
+export interface WebScrapedData {
+  playerProfile: {
+    p1: { style: string; strengths: string; weaknesses: string; mental: string };
+    p2: { style: string; strengths: string; weaknesses: string; mental: string };
+  };
+  h2hReal: {
+    totalMatches: number;
+    p1Wins: number;
+    p2Wins: number;
+    lastMeeting: string;
+    surfaceFavorite: string;
+  };
+  surfaceStats: {
+    p1WinRate: number;
+    p2WinRate: number;
+    trend: string;
+  };
+  context: {
+    weather: string;
+    fatigueP1: string; // "Frais", "Modéré", "Épuisé"
+    fatigueP2: string;
+    scandal: string | null;
+  };
+  social: {
+    sentimentP1: 'POSITIVE' | 'NEGATIVE' | 'NEUTRAL';
+    sentimentP2: 'POSITIVE' | 'NEGATIVE' | 'NEUTRAL';
+  };
+}
+
+// --- Structure du Profil H2H (Pour le tableau d'affichage) ---
+export interface H2HFullProfile {
+  p1: {
+    age: string;
+    height: string;
+    rank: string;
+    plays: string;
+    style: string;
+    nationality: string;
+  };
+  p2: {
+    age: string;
+    height: string;
+    rank: string;
+    plays: string;
+    style: string;
+    nationality: string;
+  };
+  h2hMatches: { date: string; winner: string; score: string; surface: string }[];
+  surfaceStats: {
+    clay: { p1: string, p2: string };
+    hard: { p1: string, p2: string };
+    grass: { p1: string, p2: string };
+  };
+  context: {
+    weather: string;
+    altitude: string;
+    motivation: string;
+  };
+  sources: string[];
+}
 
 // --- IA & Apprentissage ---
 export interface AIModelWeights {
@@ -29,7 +91,16 @@ export interface LearningExperience {
   weightsUsed?: any;
 }
 
-// --- Joueurs & Attributs ---
+// --- Joueurs & Matchs Passés ---
+export interface PastMatch {
+  date: string;
+  tournament: string;
+  surface: 'Hard' | 'Clay' | 'Grass' | 'Indoor';
+  opponent: string;
+  score: string;
+  result: 'W' | 'L';
+}
+
 export interface PlayerAttributes {
   power: number;
   serve: number;
@@ -38,6 +109,15 @@ export interface PlayerAttributes {
   form: number;
   stamina?: number;
   speed?: number;
+}
+
+export interface Player {
+  name: string;
+  rank: number;
+  country: string;
+  form: number;
+  surfacePrefs: { hard: number; clay: number; grass: number };
+  lastMatches?: PastMatch[]; 
 }
 
 // --- Cotes & Bookmakers ---
@@ -138,7 +218,17 @@ export interface AIPrediction {
   qualitativeAnalysis?: string;
   structuralAnalysis?: string;
   quantitativeAnalysis?: string;
-  oddsAnalysis?: OddsAnalysis; 
+  oddsAnalysis?: OddsAnalysis;
+  // Ajout pour le God Mode
+  godModeAnalysis?: {
+      social: any;
+      geo: any;
+      trap: any;
+      injuryAlert: boolean;
+      injuryDetails?: string;
+      h2hProfile?: H2HFullProfile;
+      realProb?: { p1Prob: number, p2Prob: number };
+  };
 }
 
 export interface LiveUpdatePayload {
@@ -162,7 +252,6 @@ export interface ComboSelection {
 }
 
 export interface ComboStrategy {
-  // 👇 AJOUT DE 'Lotto' ICI
   type: 'Safe' | 'Balanced' | 'Value' | 'Oracle Ultra Premium' | 'Lotto';
   selections: ComboSelection[];
   combinedOdds: number;
@@ -173,107 +262,27 @@ export interface ComboStrategy {
 }
 
 export type ComboStrategyResult = ComboStrategy;
-// --- EXTENSION GOD MODE (DATA MARKET) ---
 
-// 1. Module Presse & Scandales
-export interface PressAnalysis {
-  sentimentScore: number; // -100 (Haine) à +100 (Adoration)
-  scandalAlert: boolean;
-  mentalPressureIndex: number; // 0-100
-  recentQuotes: { source: string; text: string; sentiment: 'POSITIVE' | 'NEGATIVE' | 'NEUTRAL' }[];
-  rumors: string[]; // ex: "Rumeur de blessure épaule"
+export interface MatchOdds {
+  player1: number;
+  player2: number;
+  p1: number;
+  p2: number;
 }
 
-// 2. Module Social Media
-export interface SocialSentiment {
-  twitterHype: number; // Volume de discussion
-  redditMood: 'BULLISH' | 'BEARISH' | 'TOXIC';
-  instagramActivity: string; // "Normal", "Absent", "Party Mode"
-  publicBettingTrend: number; // % des parieurs sur ce joueur
+export interface Match {
+  id: string;
+  tournament: string;
+  date: string;
+  time: string;
+  status: 'SCHEDULED' | 'LIVE' | 'FINISHED' | 'TODAY' | 'UPCOMING';
+  player1: Player;
+  player2: Player;
+  score?: string;
+  odds: MatchOdds;
+  ai?: AIPrediction;
+  surface: 'Hard' | 'Clay' | 'Grass' | 'Indoor';
+  validationResult?: 'CORRECT' | 'WRONG' | 'PENDING';
 }
 
-// 3. Module Fatigue & Voyage
-export interface FatigueData {
-  travelDistance: number; // km parcourus cette semaine
-  timeZoneChange: number; // Heures de décalage
-  hoursOnCourt: number; // Cumul 7 jours
-  physioCalls: number; // Appels kiné derniers matchs
-  fatigueScore: number; // 0 (Frais) - 100 (Épuisé)
-}
-
-// 4. Module Météo & Conditions (Geo)
-export interface GeoCondition {
-  altitude: number; // Mètres (impacte vitesse balle)
-  humidity: number; // %
-  windSpeed: number; // km/h
-  courtSpeedIndex: number; // 1-100 (Calculé via météo + surface)
-  ballType: string; // "Wilson US Open", "Dunlop Fort"...
-  isIndoor: boolean;
-}
-
-// 5. Profilage Stylistique
-export type PlayerArchetype = 'BIG_SERVER' | 'DEFENSIVE_GRINDER' | 'AGGRESSIVE_BASELINER' | 'ALL_ROUNDER' | 'SERVE_VOLLEY';
-
-export interface StyleMatchup {
-  p1Style: PlayerArchetype;
-  p2Style: PlayerArchetype;
-  compatibilityNote: string; // ex: "Le serveur est désavantagé par le retourneur sur terre battue"
-  tacticalAdvantage: 'P1' | 'P2' | 'NEUTRAL';
-}
-
-// --- MISE À JOUR DU MATCH (Extension) ---
-// On ajoute ces champs optionnels à AIPrediction dans src/engine/types.ts
-// (Tu n'as pas besoin de remplacer tout le fichier, juste d'ajouter ces champs à l'interface AIPrediction existante)
-/*
-export interface AIPrediction {
-  // ... tes champs existants ...
-  
-  // Nouveaux champs GOD MODE :
-  godModeAnalysis?: {
-    press?: PressAnalysis;
-    social?: SocialSentiment;
-    fatigue?: { p1: FatigueData, p2: FatigueData };
-    conditions?: GeoCondition;
-    style?: StyleMatchup;
-    globalConfidence: number; // Score final pondéré
-    noBetReason?: string; // Si Trap Detector activé
-  };
-}
-*/
-// --- EXTENSION H2H AUTO-FETCH ---
-export interface H2HFullProfile {
-  p1: {
-    age: string;
-    height: string;
-    rank: string;
-    plays: string; // Droitier/Gaucher
-    style: string;
-    nationality: string;
-  };
-  p2: {
-    age: string;
-    height: string;
-    rank: string;
-    plays: string;
-    style: string;
-    nationality: string;
-  };
-  h2hMatches: { date: string; winner: string; score: string; surface: string }[];
-  surfaceStats: {
-    clay: { p1: string, p2: string };
-    hard: { p1: string, p2: string };
-    grass: { p1: string, p2: string };
-  };
-  context: {
-    weather: string;
-    altitude: string;
-    motivation: string;
-  };
-  sources: string[]; // Liens trouvés
-}
-
-// Mise à jour de l'objet d'analyse pour inclure le H2H
-/*
- * Note: Ajoute 'h2hProfile?: H2HFullProfile;' dans l'interface AIPrediction existante
- * si tu veux le typer strictement, sinon on le passera via godModeAnalysis.
- */
+export type MatchStatus = Match['status'];
