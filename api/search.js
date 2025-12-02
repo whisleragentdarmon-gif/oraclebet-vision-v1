@@ -1,5 +1,5 @@
 export default async function handler(req, res) {
-  // 👇 COLLE TA CLÉ SERPER ICI
+  // TA CLÉ SERPER (C'est la bonne)
   const API_KEY = 'da8db13df8b4724e5b2588f0df9a1962f2b5274a'; 
 
   const { query } = req.body;
@@ -15,7 +15,9 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         q: query,
-        num: 3, // On veut les 3 premiers résultats
+        // 👇 MODIFICATION IMPORTANTE : ON PASSE À 10
+        // Plus de résultats = Plus de chance que le Scraper trouve des matchs "Nom - Nom"
+        num: 10, 
         gl: 'fr', // Google France
         hl: 'fr'  // Langue Français
       })
@@ -23,7 +25,7 @@ export default async function handler(req, res) {
 
     const data = await response.json();
     
-    // On extrait juste ce qui nous intéresse (Titres et petits résumés)
+    // Extraction propre
     const snippets = data.organic?.map(item => ({
       title: item.title,
       snippet: item.snippet,
@@ -33,6 +35,7 @@ export default async function handler(req, res) {
     res.status(200).json({ results: snippets });
 
   } catch (error) {
+    console.error("Erreur Search API:", error);
     res.status(500).json({ error: "Erreur recherche Google", details: error.message });
   }
 }
