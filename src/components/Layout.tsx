@@ -13,16 +13,14 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
   const { logout, user } = useAuth();
 
   const menuItems = [
-    // 👇 LE NOUVEL ONGLET PRINCIPAL
+    // 👇 LE NOUVEL ONGLET UNIQUE (Remplace Live/Today/Tomorrow)
     { id: 'program', label: 'Matchs à Venir', icon: Calendar }, 
     
-    // Les outils d'analyse
     { id: 'analysis', label: 'Analyse IA', icon: Brain },
     { id: 'combos', label: 'Combinés IA', icon: Share2 },
     
-    // La gestion
     { id: 'history', label: 'Résultats & IA', icon: History },
-    { id: 'bankroll', label: 'Ma Bankroll', icon: Wallet },
+    { id: 'bankroll', label: 'Ma Bankroll & Config', icon: Wallet },
     { id: 'vip', label: 'VIP Telegram', icon: ShieldCheck },
   ];
 
