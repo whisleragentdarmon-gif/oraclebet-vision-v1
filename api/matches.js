@@ -3,7 +3,10 @@ export default async function handler(req, res) {
   const API_KEY = 'd95f9c6d94msh91b4f8d1ad05d42p1353acjsnc68090e28eb2'; 
   const API_HOST = 'sportscore1.p.rapidapi.com';
 
-  const formatDate = (date) => date.toISOString().split('T')[0];
+ // Fonction corrigée pour gérer le fuseau horaire
+  const formatDate = (date) => {
+      return date.toLocaleDateString('fr-CA'); // Format YYYY-MM-DD respectant le fuseau local du serveur
+  };
 
   const today = new Date();
   const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1);
