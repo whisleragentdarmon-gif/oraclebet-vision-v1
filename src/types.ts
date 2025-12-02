@@ -5,8 +5,8 @@ import {
   PlayerAttributes, 
   Circuit, 
   H2HFullProfile, 
-  HumanFactors, // 👈 AJOUTÉ
-  WebScrapedData, // 👈 AJOUTÉ
+  HumanFactors, // 👈 IL FAUT L'IMPORTER ICI
+  WebScrapedData, 
   ComboStrategy,
   ComboSelection
 } from './engine/types';
@@ -37,14 +37,14 @@ export interface MatchOdds {
   p2: number;
 }
 
-// 👇 C'EST ICI QUE CA MANQUAIT : On ré-exporte tout pour que les autres fichiers les trouvent
+// 👇 ET IL FAUT L'EXPORTER ICI POUR QUE H2HENGINE LE TROUVE
 export type { 
   AIPrediction, 
   OddsAnalysis, 
   PlayerAttributes, 
   Circuit, 
   H2HFullProfile, 
-  HumanFactors,
+  HumanFactors, // ✅ Ajouté
   WebScrapedData,
   ComboStrategy,
   ComboSelection
