@@ -1,22 +1,92 @@
 export const MotivationEngine = {
+  /**
+   * Analyse la motivation d'un joueur pour un tournoi donné.
+   * Détecte le "Tanking" (laisser filer le match) avant les grands événements.
+   */
   analyze: async (player: string, tournament: string): Promise<{ score: number, reason: string, risk: boolean }> => {
-    // Par défaut
-    let motivationScore = 80; 
-    let reason = "Tournoi standard.";
+    
+    // --- 1. CONFIGURATION DE BASE ---
+    let motivationScore = 80; // 80/100 est la base pour un pro
+    let reason = "Contexte standard.";
     let risk = false;
 
-    const isBigTournament = tournament.includes("Grand Slam") || tournament.includes("1000") || tournament.includes("Finals");
-    const isSmallTournament = tournament.includes("250") || tournament.includes("Challenger");
-    
-    if (isBigTournament) {
+    // Détection du type de tournoi
+    const t = tournament.toLowerCase();
+    const isGrandSlam = t.includes("grand slam") || t.includes("open") && (t.includes("us") || t.includes("australian") || t.includes("french") || t.includes("wimbledon"));
+    const isMasters1000 = t.includes("1000") || t.includes("masters");
+    const isFinals = t.includes("finals");
+    const isSmallTournament = t.includes("250") || t.includes("challenger");
+
+    // --- 2. LOGIQUE STATIQUE (HIERARCHIE) ---
+    if (isGrandSlam || isFinals) {
         motivationScore = 100;
-        reason = "DÉFEND SON TITRE/POINTS. Motivation Max.";
+        reason = "TOURNOI MAJEUR : Motivation Maximale (Grand Chelem/Finals).";
+    } else if (isMasters1000) {
+        motivationScore = 95;
+        reason = "Masters 1000 : Points et Prize Money cruciaux.";
     } else if (isSmallTournament) {
-        motivationScore = 60;
-        reason = "Petit tournoi : risque de baisse d'intensité.";
-        risk = true;
+        // Par défaut, un petit tournoi est moins motivant pour un Top Player
+        motivationScore = 70; 
+        reason = "Tournoi mineur. Vigilance requise.";
     }
 
-    return { score: motivationScore, reason, risk };
+    // --- 3. RECHERCHE DYNAMIQUE (LE "INSIDER") ---
+    // On va vérifier sur le web si le joueur défend des points ou s'il s'en fiche
+    try {
+        const query = `${player} defending points ${tournament} tennis news motivation`;
+        
+        // Appel à ton API de recherche (Google Serper)
+        const res = await fetch('/api/search', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query })
+        });
+        
+        const data = await res.json();
+        // On combine tous les titres et snippets trouvés pour l'analyse
+        const text = JSON.stringify(data.results || []).toLowerCase();
+
+        // SCÉNARIO A : DÉFENSE DE TITRE (Le joueur doit gagner pour garder son classement)
+        if (text.includes("defending champion") || text.includes("defend points") || text.includes("won last year")) {
+            motivationScore = 100;
+            reason = "DÉFENSE DE TITRE : Le joueur joue sa survie au classement.";
+            risk = false;
+        } 
+        
+        // SCÉNARIO B : TANKING AVANT GROS TOURNOI
+        // Si on est dans un petit tournoi et qu'il y a un Grand Chelem la semaine prochaine (souvent mentionné dans les news)
+        else if (isSmallTournament && (text.includes("prep for") || text.includes("focus on slam") || text.includes("next week"))) {
+            motivationScore = 40;
+            reason = "ALERTE TANKING : Joue ce tournoi pour s'échauffer avant un Majeur.";
+            risk = true;
+        }
+
+        // SCÉNARIO C : WILD CARD / APPARITION (Le joueur vient prendre le chèque)
+        else if (text.includes("wild card") && isSmallTournament) {
+            motivationScore = 60;
+            reason = "Wild Card : Présence commerciale ou retour de blessure ?";
+            risk = true; // Un peu risqué
+        }
+
+        // SCÉNARIO D : PRIZE MONEY (Pour les Challengers, l'argent motive les "petits")
+        else if (t.includes("challenger") && !risk) {
+            // Pas de modification majeure, mais on note que pour un challenger, c'est la survie financière
+            motivationScore += 5;
+            reason = "Circuit Challenger : Besoin de points et d'argent.";
+        }
+
+    } catch (e) {
+        console.error("Erreur MotivationEngine (API Search)", e);
+        // En cas d'erreur, on garde l'analyse statique
+    }
+
+    // Bornage du score entre 0 et 100
+    motivationScore = Math.min(100, Math.max(0, motivationScore));
+
+    return { 
+        score: motivationScore, 
+        reason: reason, 
+        risk: risk || motivationScore < 50 
+    };
   }
 };
