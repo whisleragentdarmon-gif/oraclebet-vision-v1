@@ -1,59 +1,52 @@
 import React, { useState } from 'react';
-import { PlusCircle, Search, Save, X, Loader2 } from 'lucide-react';
+import { PlusCircle, Search, Save, X, Loader2, FileText } from 'lucide-react';
 import { useData } from '../context/DataContext';
 import { H2HEngine } from '../engine/market/H2HEngine';
+import { FullMatchDossier } from '../engine/types';
 
 export const CustomMatchInput: React.FC = () => {
   const { addCustomMatch } = useData();
   
-  const [step, setStep] = useState<'INPUT' | 'LOADING' | 'EDIT'>('INPUT');
+  const [step, setStep] = useState<'INPUT' | 'LOADING' | 'DOSSIER'>('INPUT');
   const [p1Name, setP1Name] = useState('');
   const [p2Name, setP2Name] = useState('');
-  
-  // Les données scrappées qu'on va éditer
-  const [draftData, setDraftData] = useState<any>(null);
+  const [dossier, setDossier] = useState<FullMatchDossier | null>(null);
 
-  const startScan = async () => {
+  const startInvestigation = async () => {
     if (!p1Name || !p2Name) return;
     setStep('LOADING');
-    
-    // On lance le scraper
-    const profile = await H2HEngine.fetchFullProfile(p1Name, p2Name, "Tournoi Inconnu");
-    
-    // On prépare les données pour le formulaire
-    setDraftData({
-        p1: { name: p1Name, rank: profile.p1.rank, clay: profile.surfaceStats.clay.p1, hard: profile.surfaceStats.hard.p1 },
-        p2: { name: p2Name, rank: profile.p2.rank, clay: profile.surfaceStats.clay.p2, hard: profile.surfaceStats.hard.p2 },
-        context: { weather: "Ensoleillé", surface: "Clay" }
-    });
-    
-    setStep('EDIT');
+    const result = await H2HEngine.buildDossier(p1Name, p2Name);
+    setDossier(result);
+    setStep('DOSSIER');
   };
 
-  const handleFinalize = () => {
-      // On envoie tout à la fonction de création
-      addCustomMatch(draftData);
-      reset();
+  const handleFieldChange = (section: string, field: string, value: string, sub?: string) => {
+      if (!dossier) return;
+      const newDossier = { ...dossier };
+      if (sub) newDossier[section][sub][field] = value;
+      else newDossier[section][field] = value;
+      setDossier(newDossier);
   };
 
-  const reset = () => {
+  const finalize = () => {
+      // On envoie le dossier complet au système
+      // (Note: il faut adapter addCustomMatch dans DataContext pour accepter 'dossier')
+      addCustomMatch({ p1: dossier?.identity.p1Name, p2: dossier?.identity.p2Name, dossier }); 
       setStep('INPUT');
-      setP1Name('');
-      setP2Name('');
-      setDraftData(null);
+      setP1Name(''); setP2Name('');
   };
 
   if (step === 'INPUT') {
       return (
-        <div className="bg-surface border border-neon/30 p-4 rounded-xl animate-fade-in mb-6">
-            <h3 className="text-white font-bold mb-3 text-sm flex items-center gap-2"><PlusCircle size={16}/> Ajout & Scan Intelligent</h3>
-            <div className="flex gap-2">
-                <input type="text" placeholder="Joueur 1" value={p1Name} onChange={e=>setP1Name(e.target.value)} className="flex-1 bg-black/40 border border-neutral-700 rounded p-2 text-white text-sm"/>
-                <span className="text-gray-500 self-center">vs</span>
-                <input type="text" placeholder="Joueur 2" value={p2Name} onChange={e=>setP2Name(e.target.value)} className="flex-1 bg-black/40 border border-neutral-700 rounded p-2 text-white text-sm"/>
+        <div className="bg-surface border border-neon/30 p-6 rounded-xl mb-6 text-center">
+            <h3 className="text-white font-bold mb-4 text-lg">NOUVELLE ENQUÊTE</h3>
+            <div className="flex gap-4 mb-4">
+                <input type="text" placeholder="Joueur A" value={p1Name} onChange={e=>setP1Name(e.target.value)} className="flex-1 bg-black/40 border border-neutral-700 rounded-lg p-3 text-white text-center font-bold"/>
+                <span className="text-gray-500 self-center text-xl">VS</span>
+                <input type="text" placeholder="Joueur B" value={p2Name} onChange={e=>setP2Name(e.target.value)} className="flex-1 bg-black/40 border border-neutral-700 rounded-lg p-3 text-white text-center font-bold"/>
             </div>
-            <button onClick={startScan} disabled={!p1Name || !p2Name} className="w-full mt-3 bg-neon hover:bg-neonHover text-black font-bold py-2 rounded text-sm flex items-center justify-center gap-2">
-                <Search size={16}/> Scanner & Pré-remplir
+            <button onClick={startInvestigation} disabled={!p1Name || !p2Name} className="w-full bg-neon hover:bg-neonHover text-black font-bold py-3 rounded-lg flex items-center justify-center gap-2 shadow-lg">
+                <Search size={20}/> LANCER L'INVESTIGATION WEB
             </button>
         </div>
       );
@@ -61,64 +54,93 @@ export const CustomMatchInput: React.FC = () => {
 
   if (step === 'LOADING') {
       return (
-        <div className="bg-surface border border-neutral-800 p-6 rounded-xl mb-6 flex flex-col items-center justify-center text-center">
-            <Loader2 size={32} className="text-neon animate-spin mb-2"/>
-            <p className="text-white font-bold">L'Oracle scanne le web...</p>
-            <p className="text-xs text-gray-500">Récupération Rankings, Stats Surface, H2H...</p>
+        <div className="bg-surface border border-neutral-800 p-8 rounded-xl mb-6 flex flex-col items-center justify-center text-center">
+            <Loader2 size={48} className="text-neon animate-spin mb-4"/>
+            <p className="text-white font-bold text-lg">Création du Dossier Criminel...</p>
+            <p className="text-sm text-gray-500">Scraping H2H, Météo, Scandales, Blessures.</p>
         </div>
       );
   }
 
-  // STEP EDIT : On affiche le formulaire pour corriger/compléter
+  // --- LE DOSSIER GÉANT ---
   return (
-    <div className="bg-surface border border-blue-500/30 p-4 rounded-xl animate-fade-in mb-6">
-        <div className="flex justify-between items-center mb-4 border-b border-neutral-800 pb-2">
-            <h3 className="text-blue-400 font-bold text-sm">Vérification des Données</h3>
-            <button onClick={reset}><X size={16} className="text-gray-500 hover:text-white"/></button>
+    <div className="bg-surface border border-neutral-700 p-6 rounded-xl mb-6 animate-fade-in">
+        <div className="flex justify-between items-center mb-6 border-b border-neutral-700 pb-4">
+            <h2 className="text-2xl font-bold text-white flex items-center gap-2"><FileText className="text-neon"/> FICHE MATCH – ORACLEBET</h2>
+            <button onClick={() => setStep('INPUT')}><X className="text-gray-500 hover:text-white"/></button>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 mb-4">
-            {/* JOUEUR 1 */}
-            <div className="space-y-2">
-                <p className="font-bold text-white text-center">{draftData.p1.name}</p>
-                <div className="flex gap-2">
-                    <input type="text" value={draftData.p1.rank} onChange={e => setDraftData({...draftData, p1: {...draftData.p1, rank: e.target.value}})} className="w-1/2 bg-black/40 border border-neutral-700 rounded p-1 text-xs text-center" placeholder="Rang"/>
-                    <div className="text-gray-500 text-xs self-center">ATP</div>
+        <div className="grid grid-cols-2 gap-8">
+            {/* COLONNE GAUCHE */}
+            <div className="space-y-6">
+                
+                {/* 1. IDENTITÉ */}
+                <div className="bg-black/20 p-4 rounded-lg border border-neutral-800">
+                    <h4 className="text-neon text-xs font-bold mb-3 uppercase">1. Identité Match</h4>
+                    <div className="grid grid-cols-2 gap-2">
+                        <input value={dossier?.identity.tournament} onChange={e=>handleFieldChange('identity','tournament',e.target.value)} className="bg-neutral-900 border-neutral-700 rounded p-1 text-xs text-white" placeholder="Tournoi"/>
+                        <input value={dossier?.identity.surface} onChange={e=>handleFieldChange('identity','surface',e.target.value)} className="bg-neutral-900 border-neutral-700 rounded p-1 text-xs text-white" placeholder="Surface"/>
+                    </div>
                 </div>
-                <p className="text-[10px] text-gray-400 uppercase">Winrate Surface (%)</p>
-                <div className="flex gap-1">
-                    <input type="number" value={draftData.p1.clay} onChange={e => setDraftData({...draftData, p1: {...draftData.p1, clay: e.target.value}})} className="w-1/2 bg-black/40 border border-orange-900 rounded p-1 text-xs text-center text-orange-400" placeholder="Terre"/>
-                    <input type="number" value={draftData.p1.hard} onChange={e => setDraftData({...draftData, p1: {...draftData.p1, hard: e.target.value}})} className="w-1/2 bg-black/40 border border-blue-900 rounded p-1 text-xs text-center text-blue-400" placeholder="Dur"/>
+
+                {/* 2. PROFILS */}
+                <div className="bg-black/20 p-4 rounded-lg border border-neutral-800">
+                    <h4 className="text-blue-400 text-xs font-bold mb-3 uppercase">2. Profils Joueurs</h4>
+                    <div className="grid grid-cols-3 gap-2 text-center text-xs mb-2 font-bold text-gray-500">
+                        <span>{dossier?.identity.p1Name}</span>
+                        <span>DATA</span>
+                        <span>{dossier?.identity.p2Name}</span>
+                    </div>
+                    {['rank','age','height','style','injury','motivation'].map(field => (
+                        <div key={field} className="grid grid-cols-3 gap-2 mb-2">
+                            <input value={dossier?.profiles.p1[field]} onChange={e=>handleFieldChange('profiles',field,e.target.value, 'p1')} className="bg-neutral-900 border-neutral-700 rounded p-1 text-xs text-white text-center"/>
+                            <span className="text-gray-600 text-[10px] uppercase self-center text-center">{field}</span>
+                            <input value={dossier?.profiles.p2[field]} onChange={e=>handleFieldChange('profiles',field,e.target.value, 'p2')} className="bg-neutral-900 border-neutral-700 rounded p-1 text-xs text-white text-center"/>
+                        </div>
+                    ))}
                 </div>
+
+                {/* 3. H2H */}
+                <div className="bg-black/20 p-4 rounded-lg border border-neutral-800">
+                    <h4 className="text-purple-400 text-xs font-bold mb-3 uppercase">3. Head-to-Head</h4>
+                    <textarea value={dossier?.h2h.global} onChange={e=>handleFieldChange('h2h','global',e.target.value)} className="w-full bg-neutral-900 border-neutral-700 rounded p-2 text-xs text-white h-20"/>
+                </div>
+
             </div>
 
-            {/* JOUEUR 2 */}
-            <div className="space-y-2">
-                <p className="font-bold text-white text-center">{draftData.p2.name}</p>
-                <div className="flex gap-2">
-                    <input type="text" value={draftData.p2.rank} onChange={e => setDraftData({...draftData, p2: {...draftData.p2, rank: e.target.value}})} className="w-1/2 bg-black/40 border border-neutral-700 rounded p-1 text-xs text-center" placeholder="Rang"/>
-                    <div className="text-gray-500 text-xs self-center">ATP</div>
+            {/* COLONNE DROITE */}
+            <div className="space-y-6">
+                
+                {/* 4. CONDITIONS */}
+                <div className="bg-black/20 p-4 rounded-lg border border-neutral-800">
+                    <h4 className="text-yellow-400 text-xs font-bold mb-3 uppercase">4. Conditions Externes</h4>
+                    <div className="grid grid-cols-2 gap-2">
+                        <input value={dossier?.conditions.weather} onChange={e=>handleFieldChange('conditions','weather',e.target.value)} className="bg-neutral-900 border-neutral-700 rounded p-1 text-xs text-white"/>
+                        <input value={dossier?.conditions.wind} onChange={e=>handleFieldChange('conditions','wind',e.target.value)} className="bg-neutral-900 border-neutral-700 rounded p-1 text-xs text-white"/>
+                    </div>
                 </div>
-                <p className="text-[10px] text-gray-400 uppercase">Winrate Surface (%)</p>
-                <div className="flex gap-1">
-                    <input type="number" value={draftData.p2.clay} onChange={e => setDraftData({...draftData, p2: {...draftData.p2, clay: e.target.value}})} className="w-1/2 bg-black/40 border border-orange-900 rounded p-1 text-xs text-center text-orange-400" placeholder="Terre"/>
-                    <input type="number" value={draftData.p2.hard} onChange={e => setDraftData({...draftData, p2: {...draftData.p2, hard: e.target.value}})} className="w-1/2 bg-black/40 border border-blue-900 rounded p-1 text-xs text-center text-blue-400" placeholder="Dur"/>
+
+                {/* 6. BOOKMAKERS */}
+                <div className="bg-black/20 p-4 rounded-lg border border-neutral-800">
+                    <h4 className="text-green-400 text-xs font-bold mb-3 uppercase">6. Analyse Bookmaker</h4>
+                    <div className="grid grid-cols-2 gap-2">
+                         <input value={dossier?.bookmakers.p1Odds} onChange={e=>handleFieldChange('bookmakers','p1Odds',e.target.value)} className="bg-neutral-900 border-neutral-700 rounded p-1 text-xs text-white font-mono" placeholder="Cote 1"/>
+                         <input value={dossier?.bookmakers.p2Odds} onChange={e=>handleFieldChange('bookmakers','p2Odds',e.target.value)} className="bg-neutral-900 border-neutral-700 rounded p-1 text-xs text-white font-mono" placeholder="Cote 2"/>
+                    </div>
+                    <textarea value={dossier?.bookmakers.trapIndicator} onChange={e=>handleFieldChange('bookmakers','trapIndicator',e.target.value)} className="w-full bg-neutral-900 border-neutral-700 rounded p-2 text-xs text-red-300 mt-2 h-16" placeholder="Piège ?"/>
+                </div>
+
+                {/* 8. SYNTHÈSE */}
+                <div className="bg-black/20 p-4 rounded-lg border border-neutral-800">
+                    <h4 className="text-white text-xs font-bold mb-3 uppercase">8. Synthèse Factuelle</h4>
+                    <input value={dossier?.synthesis.statAdvantage} onChange={e=>handleFieldChange('synthesis','statAdvantage',e.target.value)} className="w-full bg-neutral-900 border-neutral-700 rounded p-1 text-xs text-white mb-2"/>
+                    <input value={dossier?.synthesis.physicalAdvantage} onChange={e=>handleFieldChange('synthesis','physicalAdvantage',e.target.value)} className="w-full bg-neutral-900 border-neutral-700 rounded p-1 text-xs text-white"/>
                 </div>
             </div>
         </div>
 
-        {/* CONTEXTE */}
-        <div className="bg-black/20 p-2 rounded mb-4 flex gap-4">
-            <select value={draftData.context.surface} onChange={e => setDraftData({...draftData, context: {...draftData.context, surface: e.target.value}})} className="bg-neutral-800 text-white text-xs p-1 rounded border border-neutral-700">
-                <option value="Clay">Terre Battue</option>
-                <option value="Hard">Dur</option>
-                <option value="Grass">Gazon</option>
-            </select>
-             <input type="text" value={draftData.context.weather} onChange={e => setDraftData({...draftData, context: {...draftData.context, weather: e.target.value}})} className="flex-1 bg-neutral-800 border border-neutral-700 rounded p-1 text-xs text-white" placeholder="Météo (ex: Vent fort)"/>
-        </div>
-
-        <button onClick={handleFinalize} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 rounded-lg text-sm flex items-center justify-center gap-2 shadow-lg">
-            <Save size={16}/> VALIDER & ANALYSER
+        <button onClick={finalize} className="w-full mt-6 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold py-4 rounded-xl shadow-xl hover:scale-[1.02] transition-transform">
+            VALIDER & LANCER LE GOD MODE (PRÉDICTION)
         </button>
     </div>
   );
