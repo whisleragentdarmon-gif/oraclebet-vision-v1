@@ -1,9 +1,17 @@
-// Fichier : src/types.ts
+// On importe les définitions depuis le moteur
+import { 
+  OddsAnalysis, 
+  AIPrediction, 
+  PlayerAttributes, 
+  Circuit, 
+  H2HFullProfile, 
+  HumanFactors, // 👈 AJOUTÉ
+  WebScrapedData, // 👈 AJOUTÉ
+  ComboStrategy,
+  ComboSelection
+} from './engine/types';
 
-// On importe les définitions techniques depuis le moteur
-import { OddsAnalysis, AIPrediction, PlayerAttributes, Circuit, H2HFullProfile } from './engine/types';
-
-// Structure des matchs passés (Historique joueur)
+// Structure des matchs passés
 export interface PastMatch {
   date: string;
   tournament: string;
@@ -13,17 +21,15 @@ export interface PastMatch {
   result: 'W' | 'L';
 }
 
-// Structure Joueur
 export interface Player {
   name: string;
   rank: number;
   country: string;
   form: number;
   surfacePrefs: { hard: number; clay: number; grass: number };
-  lastMatches?: PastMatch[];
+  lastMatches?: PastMatch[]; 
 }
 
-// Structure Cotes simplifiées
 export interface MatchOdds {
   player1: number;
   player2: number;
@@ -31,10 +37,19 @@ export interface MatchOdds {
   p2: number;
 }
 
-// On ré-exporte pour que les pages puissent les utiliser
-export type { OddsAnalysis, AIPrediction, PlayerAttributes, Circuit, H2HFullProfile };
+// 👇 C'EST ICI QUE CA MANQUAIT : On ré-exporte tout pour que les autres fichiers les trouvent
+export type { 
+  AIPrediction, 
+  OddsAnalysis, 
+  PlayerAttributes, 
+  Circuit, 
+  H2HFullProfile, 
+  HumanFactors,
+  WebScrapedData,
+  ComboStrategy,
+  ComboSelection
+};
 
-// Structure Principale du Match
 export interface Match {
   id: string;
   tournament: string;
