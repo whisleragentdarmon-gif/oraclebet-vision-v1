@@ -14,47 +14,57 @@ export const MatchService = {
     try {
       const response = await fetch('/api/matches');
       const json = await response.json();
-
       if (!json.data) return [];
 
-      // 1. FILTRE STRICT : On ne garde que le Tennis (sport_id 2)
-      // On exclut aussi les matchs sans noms de joueurs (parfois des bugs de l'API)
-      const tennisMatches = json.data.filter((m: any) => 
-          m.sport_id === 2 && 
-          m.home_team?.name && 
-          m.away_team?.name
-      );
-
-      const realMatches: Match[] = tennisMatches.map((m: any) => {
-        const p1Name = m.home_team.name;
-        const p2Name = m.away_team.name;
+      const realMatches: Match[] = json.data.map((m: any) => {
+        const p1Name = m.home_team?.name || "TBA";
+        const p2Name = m.away_team?.name || "TBA";
         const status = mapStatus(m.status);
         
-        // Calcul intelligent des cotes simulées (Car l'API gratuite ne les donne pas toujours)
-        const seed = p1Name.length + p2Name.length; 
-        const isP1Fav = seed % 2 === 0;
-        const p1Odd = isP1Fav ? 1.45 : 2.60;
-        const p2Odd = isP1Fav ? 2.60 : 1.45;
+        // --- SIMULATION DE COTES VARIÉES (POUR API GRATUITE) ---
+        // On utilise le hachage du nom pour que la cote soit constante pour un match donné
+        const hash = (p1Name + p2Name).length;
+        const randomFactor = (hash % 10) / 10; // Donne un chiffre entre 0 et 0.9
+
+        let p1Odd, p2Odd, isP1Fav;
+
+        if (randomFactor < 0.3) {
+            // CAS 1 : GRAND FAVORI (P1) -> Doit déclencher "2-0"
+            p1Odd = 1.20 + (randomFactor / 2);
+            p2Odd = 4.50 + randomFactor;
+            isP1Fav = true;
+        } else if (randomFactor > 0.7) {
+            // CAS 2 : GRAND FAVORI (P2) -> Doit déclencher "2-0"
+            p1Odd = 3.80 + randomFactor;
+            p2Odd = 1.25 + (randomFactor / 2);
+            isP1Fav = false;
+        } else {
+            // CAS 3 : MATCH SERRÉ -> Doit déclencher "Vainqueur" ou "Over"
+            p1Odd = 1.75 + (randomFactor / 2);
+            p2Odd = 1.85 + (randomFactor / 2);
+            isP1Fav = p1Odd < p2Odd;
+        }
 
         const aiData = {
             winner: isP1Fav ? p1Name : p2Name,
-            confidence: isP1Fav ? 78 : 62,
-            recommendedBet: isP1Fav ? `${p1Name} Vainqueur` : `${p2Name} +1.5 Sets`,
+            confidence: isP1Fav ? (p1Odd < 1.30 ? 85 : 70) : 60,
+            // Note: recommendedBet sera recalculé intelligemment par le moteur Combo
+            recommendedBet: "Analyse...",
             riskLevel: isP1Fav ? 'SAFE' : 'MODERATE',
             marketType: 'WINNER',
             circuit: m.league?.name?.includes('WTA') ? 'WTA' : 'ATP',
-            fairOdds: { p1: p1Odd - 0.1, p2: p2Odd - 0.2 },
-            qualitativeAnalysis: `Analyse ${m.league?.name || 'Tournoi'}: ${isP1Fav ? p1Name : p2Name} montre une meilleure dynamique.`,
+            fairOdds: { p1: p1Odd - 0.05, p2: p2Odd - 0.1 },
+            qualitativeAnalysis: `Oracle détecte un avantage pour ${isP1Fav ? p1Name : p2Name} basé sur la dynamique.`,
             integrity: { isSuspicious: false, score: 0 },
             attributes: [
-                { power: isP1Fav ? 85 : 70, serve: 80, return: 75, mental: 80, form: 85 },
-                { power: isP1Fav ? 70 : 80, serve: 75, return: 70, mental: 70, form: 75 }
+                { power: 80, serve: 75, return: 70, mental: 80, form: 80 },
+                { power: 70, serve: 70, return: 75, mental: 70, form: 75 }
             ]
         };
 
         return {
           id: String(m.id),
-          tournament: m.league?.name || "Tournoi Pro",
+          tournament: m.league?.name || "Tournoi",
           date: m.start_at ? new Date(m.start_at).toLocaleDateString() : "Auj.",
           time: m.start_at ? new Date(m.start_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : "00:00",
           status: status,
