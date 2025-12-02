@@ -54,11 +54,9 @@ export const BankrollProvider: React.FC<{ children: ReactNode }> = ({ children }
     if (existingRecordIndex >= 0) {
         const record = state.history[existingRecordIndex];
         if (record.status !== 'PENDING') return;
-        // Si c'était un ticket en attente, la mise est déjà fixée
         stake = typeof record.stake === 'number' ? record.stake : parseFloat(record.stake as string);
     } else {
-        // ✅ CORRECTION ICI : On adapte l'appel à la nouvelle signature
-        // Si confiance > 70, on considère "HighConf", sinon "Normal"
+        // ✅ CORRECTION ICI : On utilise la nouvelle méthode
         const confidence = (target as any).ai?.confidence || 50;
         const strategy = confidence > 70 ? 'HighConf' : 'Balanced';
         stake = OracleAI.bankroll.calculateStake(state.currentBalance, strategy);
@@ -81,7 +79,6 @@ export const BankrollProvider: React.FC<{ children: ReactNode }> = ({ children }
         h[existingRecordIndex] = { ...h[existingRecordIndex], status: isWin ? 'WON' : 'LOST', profit: parseFloat(profit.toFixed(2)) };
         newState.history = h;
     } else {
-         // Si c'est un nouveau pari simple validé en direct
          const newRecord: BetRecord = {
             id: Date.now().toString(),
             matchId: (target as Match).id,
@@ -96,7 +93,6 @@ export const BankrollProvider: React.FC<{ children: ReactNode }> = ({ children }
         };
         newState.history = [newRecord, ...state.history];
     }
-
     setState(newState);
   };
 
