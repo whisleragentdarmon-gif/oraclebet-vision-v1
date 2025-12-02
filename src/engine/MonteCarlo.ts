@@ -1,38 +1,30 @@
 import { SimulationResult, WebScrapedData } from './types';
 
 export const MonteCarlo = {
-  // Simulation financière (existante)
   simulateFuture: (currentBalance: number, winRate: number, avgOdds: number): SimulationResult => {
-      // ... (Garde ton code existant pour la bankroll ici) ...
       return { finalBankroll: 0, riskOfRuin: 0, volatility: 0, maxBankroll: 0, minBankroll: 0, paths: [] };
   },
 
-  // NOUVEAU : Simulation de Match (PURE DATA - NO ODDS)
-  simulateMatchup: (scrapedData: WebScrapedData): { p1Prob: number, p2Prob: number } => {
+  simulateMatchup: (data: any): { p1Prob: number, p2Prob: number } => {
+      // On utilise les données H2H complètes pour la simulation
       let p1Score = 50;
-      let p2Score = 50;
+      
+      // Facteur Physique (Critique)
+      if (data.human?.p1.physical.injuryStatus.includes("ALERTE")) p1Score -= 25;
+      if (data.human?.p2.physical.injuryStatus.includes("ALERTE")) p1Score += 25;
 
-      // 1. Impact du Style
-      if (scrapedData.playerProfile.p1.style === "Gros Serveur") p1Score += 5;
-      if (scrapedData.playerProfile.p2.style === "Défenseur de fond") p2Score += 2;
+      // Facteur Mental
+      if (data.human?.p1.mental.state === "Confiant") p1Score += 5;
+      if (data.human?.p2.mental.state === "Instable") p1Score += 5;
 
-      // 2. Impact Fatigue (Pénalité lourde)
-      if (scrapedData.context.fatigueP1 === "ALERTE PHYSIQUE") p1Score -= 30;
-      if (scrapedData.context.fatigueP1 === "Fatigue Élevée") p1Score -= 10;
+      // Facteur Style
+      if (data.playerProfile?.p1.style === "Gros Serveur" && data.context?.weather?.includes("Windy")) p1Score -= 5;
 
-      // 3. Impact Météo (Vent désavantage les serveurs)
-      if (scrapedData.context.weather.includes("wind") && scrapedData.playerProfile.p1.style === "Gros Serveur") {
-          p1Score -= 5;
-      }
-
-      // 4. Monte Carlo (1000 tirages)
+      // Simulation 1000 tirages avec variance
       let p1Wins = 0;
-      for (let i = 0; i < 1000; i++) {
-          // On ajoute une variance aléatoire de +/- 15% (Forme du jour)
-          const p1DayForm = p1Score + (Math.random() * 30 - 15);
-          const p2DayForm = p2Score + (Math.random() * 30 - 15);
-          
-          if (p1DayForm > p2DayForm) p1Wins++;
+      for(let i=0; i<1000; i++) {
+          const noise = (Math.random() * 20) - 10;
+          if (p1Score + noise > 50) p1Wins++;
       }
 
       const p1Prob = (p1Wins / 1000) * 100;
