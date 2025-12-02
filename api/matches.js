@@ -1,45 +1,40 @@
 export default async function handler(req, res) {
+  // ✅ TA NOUVELLE CLÉ EST ICI
   const API_KEY = 'd95f9c6d94msh91b4f8d1ad05d42p1353acjsnc68090e28eb2'; 
   const API_HOST = 'sportscore1.p.rapidapi.com';
 
   const formatDate = (date) => date.toISOString().split('T')[0];
 
   const today = new Date();
-  
-  const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
-  
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
+  const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1);
+  const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
 
   try {
-    // ON RÉCUPÈRE 3 JOURS D'UN COUP POUR NE RIEN RATER (ITF, UTR, WTA125 inclus)
+    // On récupère Hier, Aujourd'hui et Demain pour être sûr d'avoir des matchs
     const [resYesterday, resToday, resTomorrow] = await Promise.all([
       fetch(`https://${API_HOST}/events/date/${formatDate(yesterday)}?sport_id=2`, { headers: { "x-rapidapi-key": API_KEY, "x-rapidapi-host": API_HOST } }),
       fetch(`https://${API_HOST}/events/date/${formatDate(today)}?sport_id=2`, { headers: { "x-rapidapi-key": API_KEY, "x-rapidapi-host": API_HOST } }),
       fetch(`https://${API_HOST}/events/date/${formatDate(tomorrow)}?sport_id=2`, { headers: { "x-rapidapi-key": API_KEY, "x-rapidapi-host": API_HOST } })
     ]);
 
-    const dataYesterday = await resYesterday.json();
-    const dataToday = await resToday.json();
-    const dataTomorrow = await resTomorrow.json();
+    const d1 = await resYesterday.json();
+    const d2 = await resToday.json();
+    const d3 = await resTomorrow.json();
 
-    // On fusionne tout
+    // Fusion
     let allMatches = [
-      ...(dataYesterday.data || []),
-      ...(dataToday.data || []),
-      ...(dataTomorrow.data || [])
+      ...(d1.data || []),
+      ...(d2.data || []),
+      ...(d3.data || [])
     ];
 
-    // On s'assure que c'est bien du tennis (ID 2) et on retire les doublons éventuels par ID
+    // Filtre Tennis (ID 2) et Dédoublonnage
     const tennisOnly = allMatches.filter(match => match.sport_id === 2);
-    
-    // Astuce pour retirer les doublons (parfois l'API renvoie le même match sur 2 jours à minuit)
     const uniqueMatches = Array.from(new Map(tennisOnly.map(item => [item.id, item])).values());
 
     res.status(200).json({ data: uniqueMatches });
 
   } catch (error) {
-    res.status(500).json({ error: "Erreur connexion SportScore", details: error.message });
+    res.status(500).json({ error: "Erreur API", details: error.message });
   }
 }
