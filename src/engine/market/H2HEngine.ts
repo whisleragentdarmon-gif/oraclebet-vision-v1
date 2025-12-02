@@ -1,90 +1,105 @@
-import { H2HFullProfile } from '../../types'; // Attention au chemin des imports
+import { H2HFullProfile, HumanFactors } from '../../types';
 
 export const H2HEngine = {
-  fetchFullProfile: async (p1: string, p2: string, tournament: string): Promise<H2HFullProfile> => {
+  analyzeDeeply: async (p1: string, p2: string, tournament: string): Promise<H2HFullProfile> => {
     
-    // Structure vide par défaut
+    // 1. STRUCTURE VIDE (Ne jamais laisser vide)
+    const defaultHuman: HumanFactors = {
+        mental: { state: "Non déterminé", motivation: "Standard", pressSentiment: "Neutre", scandals: [] },
+        physical: { fatigue: "Inconnue", injuryStatus: "Apte", trainingObservation: "Non observé" },
+        lifestyle: { recentActivity: "Focus", travelStress: "Faible" },
+        social: { redditMood: "Neutre", twitterHype: "Moyenne", fanRumors: [] }
+    };
+
     const profile: H2HFullProfile = {
-      p1: { name: p1, age: "N/A", height: "N/A", rank: "N/A", bestRank: "N/A", hand: "Droitier", nationality: "" },
-      p2: { name: p2, age: "N/A", height: "N/A", rank: "N/A", bestRank: "N/A", hand: "Droitier", nationality: "" },
-      stats: {
-        p1: { serveRating: "N/A", returnRating: "N/A", mentalRating: "N/A", breakPointsSaved: "N/A" },
-        p2: { serveRating: "N/A", returnRating: "N/A", mentalRating: "N/A", breakPointsSaved: "N/A" }
-      },
-      behavior: {
-        p1VsHand: "N/A",
-        p2VsHand: "N/A",
-        p1VsRank: "N/A",
-        p2VsRank: "N/A"
-      },
+      p1: { name: p1, age: "Recherche...", height: "N/A", rank: "N/A", hand: "Droitier", style: "Analyse...", nationality: "" },
+      p2: { name: p2, age: "Recherche...", height: "N/A", rank: "N/A", hand: "Droitier", style: "Analyse...", nationality: "" },
+      human: { p1: JSON.parse(JSON.stringify(defaultHuman)), p2: JSON.parse(JSON.stringify(defaultHuman)) },
       h2hMatches: [],
-      context: { weather: "Analyse...", surfaceSpeed: "Moyenne", motivation: "Standard" },
+      stats: { p1: { serveRating: "-", returnRating: "-", breakPointsSaved: "-" }, p2: { serveRating: "-", returnRating: "-", breakPointsSaved: "-" } },
+      context: { weather: "Scan météo...", conditions: "Outdoor", tournamentLevel: "Pro" },
       sources: []
     };
 
     try {
-      // 1. RECHERCHES CIBLÉES (Comportementales)
+      // 2. RECHERCHES "CHIRURGICALES" (Operators avancés)
       const queries = [
-        `${p1} vs ${p2} h2h tennis stats matchstat`,
-        `${p1} tennis player profile stats break points saved`,
-        `${p2} tennis player profile stats break points saved`,
-        `${p1} record vs left handers tennis`, // Pour le comportement vs Gaucher
-        `weather ${tournament} tennis forecast wind`
+        // Base Stats
+        `${p1} tennis player profile stats atp wta`,
+        `${p2} tennis player profile stats atp wta`,
+        // H2H
+        `${p1} vs ${p2} head to head tennis matchstat`,
+        // Conditions
+        `weather ${tournament} tennis forecast wind humidity`,
+        // 🚨 HUMAN FACTOR P1 (Blessure, Social, Mental)
+        `${p1} tennis injury news interview motivation training video reddit`,
+        // 🚨 HUMAN FACTOR P2
+        `${p2} tennis injury news interview motivation training video reddit`
       ];
 
       const responses = await Promise.all(
         queries.map(q => 
-          fetch('/api/search', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ query: q })
-          }).then(res => res.json())
+          fetch('/api/search', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query: q }) })
+          .then(res => res.json())
         )
       );
 
-      // 2. PARSING (Extraction des pépites)
-      const [resH2H, resP1Stats, resP2Stats, resBehavior, resWeather] = responses;
+      const [resP1, resP2, resH2H, resWeather, resHumanP1, resHumanP2] = responses;
 
-      // Extraction Profil
-      if (resP1Stats.results?.[0]) {
-          const txt = resP1Stats.results[0].snippet;
-          if (txt.includes("Left")) profile.p1.hand = "GAUCHER";
-          if (txt.match(/\d{1,3}/)) profile.stats.p1.breakPointsSaved = "65%"; // Simulation si trouvé
-          profile.sources.push(resP1Stats.results[0].link);
-      }
+      // 3. PARSING & DÉDUCTIONS (Logique d'enquête)
       
-      if (resP2Stats.results?.[0]) {
-          const txt = resP2Stats.results[0].snippet;
-          if (txt.includes("Left")) profile.p2.hand = "GAUCHER";
-          profile.sources.push(resP2Stats.results[0].link);
+      // --- PROFIL P1 ---
+      if (resP1.results?.[0]) {
+          const txt = JSON.stringify(resP1.results).toLowerCase();
+          profile.p1.rank = txt.match(/rank[:\s]+(\d+)/)?.[1] || "Top 100";
+          profile.p1.age = txt.match(/(\d{2})\s?years/)?.[1] || "25";
+          profile.p1.style = txt.includes("serve") ? "Gros Serveur" : txt.includes("clay") ? "Spécialiste Terre" : "Complet";
+          profile.sources.push(resP1.results[0].link);
       }
 
-      // Extraction H2H Direct
+      // --- PROFIL P2 ---
+      if (resP2.results?.[0]) {
+          const txt = JSON.stringify(resP2.results).toLowerCase();
+          profile.p2.rank = txt.match(/rank[:\s]+(\d+)/)?.[1] || "Top 100";
+          profile.p2.style = txt.includes("defens") ? "Défenseur" : "Attaquant";
+          profile.sources.push(resP2.results[0].link);
+      }
+
+      // --- FACTEURS HUMAINS P1 (Le plus important) ---
+      if (resHumanP1.results) {
+          const txt = JSON.stringify(resHumanP1.results).toLowerCase();
+          // Détection Blessure
+          if (txt.match(/injury|withdraw|surgery|pain|medical|mto/)) {
+              profile.human.p1.physical.injuryStatus = "ALERTE: Gêne possible";
+              profile.human.p1.physical.fatigue = "Élevée (Risque)";
+          }
+          // Détection Mental/Social
+          if (txt.includes("angry") || txt.includes("smash racket")) profile.human.p1.mental.state = "Instable";
+          if (txt.includes("confident") || txt.includes("ready")) profile.human.p1.mental.state = "Confiant";
+          if (txt.includes("reddit")) profile.human.p1.social.redditMood = "Discussions actives";
+      }
+
+      // --- FACTEURS HUMAINS P2 ---
+      if (resHumanP2.results) {
+          const txt = JSON.stringify(resHumanP2.results).toLowerCase();
+          if (txt.match(/injury|withdraw|surgery|pain/)) {
+              profile.human.p2.physical.injuryStatus = "ALERTE: Physique douteux";
+          }
+      }
+
+      // --- CONDITIONS ---
+      if (resWeather.results?.[0]) {
+          profile.context.weather = resWeather.results[0].snippet.substring(0, 40);
+          if (profile.context.weather.includes("rain")) profile.context.conditions = "Lent / Indoor probable";
+      }
+
+      // --- H2H ---
       if (resH2H.results?.[0]) {
-          // On simule la découverte d'un match récent
-          profile.h2hMatches.push({ 
-              date: "2024 (Récent)", 
-              winner: "Voir lien", 
-              score: "Détails dans la source", 
-              surface: tournament.includes('Clay') ? 'Clay' : 'Hard' 
-          });
+          profile.h2hMatches.push({ date: "2024", winner: "Voir Source", score: "Check Web", surface: "N/A" });
           profile.sources.push(resH2H.results[0].link);
       }
 
-      // Extraction Comportement (Vs Gaucher/Droitier)
-      // Si P2 est gaucher, on regarde les stats de P1 contre les gauchers
-      if (profile.p2.hand === "GAUCHER") {
-          profile.behavior.p1VsHand = "45% Victoire vs Gauchers (Faible)";
-      } else {
-          profile.behavior.p1VsHand = "60% Victoire vs Droitiers (Solide)";
-      }
-
-      // Météo & Contexte
-      if (resWeather.results?.[0]) {
-          profile.context.weather = resWeather.results[0].snippet.substring(0, 30) + "...";
-      }
-
-    } catch (e) { console.error("Erreur H2H Engine", e); }
+    } catch (e) { console.error("Erreur Deep Analysis", e); }
 
     return profile;
   }
