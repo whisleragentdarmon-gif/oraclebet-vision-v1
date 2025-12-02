@@ -9,7 +9,8 @@ interface DataContextType {
   refreshData: () => void;
   scrapeWebMatches: () => void;
   markAsFinished: (matchId: string, score?: string) => void;
-  addCustomMatch: (p1: string, p2: string) => void; // ✅ La fonction pour le tableau manuel
+  // ✅ Mise à jour : accepte un objet complet de données
+  addCustomMatch: (data: any) => void;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -79,27 +80,67 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setLoading(false);
   };
 
-  // --- FONCTION 3 : AJOUT MANUEL (Pour ton tableau personnalisé) ---
-  const addCustomMatch = (p1: string, p2: string) => {
+  // --- FONCTION 3 : AJOUT MANUEL AVEC CALCUL IA IMMÉDIAT ---
+  const addCustomMatch = (data: any) => {
+      const { p1, p2, context } = data;
+      
+      // 1. Parsing des données saisies
+      const r1 = parseInt(p1.rank) || 100;
+      const r2 = parseInt(p2.rank) || 100;
+      
+      // On récupère le winrate correspondant à la surface choisie
+      const w1 = parseInt(context.surface === 'Clay' ? p1.clay : context.surface === 'Grass' ? p1.grass : p1.hard) || 50;
+      const w2 = parseInt(context.surface === 'Clay' ? p2.clay : context.surface === 'Grass' ? p2.grass : p2.hard) || 50;
+
+      // 2. Algorithme de prédiction instantanée
+      let scoreP1 = 50;
+      
+      // Facteur Classement (30%)
+      if (r1 < r2) scoreP1 += 15; else scoreP1 -= 15;
+      
+      // Facteur Surface (70% - Plus important)
+      if (w1 > w2) scoreP1 += 20; else if (w2 > w1) scoreP1 -= 20;
+
+      // Calcul confiance
+      const winner = scoreP1 >= 50 ? p1.name : p2.name;
+      const rawConfidence = 50 + Math.abs(scoreP1 - 50);
+      const confidence = Math.min(95, Math.max(55, rawConfidence)); // Borné entre 55 et 95
+
+      // Génération de l'analyse textuelle
+      const analysis = `Analyse basée sur les données saisies : ${winner} est favori (${confidence}%) grâce à une meilleure performance sur ${context.surface} (${scoreP1 > 50 ? w1 : w2}%) et son classement (${scoreP1 > 50 ? r1 : r2}).`;
+
       const newMatch: Match = {
         id: `custom-${Date.now()}`,
-        tournament: "Match Ajouté Manuellement",
+        tournament: "Match Personnalisé",
         date: new Date().toLocaleDateString('fr-FR'),
         time: "À venir",
         status: 'SCHEDULED',
-        surface: 'Hard', // Défaut, modifiable par l'IA plus tard
-        player1: { name: p1, rank: 0, country: 'WLD', form: 50, surfacePrefs: {hard:50, clay:50, grass:50} },
-        player2: { name: p2, rank: 0, country: 'WLD', form: 50, surfacePrefs: {hard:50, clay:50, grass:50} },
-        odds: { player1: 1.90, player2: 1.90, p1: 1.90, p2: 1.90 }, // Cotes par défaut
+        surface: context.surface,
+        player1: { 
+            name: p1.name, 
+            rank: r1, 
+            country: 'WLD', 
+            form: w1, 
+            surfacePrefs: { hard: parseInt(p1.hard)||50, clay: parseInt(p1.clay)||50, grass: 50 } 
+        },
+        player2: { 
+            name: p2.name, 
+            rank: r2, 
+            country: 'WLD', 
+            form: w2, 
+            surfacePrefs: { hard: parseInt(p2.hard)||50, clay: parseInt(p2.clay)||50, grass: 50 } 
+        },
+        odds: { player1: 1.90, player2: 1.90, p1: 1.90, p2: 1.90 },
         ai: {
-            winner: p1,
-            confidence: 50,
-            recommendedBet: "Lancer God Mode",
-            riskLevel: 'MODERATE',
+            winner: winner,
+            confidence: confidence,
+            recommendedBet: `${winner} Vainqueur`,
+            riskLevel: confidence > 80 ? 'SAFE' : 'MODERATE',
             marketType: 'WINNER',
             circuit: 'ATP',
             fairOdds: {p1:1.9, p2:1.9},
-            integrity: {isSuspicious:false, score:0}
+            integrity: {isSuspicious:false, score:0},
+            qualitativeAnalysis: analysis
         }
       };
       
