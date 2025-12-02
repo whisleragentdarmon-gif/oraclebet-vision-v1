@@ -2,7 +2,7 @@ export type Circuit = 'ATP' | 'WTA' | 'CHALLENGER' | 'ITF';
 export type RiskLevel = 'SAFE' | 'MODERATE' | 'RISKY' | 'Safe' | 'Moderate' | 'Risky' | 'NO_BET';
 export type PlayerStyle = 'Aggressive' | 'Defensive' | 'ServeVolley' | 'Balanced' | 'Big Server' | 'Grinder';
 
-// --- NOUVEAU : HUMAN FACTORS (Manquait ici) ---
+// ✅ C'EST ICI QUE CA MANQUAIT : HUMAN FACTORS
 export interface HumanFactors {
   mental: { state: string; motivation: string; pressSentiment: string; scandals: string[]; };
   physical: { fatigue: string; injuryStatus: string; trainingObservation: string; };
@@ -10,7 +10,6 @@ export interface HumanFactors {
   social: { redditMood: string; twitterHype: string; fanRumors: string[]; };
 }
 
-// --- Geo & Press ---
 export interface GeoCondition { altitude: number; humidity: number; windSpeed: number; courtSpeedIndex: number; ballType: string; isIndoor: boolean; }
 export interface PressAnalysis { sentimentScore: number; scandalAlert: boolean; mentalPressureIndex: number; recentQuotes: any[]; rumors: string[]; }
 export interface SocialSentiment { twitterHype: number; redditMood: string; instagramActivity: string; publicBettingTrend: number; }
