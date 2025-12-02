@@ -2,7 +2,7 @@ export type Circuit = 'ATP' | 'WTA' | 'CHALLENGER' | 'ITF';
 export type RiskLevel = 'SAFE' | 'MODERATE' | 'RISKY' | 'Safe' | 'Moderate' | 'Risky' | 'NO_BET';
 export type PlayerStyle = 'Aggressive' | 'Defensive' | 'ServeVolley' | 'Balanced' | 'Big Server' | 'Grinder';
 
-// ✅ C'EST ICI QUE CA MANQUAIT : HUMAN FACTORS
+// 👇 C'EST LUI QUI MANQUAIT : HUMAN FACTORS
 export interface HumanFactors {
   mental: { state: string; motivation: string; pressSentiment: string; scandals: string[]; };
   physical: { fatigue: string; injuryStatus: string; trainingObservation: string; };
