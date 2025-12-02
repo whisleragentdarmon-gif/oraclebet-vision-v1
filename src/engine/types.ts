@@ -2,7 +2,6 @@ export type Circuit = 'ATP' | 'WTA' | 'CHALLENGER' | 'ITF';
 export type RiskLevel = 'SAFE' | 'MODERATE' | 'RISKY' | 'Safe' | 'Moderate' | 'Risky' | 'NO_BET';
 export type PlayerStyle = 'Aggressive' | 'Defensive' | 'ServeVolley' | 'Balanced' | 'Big Server' | 'Grinder';
 
-// ✅ C'EST LUI QUI BLOQUAIT H2H ENGINE
 export interface HumanFactors {
   mental: { state: string; motivation: string; pressSentiment: string; scandals: string[]; };
   physical: { fatigue: string; injuryStatus: string; trainingObservation: string; };
@@ -27,6 +26,12 @@ export interface H2HFullProfile {
   p2: { name: string; age: string; height: string; rank: string; hand: string; style: string; nationality: string; };
   human: { p1: HumanFactors; p2: HumanFactors; };
   h2hMatches: { date: string; winner: string; score: string; surface: string }[];
+  // ✅ AJOUT MANQUANT
+  surfaceStats: {
+    clay: { p1: string, p2: string };
+    hard: { p1: string, p2: string };
+    grass: { p1: string, p2: string };
+  };
   stats: { p1: { serveRating: string; returnRating: string; breakPointsSaved: string }; p2: { serveRating: string; returnRating: string; breakPointsSaved: string }; };
   context: { weather: string; conditions: string; tournamentLevel: string; };
   sources: string[];
