@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Layout } from './components/Layout';
-import { LivePage } from './pages/LivePage';
+import { ProgramPage } from './pages/ProgramPage'; // 👈 Nouvelle page
 import { AnalysisPage } from './pages/AnalysisPage';
 import { ComboPage } from './pages/ComboPage';
 import { VipPage } from './pages/VipPage';
@@ -11,26 +11,24 @@ import { BankrollProvider } from './context/BankrollContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ConfigProvider } from './context/ConfigContext';
 import { DataProvider } from './context/DataContext';
-import { AnalysisProvider } from './context/AnalysisContext'; // 👈 IMPORT 1 : La Mémoire
+import { AnalysisProvider } from './context/AnalysisContext';
 
-// Composant qui gère l'affichage selon si on est connecté ou non
 const AuthenticatedApp: React.FC = () => {
   const { isAuthenticated } = useAuth();
-  const [activeTab, setActiveTab] = useState('analysis');
+  // On arrive direct sur le programme
+  const [activeTab, setActiveTab] = useState('program'); 
 
   if (!isAuthenticated) return <LoginPage />;
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'live': return <LivePage filter="LIVE" title="Matchs en Direct" />;
-      case 'today': return <LivePage filter="TODAY" title="Matchs du Jour" />;
-      case 'upcoming': return <LivePage filter="UPCOMING" title="Matchs à Venir" />;
+      case 'program': return <ProgramPage />; // 👈 La page unique
       case 'history': return <HistoryPage />;
       case 'analysis': return <AnalysisPage />;
       case 'combos': return <ComboPage />;
       case 'bankroll': return <BankrollPage />;
       case 'vip': return <VipPage />;
-      default: return <AnalysisPage />;
+      default: return <ProgramPage />;
     }
   };
 
@@ -47,7 +45,6 @@ const App: React.FC = () => {
       <ConfigProvider>
         <BankrollProvider>
           <DataProvider>
-            {/* 👇 AJOUT 2 : ON ENGLOBE TOUT AVEC LA MÉMOIRE */}
             <AnalysisProvider>
                <AuthenticatedApp />
             </AnalysisProvider>
