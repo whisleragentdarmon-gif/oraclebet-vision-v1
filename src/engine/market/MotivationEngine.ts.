@@ -1,6 +1,5 @@
 export const MotivationEngine = {
   analyze: async (player: string, tournament: string): Promise<{ score: number, reason: string, risk: boolean }> => {
-    
     // Par défaut
     let motivationScore = 80; 
     let reason = "Tournoi standard.";
@@ -9,21 +8,13 @@ export const MotivationEngine = {
     const isBigTournament = tournament.includes("Grand Slam") || tournament.includes("1000") || tournament.includes("Finals");
     const isSmallTournament = tournament.includes("250") || tournament.includes("Challenger");
     
-    try {
-        // Recherche simulée pour l'exemple (car API Search non disponible dans ce contexte)
-        // Dans une version avancée, on ferait un fetch ici.
-        
-        if (isBigTournament) {
-            motivationScore = 100;
-            reason = "DÉFEND SON TITRE/POINTS. Motivation Max.";
-        } else if (isSmallTournament) {
-            motivationScore = 60;
-            reason = "Petit tournoi : risque de baisse d'intensité.";
-            risk = true;
-        }
-
-    } catch (e) {
-        console.error("Erreur Motivation", e);
+    if (isBigTournament) {
+        motivationScore = 100;
+        reason = "DÉFEND SON TITRE/POINTS. Motivation Max.";
+    } else if (isSmallTournament) {
+        motivationScore = 60;
+        reason = "Petit tournoi : risque de baisse d'intensité.";
+        risk = true;
     }
 
     return { score: motivationScore, reason, risk };
