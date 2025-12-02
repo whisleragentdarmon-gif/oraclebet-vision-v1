@@ -1,15 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { useData } from '../context/DataContext';
-import { H2HEngine } from '../engine/market/H2HEngine';
-import { DetailedH2H } from '../components/DetailedH2H';
 import { useAnalysis } from '../context/AnalysisContext';
 import { MatchCard } from '../components/MatchCard';
 import { Match } from '../types';
 import { OracleReactor } from '../components/OracleReactor';
 import { OddsComparator } from '../components/OddsComparator';
+
+// IMPORTS DES MOTEURS
 import { ScandalEngine } from '../engine/market/ScandalEngine';
 import { GeoEngine } from '../engine/market/GeoEngine';
 import { TrapDetector } from '../engine/market/TrapDetector';
+import { H2HEngine } from '../engine/market/H2HEngine'; // ✅ NOUVEAU
+
+// IMPORTS DES COMPOSANTS VISUELS
+import { DetailedH2H } from '../components/DetailedH2H'; // ✅ NOUVEAU
 import { 
   BarChart, Bar, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend 
 } from 'recharts';
@@ -23,21 +27,23 @@ export const AnalysisPage: React.FC = () => {
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
   const [isComputing, setIsComputing] = useState(false);
   
-  // Données débloquées
+  // Données débloquées (contient tout : H2H, Météo, Alertes...)
   const [currentData, setCurrentData] = useState<any>(null);
 
-  // Auto-sélection et chargement mémoire
+  // Auto-sélection du premier match
   useEffect(() => {
     if (activeMatches.length > 0 && !selectedMatch) setSelectedMatch(activeMatches[0]);
   }, [matches]);
 
+  // Chargement de la mémoire si on revient sur un match déjà analysé
   useEffect(() => {
     if (selectedMatch) {
         const saved = getAnalysis(selectedMatch.id);
-        setCurrentData(saved || null); // Si pas de sauvegarde, on remet à null (Verrouillé)
+        setCurrentData(saved || null);
     }
   }, [selectedMatch]);
 
+  // --- FONCTION PRINCIPALE : LE GOD MODE ---
   const runGodMode = async () => {
     setIsComputing(true);
     if (selectedMatch) {
@@ -45,28 +51,44 @@ export const AnalysisPage: React.FC = () => {
         const p2 = selectedMatch.player2.name;
         
         try {
-            // 1. Recherches Web
-            const [resStats, resNews] = await Promise.all([
-                fetch('/api/search', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ query: `${p1} vs ${p2} h2h stats tennisexplorer` }) }),
-                fetch('/api/search', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ query: `${p1} ${p2} tennis injury news` }) })
-            ]);
-            
-            const webStats = (await resStats.json()).results || [];
-            const webNews = (await resNews.json()).results || [];
+            // 1. APPEL AU NOUVEAU MOTEUR H2H (Il fait les recherches Google pour nous)
+            const h2hProfile = await H2HEngine.fetchFullProfile(p1, p2, selectedMatch.tournament);
 
-            // 2. Moteurs Internes
+            // 2. APPEL AUX MOTEURS EXISTANTS (Interne)
             const social = ScandalEngine.analyze(p1);
             const geo = GeoEngine.getConditions(selectedMatch.tournament);
             const trap = TrapDetector.scan(selectedMatch.odds);
             
+            // 3. RECHERCHE SPÉCIFIQUE BLESSURE (Sécurité supplémentaire)
             let injuryAlert = false;
-            webNews.forEach((n: any) => {
-                if ((n.title + n.snippet).toLowerCase().match(/injury|blessure|forfait|withdraw/)) injuryAlert = true;
-            });
+            let injuryDetails = "";
+            try {
+                const resNews = await fetch('/api/search', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query: `${p1} ${p2} tennis injury news` })
+                });
+                const webNews = (await resNews.json()).results || [];
+                
+                webNews.forEach((n: any) => {
+                    if ((n.title + n.snippet).toLowerCase().match(/injury|blessure|forfait|withdraw/)) {
+                        injuryAlert = true;
+                        injuryDetails = n.title;
+                    }
+                });
+            } catch (err) { console.error("Erreur News", err); }
 
-            const newData = { social, geo, trap, injuryAlert, webStats, webNews };
+            // 4. ON RASSEMBLE TOUT
+            const newData = { 
+                social, 
+                geo, 
+                trap, 
+                injuryAlert, 
+                injuryDetails,
+                h2hProfile // ✅ On ajoute le profil complet
+            };
             
-            // 3. Sauvegarde et Déverrouillage
+            // 5. SAUVEGARDE
             saveAnalysis(selectedMatch.id, newData);
             setCurrentData(newData);
 
@@ -75,7 +97,7 @@ export const AnalysisPage: React.FC = () => {
     setIsComputing(false);
   };
 
-  // Graphiques
+  // Préparation graphiques (inchangée)
   const winProbData = selectedMatch?.ai ? [
     { name: selectedMatch.player1.name, prob: selectedMatch.ai.winProbA || 50, fill: '#6B7280' },
     { name: selectedMatch.player2.name, prob: selectedMatch.ai.winProbB || 50, fill: '#FF7A00' }
@@ -91,7 +113,6 @@ export const AnalysisPage: React.FC = () => {
   const getCircuitColor = (c: string) => {
     if (c.includes('WTA')) return 'text-pink-500';
     if (c.includes('CHALLENGER')) return 'text-yellow-500';
-    if (c.includes('ITF')) return 'text-purple-500';
     return 'text-blue-500';
   };
 
@@ -101,7 +122,7 @@ export const AnalysisPage: React.FC = () => {
 
       <div className="flex flex-col lg:flex-row gap-6 h-full">
         
-        {/* LISTE DES MATCHS */}
+        {/* COLONNE GAUCHE : LISTE */}
         <div className="lg:w-1/3 flex flex-col gap-4">
           <h2 className="text-2xl font-bold mb-2">Sélectionner un Match</h2>
           <div className="overflow-y-auto pr-2 space-y-3 max-h-[80vh]">
@@ -117,13 +138,13 @@ export const AnalysisPage: React.FC = () => {
           </div>
         </div>
 
-        {/* ZONE D'ANALYSE */}
+        {/* COLONNE DROITE : ANALYSE */}
         <div className="lg:w-2/3">
           {selectedMatch && selectedMatch.ai ? (
             <div className="bg-surface border border-neutral-800 rounded-2xl p-6 h-full shadow-2xl animate-fade-in overflow-y-auto relative">
               
-              {/* Header toujours visible */}
-              <div className="flex justify-between items-start mb-6 border-b border-neutral-800 pb-4">
+              {/* EN-TÊTE */}
+              <div className="flex justify-between items-start mb-4 border-b border-neutral-800 pb-4">
                  <div>
                     <div className="flex items-center gap-2 mb-1">
                         <Globe size={14} className={getCircuitColor(selectedMatch.ai.circuit)} />
@@ -135,7 +156,6 @@ export const AnalysisPage: React.FC = () => {
                     </h2>
                  </div>
                  
-                 {/* Bouton ou Badge de statut */}
                  {!currentData ? (
                    <button onClick={runGodMode} className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-bold py-3 px-6 rounded-xl flex items-center gap-2 shadow-lg shadow-purple-500/20 transition-all transform hover:scale-105 animate-pulse">
                       <Cpu size={20} /> LANCER GOD MODE
@@ -147,7 +167,7 @@ export const AnalysisPage: React.FC = () => {
                  )}
               </div>
 
-              {/* 🔒 ECRAN DE VERROUILLAGE (Si pas de données God Mode) */}
+              {/* 🔒 ECRAN DE VERROUILLAGE */}
               {!currentData && (
                   <div className="flex flex-col items-center justify-center h-[400px] border border-dashed border-neutral-800 rounded-xl bg-black/20 mt-8">
                       <div className="relative">
@@ -156,50 +176,36 @@ export const AnalysisPage: React.FC = () => {
                       </div>
                       <h3 className="text-xl font-bold text-white mt-6">ANALYSE VERROUILLÉE</h3>
                       <p className="text-gray-400 text-sm mt-2 text-center max-w-md">
-                          L'Oracle a besoin de scanner le web, la météo et les cotes pour générer une prédiction fiable.
-                      </p>
-                      <p className="text-xs text-gray-500 mt-4 animate-pulse">
-                          👆 Cliquez sur "LANCER GOD MODE" en haut
+                          Lancez le God Mode pour scanner le web, récupérer le H2H, la météo et les alertes blessure.
                       </p>
                   </div>
               )}
 
-              {/* 🔓 CONTENU DÉVERROUILLÉ (Seulement si currentData existe) */}
+              {/* 🔓 CONTENU DÉVERROUILLÉ */}
               {currentData && (
-                <div className="animate-fade-in space-y-6">
+                <div className="animate-fade-in space-y-8">
                     
-                    {/* 1. WEB INTEL (H2H) */}
-                    <div className="bg-surfaceHighlight border border-neutral-700 rounded-xl overflow-hidden">
-                        <div className="bg-black/40 p-3 border-b border-neutral-700 flex items-center justify-between">
-                            <h4 className="text-blue-400 text-xs font-bold uppercase flex items-center gap-2"><Search size={14}/> Intelligence Web & H2H</h4>
-                        </div>
-                        <div className="divide-y divide-neutral-800">
-                            {currentData.webStats.length > 0 ? currentData.webStats.map((item: any, i: number) => (
-                                <div key={i} className="p-3 hover:bg-white/5 transition-colors flex items-start gap-3">
-                                    <div className="mt-1"><Calendar size={14} className="text-gray-500"/></div>
-                                    <div className="flex-1">
-                                        <a href={item.link} target="_blank" rel="noopener noreferrer" className="text-sm font-bold text-white hover:text-neon block mb-1 flex items-center gap-2">
-                                            {item.title} <ExternalLink size={10} className="opacity-50"/>
-                                        </a>
-                                        <p className="text-xs text-gray-400 leading-relaxed">{item.snippet}</p>
-                                    </div>
-                                </div>
-                            )) : <p className="p-4 text-xs text-gray-500 text-center">Aucune donnée web trouvée.</p>}
-                        </div>
-                    </div>
+                    {/* ✅ NOUVEAU : TABLEAU H2H AUTO-REMPLI */}
+                    {currentData.h2hProfile && (
+                        <DetailedH2H 
+                            data={currentData.h2hProfile} 
+                            p1Name={selectedMatch.player1.name} 
+                            p2Name={selectedMatch.player2.name} 
+                        />
+                    )}
 
-                    {/* 2. ALERTE PHYSIQUE */}
+                    {/* ALERTE PHYSIQUE */}
                     <div className={`p-4 rounded-xl border flex items-center gap-4 ${currentData.injuryAlert ? 'bg-red-900/20 border-red-500' : 'bg-green-900/20 border-green-500'}`}>
                         {currentData.injuryAlert ? <Siren className="text-red-500" size={24}/> : <ShieldAlert className="text-green-500" size={24}/>}
                         <div>
                             <p className={`text-xs uppercase font-bold ${currentData.injuryAlert ? 'text-red-400' : 'text-green-400'}`}>
-                                {currentData.injuryAlert ? "ALERTE BLESSURE DÉTECTÉE" : "SCAN PHYSIQUE OK"}
+                                {currentData.injuryAlert ? "ALERTE BLESSURE DÉTECTÉE" : "PHYSIQUE R.A.S"}
                             </p>
-                            <p className="text-xs text-gray-300">Analyse des news en temps réel.</p>
+                            {currentData.injuryDetails && <p className="text-xs text-gray-300 mt-1">{currentData.injuryDetails}</p>}
                         </div>
                     </div>
 
-                    {/* 3. PRÉDICTION STANDARD */}
+                    {/* PRÉDICTION & COTES */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="bg-surfaceHighlight p-5 rounded-xl border border-neutral-800">
                             <p className="text-gray-400 text-xs uppercase mb-2">Verdict Oracle</p>
@@ -211,39 +217,32 @@ export const AnalysisPage: React.FC = () => {
                                 <span className="text-sm font-bold text-neon">{selectedMatch.ai.confidence}%</span>
                             </div>
                         </div>
-                        <div className="bg-surfaceHighlight p-5 rounded-xl border border-neutral-800">
-                            <p className="text-gray-400 text-xs uppercase mb-2 flex items-center gap-2"><FileText size={14}/> Analyse Qualitative</p>
-                            <p className="text-sm text-gray-300 leading-relaxed">{selectedMatch.ai.qualitativeAnalysis}</p>
-                        </div>
-                    </div>
-
-                    {/* 4. GRAPHIQUES & COTES */}
-                    {selectedMatch.ai.oddsAnalysis && selectedMatch.ai.fairOdds && (
-                        <div className="mb-8">
+                        {selectedMatch.ai.oddsAnalysis && selectedMatch.ai.fairOdds && (
                             <OddsComparator 
                                 analysis={selectedMatch.ai.oddsAnalysis} 
                                 fairOdds={selectedMatch.ai.fairOdds}
                                 player1={selectedMatch.player1.name}
                                 player2={selectedMatch.player2.name}
                             />
-                        </div>
-                    )}
+                        )}
+                    </div>
 
+                    {/* GRAPHIQUES */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <div className="bg-surfaceHighlight rounded-xl p-4 border border-neutral-800">
-                        <h4 className="text-gray-400 text-xs uppercase mb-4 text-center">Probabilité de Victoire</h4>
-                        <div className="h-[200px]">
-                            <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={winProbData} layout="vertical">
-                                <XAxis type="number" hide />
-                                <YAxis dataKey="name" type="category" width={100} tick={{fill: '#9CA3AF', fontSize: 12}} />
-                                <Tooltip contentStyle={{backgroundColor: '#1F1F1F', border: '1px solid #333', color: '#fff'}} />
-                                <Bar dataKey="prob" radius={[0, 4, 4, 0]} barSize={20}>
-                                    {winProbData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} />)}
-                                </Bar>
-                            </BarChart>
-                            </ResponsiveContainer>
-                        </div>
+                            <h4 className="text-gray-400 text-xs uppercase mb-4 text-center">Probabilité de Victoire</h4>
+                            <div className="h-[200px]">
+                                <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={winProbData} layout="vertical">
+                                    <XAxis type="number" hide />
+                                    <YAxis dataKey="name" type="category" width={100} tick={{fill: '#9CA3AF', fontSize: 12}} />
+                                    <Tooltip contentStyle={{backgroundColor: '#1F1F1F', border: '1px solid #333', color: '#fff'}} />
+                                    <Bar dataKey="prob" radius={[0, 4, 4, 0]} barSize={20}>
+                                        {winProbData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} />)}
+                                    </Bar>
+                                </BarChart>
+                                </ResponsiveContainer>
+                            </div>
                         </div>
 
                         <div className="bg-surfaceHighlight rounded-xl p-4 border border-neutral-800">
