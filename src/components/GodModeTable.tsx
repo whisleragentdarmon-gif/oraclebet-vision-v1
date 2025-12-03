@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { GodModeReportV2 } from '../engine/types';
-import { Save, Edit3, Trophy, Zap, Activity, Thermometer, TrendingUp, Brain, AlertTriangle } from 'lucide-react';
+import { Save, Edit3, Trophy, Calendar, Activity, User, Globe, Clock, MapPin, CheckCircle, XCircle } from 'lucide-react';
 
 interface Props {
   report: GodModeReportV2;
@@ -9,155 +9,265 @@ interface Props {
 
 export const GodModeTable: React.FC<Props> = ({ report, onUpdate }) => {
   
-  const update = (player: 'p1' | 'p2', key: string, val: string) => {
+  // États pour les onglets de chaque joueur
+  const [tabP1, setTabP1] = useState<'RESUME' | 'ACTU' | 'RESULTATS' | 'CALENDRIER'>('RESUME');
+  const [tabP2, setTabP2] = useState<'RESUME' | 'ACTU' | 'RESULTATS' | 'CALENDRIER'>('RESUME');
+
+  const handleChange = (path: string[], value: string) => {
     const newReport = { ...report };
-    // @ts-ignore
-    newReport[player][key] = val;
+    let current: any = newReport;
+    for (let i = 0; i < path.length - 1; i++) {
+      current = current[path[i]];
+    }
+    current[path[path.length - 1]] = value;
     onUpdate(newReport);
   };
 
-  const updateNested = (section: string, key: string, val: string) => {
-    const newReport = { ...report };
-    // @ts-ignore
-    newReport[section][key] = val;
-    onUpdate(newReport);
-  };
-
-  // --- COMPOSANT : LIGNE COMPARATIVE 3 COLONNES ---
-  const CompRow = ({ label, val1, val2, field }: { label: string, val1: string, val2: string, field: string }) => (
-    <div className="grid grid-cols-[1fr_140px_1fr] border-b border-neutral-800 hover:bg-white/5 transition-colors h-9">
-        <input 
-            value={val1} onChange={(e) => update('p1', field, e.target.value)}
-            className="bg-transparent text-right pr-3 text-sm text-white font-bold outline-none focus:text-neon focus:bg-black/50"
-            placeholder="-"
-        />
-        <div className="bg-neutral-900/80 flex items-center justify-center text-[10px] font-bold text-gray-500 uppercase tracking-wider border-x border-neutral-800">
-            {label}
+  // --- SOUS-COMPOSANT : FICHE JOUEUR ---
+  const PlayerCard = ({ 
+    playerKey, 
+    name, 
+    data, 
+    activeTab, 
+    setActiveTab, 
+    opponentName 
+  }: { 
+    playerKey: 'p1' | 'p2', 
+    name: string, 
+    data: any, 
+    activeTab: string, 
+    setActiveTab: (t: any) => void,
+    opponentName: string
+  }) => (
+    <div className="bg-surface border border-neutral-800 rounded-xl overflow-hidden flex flex-col h-full">
+      
+      {/* EN-TÊTE JOUEUR */}
+      <div className="bg-neutral-900 p-4 border-b border-neutral-800 relative overflow-hidden">
+        {/* Drapeau en fond (simulé) */}
+        <div className="absolute right-0 top-0 text-neutral-800 opacity-20 transform translate-x-4 -translate-y-2">
+            <Globe size={100} />
         </div>
-        <input 
-            value={val2} onChange={(e) => update('p2', field, e.target.value)}
-            className="bg-transparent text-left pl-3 text-sm text-white font-bold outline-none focus:text-neon focus:bg-black/50"
-            placeholder="-"
-        />
-    </div>
-  );
-
-  // --- COMPOSANT : LIGNE SIMPLE ---
-  const SimpleRow = ({ label, val, section, field }: { label: string, val: string, section: string, field: string }) => (
-    <div className="flex border-b border-neutral-800 h-9">
-        <div className="w-32 bg-neutral-900/50 flex items-center px-3 text-[10px] font-bold text-gray-400 uppercase border-r border-neutral-800">
-            {label}
+        
+        <div className="relative z-10">
+            <div className="flex justify-between items-start">
+                <div>
+                    <h3 className="text-2xl font-black text-white flex items-center gap-2 uppercase tracking-tight">
+                        {playerKey === 'p1' ? <span className="text-blue-500">●</span> : <span className="text-orange-500">●</span>} 
+                        {name}
+                    </h3>
+                    <div className="flex items-center gap-3 mt-2 text-xs text-gray-400 font-mono">
+                        <span className="flex items-center gap-1 bg-black/40 px-2 py-1 rounded border border-neutral-700">
+                            <Trophy size={10} className="text-neon"/> #{data.rank}
+                        </span>
+                        <span className="flex items-center gap-1 bg-black/40 px-2 py-1 rounded border border-neutral-700">
+                            <User size={10}/> {data.ageHeight}
+                        </span>
+                        <span className="flex items-center gap-1 bg-black/40 px-2 py-1 rounded border border-neutral-700">
+                            <Globe size={10}/> {data.nationality}
+                        </span>
+                    </div>
+                </div>
+            </div>
         </div>
-        <input 
-            value={val} onChange={(e) => updateNested(section, field, e.target.value)}
-            className="flex-1 bg-transparent px-3 text-sm text-white outline-none focus:text-neon"
-        />
-    </div>
-  );
-
-  const SectionHeader = ({ title, icon: Icon, color }: { title: string, icon: any, color: string }) => (
-      <div className={`p-2 flex items-center justify-center gap-2 bg-neutral-950 border-y border-neutral-800 mt-6 first:mt-0 ${color}`}>
-          <Icon size={14} />
-          <span className="text-xs font-black uppercase tracking-widest">{title}</span>
       </div>
+
+      {/* ONGLETS FLASHSCORE STYLE */}
+      <div className="flex border-b border-neutral-800 bg-black/40 text-[10px] font-bold uppercase tracking-wider">
+          {['RESUME', 'ACTU', 'RESULTATS', 'CALENDRIER'].map((tab) => (
+              <button 
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`flex-1 py-3 hover:bg-white/5 transition-colors ${activeTab === tab ? 'text-white border-b-2 border-neon bg-white/5' : 'text-gray-500'}`}
+              >
+                  {tab}
+              </button>
+          ))}
+      </div>
+
+      {/* CONTENU */}
+      <div className="p-4 space-y-6 overflow-y-auto h-[500px] scrollbar-thin scrollbar-thumb-neutral-700">
+          
+          {activeTab === 'RESUME' && (
+              <>
+                {/* 1. RÉSUMÉ PROFIL */}
+                <div>
+                    <h4 className="text-xs font-bold text-neon mb-2 uppercase flex items-center gap-2">
+                        <User size={14}/> Profil & Palmarès
+                    </h4>
+                    <div className="border border-neutral-700 rounded-lg overflow-hidden text-xs">
+                        {[
+                            { l: 'Classement Actuel', k: 'rank' },
+                            { l: 'Meilleur Class.', k: 'bestRank' },
+                            { l: 'Âge / Taille', k: 'ageHeight' },
+                            { l: 'Nationalité', k: 'nationality' },
+                            { l: 'Main', k: 'hand' },
+                            { l: 'Style / Titres', k: 'style' }, // On utilise 'style' pour les titres/palmarès
+                        ].map((row, idx) => (
+                            <div key={idx} className="grid grid-cols-[120px_1fr] border-b border-neutral-800 last:border-0">
+                                <div className="bg-neutral-800/50 p-2 text-gray-400 font-semibold border-r border-neutral-800 flex items-center">
+                                    {row.l}
+                                </div>
+                                <input 
+                                    value={data[row.k]} 
+                                    onChange={(e) => handleChange([playerKey, row.k], e.target.value)}
+                                    className="bg-transparent text-white p-2 outline-none w-full font-mono focus:bg-white/5 transition-colors"
+                                />
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* 2. MATCH DU JOUR */}
+                <div>
+                    <h4 className="text-xs font-bold text-blue-400 mb-2 uppercase flex items-center gap-2">
+                        <Activity size={14}/> Match du Jour
+                    </h4>
+                    <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-3 text-xs shadow-lg">
+                        <div className="flex justify-between items-center mb-3 border-b border-neutral-800 pb-2">
+                            <span className="text-gray-400 font-bold">{report.identity.tournament}</span>
+                            <span className="text-green-500 font-bold animate-pulse flex items-center gap-1">
+                                ● EN COURS
+                            </span>
+                        </div>
+                        <div className="grid grid-cols-3 items-center text-center">
+                            <span className="font-bold text-white">{name}</span>
+                            <span className="text-gray-600 text-[10px]">VS</span>
+                            <span className="font-bold text-white">{opponentName}</span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* 3. DERNIERS RÉSULTATS (TABLEAU FLASHSCORE) */}
+                <div>
+                    <h4 className="text-xs font-bold text-orange-500 mb-2 uppercase flex items-center gap-2">
+                        <Trophy size={14}/> Derniers Résultats
+                    </h4>
+                    <div className="border border-neutral-700 rounded-lg overflow-hidden text-[10px]">
+                        {/* En-têtes */}
+                        <div className="grid grid-cols-[50px_1fr_1fr_40px_30px] bg-neutral-800 p-2 font-bold text-gray-400 border-b border-neutral-700">
+                            <span>Date</span><span>Tournoi</span><span>Adv.</span><span>Sc.</span><span>R</span>
+                        </div>
+                        
+                        {/* Lignes (Simulées pour l'édition manuelle, car l'API donne un bloc texte) */}
+                        {[1, 2, 3, 4, 5].map((i) => (
+                            <div key={i} className="grid grid-cols-[50px_1fr_1fr_40px_30px] border-b border-neutral-800 p-1 hover:bg-white/5 items-center group">
+                                <input className="bg-transparent text-gray-500 w-full outline-none text-center" defaultValue={i===1 ? "01.12" : "-"} />
+                                <input className="bg-transparent text-gray-300 w-full outline-none truncate font-bold" defaultValue={i===1 ? "Angers" : "-"} />
+                                <input className="bg-transparent text-white w-full outline-none truncate" placeholder="Adversaire..." />
+                                <input className="bg-transparent text-neon w-full outline-none text-center font-mono" placeholder="0-0" />
+                                <div className="flex justify-center">
+                                    <span className="w-4 h-4 rounded bg-neutral-700 group-hover:bg-neutral-600 cursor-pointer flex items-center justify-center text-white font-bold">?</span>
+                                </div>
+                            </div>
+                        ))}
+                        
+                        {/* Zone de texte brut (Source) */}
+                        <div className="p-2 bg-black/30 border-t border-neutral-800">
+                            <p className="text-[9px] text-gray-600 mb-1 uppercase">Données brutes (Source Web) :</p>
+                            <textarea 
+                                className="w-full bg-transparent text-gray-400 text-[10px] outline-none resize-none h-12"
+                                value={data.last5}
+                                onChange={(e) => handleChange([playerKey, 'last5'], e.target.value)}
+                            />
+                        </div>
+                    </div>
+                </div>
+              </>
+          )}
+
+          {activeTab !== 'RESUME' && (
+              <div className="h-48 flex flex-col items-center justify-center text-gray-500 border border-dashed border-neutral-800 rounded-xl bg-black/20">
+                  <Clock size={24} className="mb-2 opacity-50"/>
+                  <p>Données {activeTab} en cours d'intégration.</p>
+              </div>
+          )}
+      </div>
+    </div>
   );
 
   return (
-    <div className="mt-6 bg-black border border-neutral-700 rounded-xl overflow-hidden shadow-2xl font-sans">
+    <div className="mt-6 space-y-6">
       
-      {/* 1. HEADER MATCH */}
-      <div className="bg-gradient-to-r from-neutral-900 to-neutral-800 p-4 border-b border-neutral-700">
-          <div className="flex justify-between items-center mb-2">
-              <div className="flex items-center gap-2">
-                  <Trophy size={16} className="text-neon"/>
-                  <span className="text-xs font-bold text-neon uppercase">{report.identity.tournament}</span>
+      {/* 1. BANDEAU MATCH (Identité) */}
+      <div className="bg-black border border-neutral-700 rounded-xl p-5 flex flex-col md:flex-row justify-between items-center gap-4 shadow-xl">
+          <div className="flex flex-col gap-1">
+              <div className="flex items-center gap-2 text-neon">
+                  <MapPin size={14}/>
+                  <input 
+                    value={report.identity.tournament} 
+                    onChange={(e) => handleChange(['identity', 'tournament'], e.target.value)}
+                    className="bg-transparent text-sm font-bold text-neon uppercase tracking-widest outline-none w-64"
+                  />
               </div>
-              <button className="text-[10px] bg-black/40 hover:bg-black/60 text-white px-3 py-1 rounded border border-white/10 flex gap-1 items-center">
-                  <Save size={10}/> Sauvegarder
-              </button>
+              <div className="flex items-center gap-4 text-white text-3xl font-black tracking-tighter">
+                  <input value={report.identity.p1Name} onChange={(e) => handleChange(['identity', 'p1Name'], e.target.value)} className="bg-transparent text-right w-full outline-none"/>
+                  <span className="text-gray-700 text-xl italic">VS</span>
+                  <input value={report.identity.p2Name} onChange={(e) => handleChange(['identity', 'p2Name'], e.target.value)} className="bg-transparent text-left w-full outline-none"/>
+              </div>
+              <div className="flex items-center gap-4 mt-1 text-xs text-gray-400">
+                  <span className="flex items-center gap-1 bg-neutral-900 px-2 py-1 rounded"><Calendar size={12}/> {report.identity.date}</span>
+                  <span className="flex items-center gap-1 bg-neutral-900 px-2 py-1 rounded"><Globe size={12}/> {report.conditions.weather}</span>
+                  <span className="flex items-center gap-1 bg-neutral-900 px-2 py-1 rounded border border-neutral-700 text-white font-bold">{report.identity.surface}</span>
+              </div>
           </div>
-          <div className="grid grid-cols-3 items-center text-center">
-              <input value={report.identity.p1Name} onChange={e => updateNested('identity', 'p1Name', e.target.value)} className="bg-transparent text-right text-xl font-bold text-white outline-none w-full"/>
-              <span className="text-xs text-gray-600 font-bold">VS</span>
-              <input value={report.identity.p2Name} onChange={e => updateNested('identity', 'p2Name', e.target.value)} className="bg-transparent text-left text-xl font-bold text-white outline-none w-full"/>
-          </div>
-          <div className="text-center mt-1">
-              <input value={report.identity.date} onChange={e => updateNested('identity', 'date', e.target.value)} className="bg-transparent text-center text-xs text-gray-400 outline-none w-full"/>
-          </div>
-      </div>
-
-      {/* 2. PROFILS COMPARATIFS (Le Cœur) */}
-      <SectionHeader title="Profils Comparatifs" icon={TrendingUp} color="text-blue-400" />
-      
-      <CompRow label="Classement" val1={report.p1.rank} val2={report.p2.rank} field="rank" />
-      <CompRow label="Meilleur Class." val1={report.p1.bestRank} val2={report.p2.bestRank} field="bestRank" />
-      <CompRow label="Âge / Taille" val1={report.p1.ageHeight} val2={report.p2.ageHeight} field="ageHeight" />
-      <CompRow label="Nationalité" val1={report.p1.nationality} val2={report.p2.nationality} field="nationality" />
-      <CompRow label="Main" val1={report.p1.hand} val2={report.p2.hand} field="hand" />
-      <div className="h-1 bg-neutral-900 border-y border-neutral-800"></div>
-      <CompRow label="Winrate Saison" val1={report.p1.winrateSeason} val2={report.p2.winrateSeason} field="winrateSeason" />
-      <CompRow label="Winrate Surface" val1={report.p1.winrateSurface} val2={report.p2.winrateSurface} field="winrateSurface" />
-      <CompRow label="Aces / Match" val1={report.p1.aces} val2={report.p2.aces} field="aces" />
-      <CompRow label="Doubles Fautes" val1={report.p1.doubleFaults} val2={report.p2.doubleFaults} field="doubleFaults" />
-      <CompRow label="% 1ère Balle" val1={report.p1.firstServe} val2={report.p2.firstServe} field="firstServe" />
-      <div className="h-1 bg-neutral-900 border-y border-neutral-800"></div>
-      <CompRow label="Forme (1-10)" val1={report.p1.form} val2={report.p2.form} field="form" />
-      <CompRow label="Blessures" val1={report.p1.injury} val2={report.p2.injury} field="injury" />
-      <CompRow label="Motivation" val1={report.p1.motivation} val2={report.p2.motivation} field="motivation" />
-
-      {/* 3. STATISTIQUES LIVE (Structure prête pour les chiffres) */}
-      <SectionHeader title="Statistiques Live (Set 1)" icon={Activity} color="text-neon" />
-      
-      <div className="grid grid-cols-1 lg:grid-cols-2 divide-x divide-neutral-800 border-b border-neutral-800">
-          <div>
-             <div className="bg-neutral-900/30 p-1 text-center text-[10px] text-gray-500 font-bold">SERVICE</div>
-             <CompRow label="Aces" val1={report.p1.aces} val2={report.p2.aces} field="aces" />
-             <CompRow label="% 1er Serv." val1={report.p1.firstServe} val2={report.p2.firstServe} field="firstServe" />
-             <CompRow label="Pts Gagnés Serv." val1="-" val2="-" field="temp" />
-          </div>
-          <div>
-             <div className="bg-neutral-900/30 p-1 text-center text-[10px] text-gray-500 font-bold">RETOUR</div>
-             <CompRow label="Pts Retour" val1="-" val2="-" field="temp" />
-             <CompRow label="Breaks" val1="-" val2="-" field="temp" />
-             <CompRow label="Total Points" val1="-" val2="-" field="temp" />
-          </div>
-      </div>
-
-      {/* 4. ANALYSE PROFONDE (Météo, Bookmaker, H2H) */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 divide-x divide-neutral-800 border-t border-neutral-700">
           
-          {/* GAUCHE : CONDITIONS & BOOKMAKER */}
-          <div>
-              <SectionHeader title="Conditions & Cotes" icon={Thermometer} color="text-orange-400" />
-              <SimpleRow label="Météo" val={report.conditions.weather} section="conditions" field="weather" />
-              <SimpleRow label="Vent / Alt." val={`${report.conditions.wind} / ${report.conditions.altitude}`} section="conditions" field="wind" />
-              <SimpleRow label="Cotes Live" val={`J1: ${report.bookmaker.oddA} | J2: ${report.bookmaker.oddB}`} section="bookmaker" field="oddA" />
-              <SimpleRow label="Mouvement" val={report.bookmaker.movement || "-"} section="bookmaker" field="movement" />
-              <SimpleRow label="Smart Money" val={report.bookmaker.smartMoney || "-"} section="bookmaker" field="smartMoney" />
-          </div>
-
-          {/* DROITE : H2H & SYNTHÈSE */}
-          <div>
-              <SectionHeader title="H2H & Synthèse" icon={Brain} color="text-purple-400" />
-              <SimpleRow label="H2H Global" val={report.h2h.global} section="h2h" field="global" />
-              <SimpleRow label="Sur Surface" val={report.h2h.surface} section="h2h" field="surface" />
-              <SimpleRow label="Mental" val={report.synthesis.mental} section="synthesis" field="mental" />
-              <SimpleRow label="Risque" val={report.synthesis.risk} section="synthesis" field="risk" />
-              <div className="flex border-b border-neutral-800 h-9 bg-red-900/10">
-                 <div className="w-32 bg-neutral-900/50 flex items-center px-3 text-[10px] font-bold text-red-400 uppercase border-r border-neutral-800">
-                    <AlertTriangle size={12} className="mr-2"/> Facteur X
-                 </div>
-                 <input 
-                    value={report.synthesis.xFactor} 
-                    onChange={(e) => updateNested('synthesis', 'xFactor', e.target.value)}
-                    className="flex-1 bg-transparent px-3 text-sm text-red-300 outline-none font-bold"
-                 />
-              </div>
-          </div>
+          <button className="bg-neon hover:bg-neonHover text-black font-bold px-6 py-3 rounded-xl flex items-center gap-2 shadow-lg shadow-neon/20 transition-all transform hover:scale-105">
+              <Save size={18}/> SAUVEGARDER FICHE
+          </button>
       </div>
 
-      <div className="p-2 bg-neutral-950 text-center border-t border-neutral-800">
-          <p className="text-[10px] text-gray-600">Données "God Mode" récupérées via Web Scraping. Modifiables manuellement.</p>
+      {/* 2. LES DEUX FICHES CÔTE À CÔTE */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <PlayerCard 
+            playerKey="p1" 
+            name={report.identity.p1Name} 
+            data={report.p1} 
+            activeTab={tabP1} 
+            setActiveTab={setTabP1}
+            opponentName={report.identity.p2Name}
+          />
+          <PlayerCard 
+            playerKey="p2" 
+            name={report.identity.p2Name} 
+            data={report.p2} 
+            activeTab={tabP2} 
+            setActiveTab={setTabP2}
+            opponentName={report.identity.p1Name}
+          />
+      </div>
+
+      {/* 3. SECTION HEAD TO HEAD (Bas de page) */}
+      <div className="bg-surface border border-neutral-800 rounded-xl p-6">
+          <div className="flex items-center gap-2 mb-4 border-b border-neutral-800 pb-4">
+              <Activity size={20} className="text-purple-500"/>
+              <h3 className="font-bold text-white">CONFRONTATIONS DIRECTES (H2H)</h3>
+          </div>
+          
+          <div className="grid grid-cols-3 gap-4">
+              <div className="bg-black/30 p-4 rounded-lg border border-neutral-800 text-center">
+                  <p className="text-[10px] text-gray-500 uppercase mb-1">Score Global</p>
+                  <input 
+                    value={report.h2h.total} 
+                    onChange={(e) => handleChange(['h2h', 'total'], e.target.value)}
+                    className="text-3xl font-black text-white bg-transparent text-center w-full outline-none"
+                  />
+              </div>
+              <div className="col-span-2 bg-black/30 p-4 rounded-lg border border-neutral-800">
+                  <p className="text-[10px] text-gray-500 uppercase mb-1">Analyse Matchup & Surface</p>
+                  <input 
+                    value={report.h2h.surface} 
+                    onChange={(e) => handleChange(['h2h', 'surface'], e.target.value)}
+                    className="text-sm text-gray-300 bg-transparent w-full outline-none border-b border-neutral-700 pb-1 mb-2"
+                    placeholder="Stats sur surface..."
+                  />
+                   <input 
+                    value={report.h2h.lastMatches} 
+                    onChange={(e) => handleChange(['h2h', 'lastMatches'], e.target.value)}
+                    className="text-xs text-gray-500 bg-transparent w-full outline-none italic"
+                    placeholder="Derniers scores..."
+                  />
+              </div>
+          </div>
       </div>
 
     </div>
