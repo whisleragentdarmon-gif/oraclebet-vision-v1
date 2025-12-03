@@ -1,9 +1,9 @@
-import { GodModeReportV2, Match } from '../../types';
+import { GodModeReportV2 } from '../../types';
 
 export const GodEngine = {
   generateReportV2: async (p1Name: string, p2Name: string, tournament: string): Promise<GodModeReportV2> => {
     
-    // 1. Initialisation COMPLÈTE (On remplit tout pour éviter les erreurs TS2740)
+    // 1. Initialisation COMPLÈTE (Correction de l'erreur TS2741)
     const report: GodModeReportV2 = {
       identity: {
         p1Name, p2Name, tournament, surface: "Dur", date: "Auj.",
@@ -13,7 +13,8 @@ export const GodEngine = {
       p1: createEmptyProfile(),
       p2: createEmptyProfile(),
       h2h: { 
-        global: "0 - 0", surface: "0 - 0", lastMatches: "-", trend: "Neutre", analysis: "-" 
+        // ✅ AJOUT DE 'advantage' QUI MANQUAIT
+        global: "0 - 0", surface: "0 - 0", advantage: "Neutre", lastMatches: "-", trend: "Neutre", analysis: "-" 
       },
       conditions: { 
         weather: "-", temp: "-", wind: "-", humidity: "-", 
@@ -37,7 +38,7 @@ export const GodEngine = {
     };
 
     try {
-      // 2. Recherches (Code inchangé, fonctionnel)
+      // 2. Recherches
       const queries = [
         `${p1Name} tennis profile stats`,
         `${p2Name} tennis profile stats`,
@@ -63,7 +64,6 @@ export const GodEngine = {
   }
 };
 
-// ✅ CORRECTION CRUCIALE : Tous les champs requis par PlayerProfileV2 sont ici
 function createEmptyProfile() {
     return {
         rank: "-", bestRank: "-", ageHeight: "- / -", nationality: "-",
@@ -73,4 +73,9 @@ function createEmptyProfile() {
         form: "-", confidence: "-", injury: "Non", fatigue: "Faible", 
         lastMatchDate: "-", serveStats: "-", returnStats: "-", motivation: "-", social: "-", last5: "-"
     };
+}
+
+function extract(text: string, regex: RegExp): string | null {
+    const match = text.match(regex);
+    return match ? match[1] : null;
 }
