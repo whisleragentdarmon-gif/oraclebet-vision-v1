@@ -29,7 +29,7 @@ export interface LearningExperience {
   weightsUsed?: any;
 }
 
-// --- Joueurs ---
+// --- Joueurs & Attributs ---
 export interface PlayerAttributes {
   power: number;
   serve: number;
@@ -40,8 +40,9 @@ export interface PlayerAttributes {
   speed?: number;
 }
 
-// --- Cotes ---
+// --- Cotes & Bookmakers ---
 export type BookmakerName = 'Winamax' | 'Betclic' | 'Unibet' | 'Pinnacle' | 'Bwin';
+
 export interface BookmakerOdds {
   name: BookmakerName;
   p1: number;
@@ -52,6 +53,7 @@ export interface BookmakerOdds {
   isTrap: boolean;
   isValue: boolean;
 }
+
 export interface ArbitrageResult {
   isSurebet: boolean;
   profit: number;
@@ -59,6 +61,7 @@ export interface ArbitrageResult {
   bookmakerP2: string;
   msg: string;
 }
+
 export interface OddsAnalysis {
   bestOdds: { p1: number; p2: number; bookieP1: string; bookieP2: string };
   marketAverage: { p1: number; p2: number };
@@ -77,6 +80,7 @@ export interface BankrollSimulationMetric {
   minBankroll: number;
   paths?: { x: number; y: number }[][];
 }
+
 export type SimulationResult = BankrollSimulationMetric; 
 
 export interface BetRecord {
@@ -104,10 +108,31 @@ export interface BankrollState {
     history: BetRecord[];
 }
 
-// --- H2H & GOD MODE (CORRIGÉ) ---
+// --- GOD MODE DATA & DATA MARKET ---
+// Ces interfaces manquaient et provoquaient les erreurs dans les Engines
+export interface PressAnalysis {
+  sentimentScore: number;
+  scandalAlert: boolean;
+  mentalPressureIndex: number;
+  recentQuotes: { source: string; text: string; sentiment: string }[];
+  rumors: string[];
+}
 
-// Ajout pour MonteCarlo
-export type WebScrapedData = GodModeAnalysis; 
+export interface SocialSentiment {
+  twitterHype: number;
+  redditMood: string;
+  instagramActivity: string;
+  publicBettingTrend: number;
+}
+
+export interface GeoCondition {
+  altitude: number;
+  humidity: number;
+  windSpeed: number;
+  courtSpeedIndex: number;
+  ballType: string;
+  isIndoor: boolean;
+}
 
 export interface H2HFullProfile {
   p1: {
@@ -126,8 +151,6 @@ export interface H2HFullProfile {
     weather: string; altitude: string; motivation: string;
   };
   sources: string[];
-  
-  // ✅ AJOUT POUR CORRIGER DetailedH2H : Zone de notes manuelles
   human?: {
       note: string;
       confidenceModifier: number;
@@ -135,18 +158,52 @@ export interface H2HFullProfile {
   };
 }
 
+// Alias pour corriger l'erreur dans CustomMatchInput
+export type FullMatchDossier = H2HFullProfile; 
+
+export interface MomentumData {
+  last5: string;
+  results: string;
+  fatigue: string;
+  pointsToDefend: string;
+  motivation: string;
+}
+
+export interface PlayerProfile {
+  rank: string; bestRank: string; age: string; height: string; style: string; hand: string;
+  strength: string; weakness: string; injury: string; form: string; 
+  matchesCount: string; timeOnCourt: string; winSeason: string; winCareer: string; winSurface: string;
+  tieBreak: string; vsTop10: string; motivation: string; social: string;
+}
+
 export interface GodModeReport {
-    // ... (Structure compatible pour l'affichage)
-    identity: any;
-    playerA: any;
-    playerB: any;
-    h2h: any;
-    conditions: any;
-    momentum: any;
-    bookmaker: any;
-    psychology: any;
-    synthesis: any;
-    prediction: any;
+  identity: {
+    p1: string; p2: string; tournament: string; category: string; surface: string; format: string; time: string;
+  };
+  playerA: PlayerProfile;
+  playerB: PlayerProfile;
+  h2h: {
+    global: string; surface: string; sets: string; games: string; context: string; styleMatchup: string;
+  };
+  conditions: {
+    weather: string; temp: string; wind: string; humidity: string; altitude: string; speed: string; indoor: string; advantage: string;
+  };
+  momentum: {
+    p1: MomentumData; p2: MomentumData;
+  };
+  bookmaker: {
+    oddA: string; oddB: string; value: string; movement: string; trap: string; volume: string;
+  };
+  psychology: {
+    p1: string; p2: string;
+  };
+  synthesis: {
+    stat: string; mental: string; physical: string; surface: string; momentum: string;
+  };
+  prediction: {
+    probA: string; probB: string; probOver: string; probTieBreak: string; probUpset: string; risk: string;
+    recoWinner: string; recoOver: string; recoSet: string;
+  };
 }
 
 export interface GodModeAnalysis {
@@ -213,3 +270,6 @@ export interface ComboStrategy {
 }
 
 export type ComboStrategyResult = ComboStrategy;
+
+// Ajout pour MonteCarlo (si utilisé)
+export type WebScrapedData = GodModeAnalysis;
