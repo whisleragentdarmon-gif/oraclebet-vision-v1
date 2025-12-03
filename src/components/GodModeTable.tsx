@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { GodModeReportV2 } from '../engine/types';
-// ✅ CORRECTION : Ajout des icônes manquantes (Brain, Thermometer, Droplets, Eye, Wind)
-import { Save, Edit3, Trophy, Calendar, Activity, User, Globe, Clock, MapPin, Star, List, Brain, Thermometer, Droplets, Eye, Wind } from 'lucide-react';
+import { Save, Trophy, Calendar, Activity, User, Globe, Clock, MapPin, Star, List, Wind, Thermometer, Droplets, Eye } from 'lucide-react';
 
 interface Props {
   report: GodModeReportV2;
@@ -27,14 +26,7 @@ export const GodModeTable: React.FC<Props> = ({ report, onUpdate }) => {
   const PlayerCard = ({ 
     playerKey, name, data, activeTab, setActiveTab, colorClass, opponentName 
   }: { 
-    // ✅ CORRECTION : Ajout explicite de opponentName et colorClass dans le type
-    playerKey: 'p1' | 'p2', 
-    name: string, 
-    data: any, 
-    activeTab: string, 
-    setActiveTab: (t: any) => void, 
-    colorClass: string,
-    opponentName: string 
+    playerKey: 'p1' | 'p2', name: string, data: any, activeTab: string, setActiveTab: (t: any) => void, colorClass: string, opponentName: string 
   }) => (
     <div className="bg-surface border border-neutral-800 rounded-xl overflow-hidden flex flex-col h-full shadow-lg">
       
@@ -71,6 +63,7 @@ export const GodModeTable: React.FC<Props> = ({ report, onUpdate }) => {
       {/* CONTENU */}
       <div className="p-4 space-y-6 overflow-y-auto h-[500px] scrollbar-thin scrollbar-thumb-neutral-700 bg-[#1a1a1a]">
           
+          {/* ONGLET PROFIL */}
           {activeTab === 'PROFIL' && (
             <>
               <div className="space-y-2">
@@ -110,6 +103,7 @@ export const GodModeTable: React.FC<Props> = ({ report, onUpdate }) => {
             </>
           )}
 
+          {/* ONGLET STATS */}
           {activeTab === 'STATS' && (
               <div className="space-y-4">
                  <div className="space-y-2">
@@ -146,9 +140,10 @@ export const GodModeTable: React.FC<Props> = ({ report, onUpdate }) => {
               </div>
           )}
 
+          {/* ONGLET PSYCHO */}
           {activeTab === 'PSYCHO' && (
               <div className="space-y-2">
-                  <div className="text-xs font-bold text-purple-400 uppercase flex gap-2"><Brain size={14}/> Psychologie</div>
+                  <div className="text-xs font-bold text-purple-400 uppercase flex gap-2"><Activity size={14}/> Psychologie</div>
                   <div className="border border-neutral-700 rounded-lg overflow-hidden text-xs bg-black/20">
                       {[
                           {l: 'Motivation', k: 'motivation'},
@@ -164,6 +159,7 @@ export const GodModeTable: React.FC<Props> = ({ report, onUpdate }) => {
               </div>
           )}
 
+          {/* ONGLET CALENDRIER */}
           {activeTab === 'CALENDRIER' && (
               <div className="space-y-2">
                   <div className="text-xs font-bold text-white uppercase">📅 Calendrier Prochain</div>
@@ -180,15 +176,17 @@ export const GodModeTable: React.FC<Props> = ({ report, onUpdate }) => {
               </div>
           )}
 
+          {/* ONGLET H2H */}
           {activeTab === 'H2H' && (
               <div className="space-y-2">
                   <div className="text-xs font-bold text-orange-500 uppercase">⚔️ Historique vs Adversaire</div>
                   <div className="text-[10px] text-gray-400 border border-dashed border-neutral-700 p-3 rounded text-center">
-                      Voir la section H2H globale en bas de page pour le détail complet des confrontations.
+                      Voir la section H2H globale en bas de page.
                   </div>
               </div>
           )}
           
+          {/* ONGLET ENJEUX */}
           {activeTab === 'ENJEUX' && (
               <div className="space-y-2">
                   <div className="text-xs font-bold text-green-400 uppercase">💰 Enjeux Financiers & Points</div>
@@ -210,7 +208,7 @@ export const GodModeTable: React.FC<Props> = ({ report, onUpdate }) => {
   );
 
   return (
-    <div className="container mt-6 space-y-6 font-sans text-white">
+    <div className="mt-6 space-y-6 font-sans text-white">
       
       {/* 1. MATCH HEADER */}
       <div className="bg-gradient-to-br from-[#1a1a1a] to-[#0a0a0a] border-2 border-orange-500/30 rounded-xl p-6 grid grid-cols-1 md:grid-cols-2 gap-6 shadow-2xl">
@@ -228,7 +226,7 @@ export const GodModeTable: React.FC<Props> = ({ report, onUpdate }) => {
                       <Calendar size={14} className="text-gray-400"/> <input value={report.identity.date} onChange={(e) => handleChange(['identity', 'date'], e.target.value)} className="bg-transparent w-24 outline-none"/>
                   </div>
                   <div className="flex items-center gap-2 bg-white/5 px-3 py-1 rounded border border-white/10">
-                      {/* ✅ CORRECTION : On accède à 'time' via 'any' pour éviter l'erreur TS */}
+                      {/* ✅ Utilisation de 'any' pour éviter erreur TS si la propriété time est optionnelle */}
                       <Clock size={14} className="text-gray-400"/> <input value={(report.identity as any).time || "16:40"} onChange={(e) => handleChange(['identity', 'time'], e.target.value)} className="bg-transparent w-16 outline-none"/>
                   </div>
               </div>
@@ -287,11 +285,12 @@ export const GodModeTable: React.FC<Props> = ({ report, onUpdate }) => {
               </div>
           </div>
           <div className="mt-4 bg-black/30 p-2 rounded text-xs text-gray-400 text-center italic">
-              {/* ✅ CORRECTION : lastMatch (singulier) comme dans les Types */}
-              <input value={report.h2h.lastMatches} onChange={(e) => handleChange(['h2h', 'lastMatches'], e.target.value)} ...
-                onChange={(e) => handleChange(['h2h', 'lastMatch'], e.target.value)}
+              {/* ✅ CORRECTION ICI : Utilisation du bon nom de propriété (lastMatches, pluriel) */}
+              <input 
+                value={report.h2h.lastMatches} 
+                onChange={(e) => handleChange(['h2h', 'lastMatches'], e.target.value)}
                 className="bg-transparent w-full text-center outline-none"
-                placeholder="Dernier match..."
+                placeholder="Détail des derniers matchs..."
               />
           </div>
       </div>
