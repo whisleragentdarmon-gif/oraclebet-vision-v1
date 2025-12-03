@@ -1,92 +1,48 @@
 import React, { useState } from 'react';
-import { MatchCard } from '../components/MatchCard';
-import { MatchDetailModal } from '../components/MatchDetailModal';
-import { CustomMatchInput } from '../components/CustomMatchInput'; // ✅ Import du formulaire manuel
-import { Match, Circuit } from '../types';
-import { Filter, RefreshCw, Trophy, Globe, Calendar } from 'lucide-react';
-import { useData } from '../context/DataContext';
+import { CustomMatchInput } from '../components/CustomMatchInput';
+import { FullMatchDossier } from '../engine/types';
+import { CheckCircle, Search } from 'lucide-react';
 
 export const ProgramPage: React.FC = () => {
-  const { matches, loading, refreshData, scrapeWebMatches } = useData();
-  const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
-  const [circuitFilter, setCircuitFilter] = useState<'ALL' | Circuit>('ALL');
+  const [lastDossier, setLastDossier] = useState<FullMatchDossier | null>(null);
 
-  // On affiche TOUT ce qui n'est pas fini (Live + Upcoming + Scheduled)
-  const displayedMatches = matches.filter(m => {
-      if (m.status === 'FINISHED') return false; // On cache les finis (ils sont dans Résultats)
-
-      if (circuitFilter !== 'ALL') {
-          if (circuitFilter === 'ITF' && !m.tournament.includes('ITF')) return false;
-          if (circuitFilter === 'CHALLENGER' && !m.tournament.includes('Challenger')) return false;
-          if (circuitFilter === 'WTA' && !m.tournament.includes('WTA')) return false;
-          if (circuitFilter === 'ATP' && !m.tournament.includes('ATP')) return false;
-      }
-      return true;
-  });
+  // ✅ C'est cette fonction qui manquait pour corriger l'erreur
+  const handleManualAnalysis = (dossier: FullMatchDossier) => {
+    console.log("Dossier manuel reçu :", dossier);
+    setLastDossier(dossier);
+    // Ici, plus tard, on pourra rediriger vers la page Analyse avec ces données
+  };
 
   return (
-    <div>
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
-        <div>
-            <div className="flex items-center gap-3">
-                <div className="p-2 bg-neon rounded-lg text-black">
-                    <Calendar size={24} />
-                </div>
-                <div>
-                    <h2 className="text-2xl font-bold">Programme & Analyse</h2>
-                    <p className="text-sm text-gray-400">Sélectionnez un match pour lancer le God Mode.</p>
-                </div>
-            </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-            {/* API Refresh */}
-            <button onClick={refreshData} className="p-2 bg-neutral-800 rounded-full hover:bg-neutral-700 transition-colors border border-neutral-700" title="Sync API SportScore">
-                <RefreshCw size={16} className={loading ? "animate-spin text-neon" : "text-gray-400"} />
-            </button>
-            
-            {/* Guérilla Scraping */}
-            <button onClick={scrapeWebMatches} className="flex items-center gap-2 px-4 py-2 bg-blue-900/30 border border-blue-500/30 rounded-lg hover:bg-blue-900/50 text-blue-400 text-sm font-bold transition-colors">
-                <Globe size={16} /> SCANNER LE WEB
-            </button>
-        </div>
+    <div className="max-w-4xl mx-auto space-y-8">
+      <div className="flex items-center gap-3 mb-6">
+          <div className="p-3 bg-neutral-800 rounded-full text-neon">
+              <Search size={24} />
+          </div>
+          <div>
+              <h2 className="text-2xl font-bold text-white">Recherche Manuelle</h2>
+              <p className="text-sm text-gray-400">Lancez le God Mode sur un match qui n'est pas dans la liste du jour.</p>
+          </div>
       </div>
 
-      {/* ✅ ZONE D'AJOUT MANUEL (C'est ici que tu crées tes matchs) */}
-      <div className="mb-6">
-          <CustomMatchInput />
-      </div>
+      {/* 👇 CORRECTION : On passe bien la prop onAnalysisComplete */}
+      <CustomMatchInput onAnalysisComplete={handleManualAnalysis} />
 
-      {/* Filtres */}
-      <div className="flex bg-surface border border-neutral-800 rounded-lg p-1 overflow-x-auto mb-6 w-full md:w-auto">
-            {['ALL', 'ATP', 'WTA', 'CHALLENGER', 'ITF'].map((c) => (
-                <button key={c} onClick={() => setCircuitFilter(c as any)} className={`px-4 py-2 text-xs font-bold rounded whitespace-nowrap flex items-center gap-1 transition-colors ${circuitFilter === c ? 'bg-white text-black' : 'text-gray-500 hover:text-white'}`}>
-                    {c === 'ALL' && <Trophy size={12} />} {c}
-                </button>
-            ))}
-      </div>
-
-      {/* Liste des Matchs */}
-      {displayedMatches.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {displayedMatches.map(match => (
-            <MatchCard 
-                key={match.id} 
-                match={match} 
-                onClick={() => setSelectedMatch(match)} 
-            />
-          ))}
-        </div>
-      ) : (
-        <div className="flex flex-col items-center justify-center h-64 bg-surface rounded-2xl border border-neutral-800 border-dashed">
-          <Filter className="text-gray-600 mb-4" size={48} />
-          <p className="text-gray-400 font-bold">Aucun match au programme.</p>
-          <p className="text-xs text-gray-600 mt-2">Ajoutez un match manuellement ou scannez le web.</p>
-        </div>
+      {/* Petit feedback visuel si un dossier est généré */}
+      {lastDossier && (
+          <div className="bg-green-900/20 border border-green-500/50 p-6 rounded-xl flex items-start gap-4 animate-fade-in">
+              <CheckCircle className="text-green-500 shrink-0" size={24} />
+              <div>
+                  <h4 className="font-bold text-white text-lg">Analyse Terminée</h4>
+                  <p className="text-gray-300 text-sm mt-1">
+                      Les données pour ce match ont été récupérées avec succès par le God Mode.
+                  </p>
+                  <div className="mt-4 p-3 bg-black/40 rounded border border-green-500/20 font-mono text-xs text-green-300">
+                      Données prêtes : H2H, Météo: {lastDossier.context.weather}, Stats Surface...
+                  </div>
+              </div>
+          </div>
       )}
-
-      <MatchDetailModal match={selectedMatch} onClose={() => setSelectedMatch(null)} />
     </div>
   );
 };
