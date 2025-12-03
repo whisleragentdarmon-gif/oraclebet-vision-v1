@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { GodModeReportV2 } from '../engine/types';
-import { Save, Edit3, Trophy, Calendar, Activity, User, Globe, Clock, MapPin, Star, List, Cloud, Wind, Droplets, Eye } from 'lucide-react';
+// ✅ CORRECTION : Ajout des icônes manquantes (Brain, Thermometer, Droplets, Eye, Wind)
+import { Save, Edit3, Trophy, Calendar, Activity, User, Globe, Clock, MapPin, Star, List, Brain, Thermometer, Droplets, Eye, Wind } from 'lucide-react';
 
 interface Props {
   report: GodModeReportV2;
@@ -9,11 +10,9 @@ interface Props {
 
 export const GodModeTable: React.FC<Props> = ({ report, onUpdate }) => {
   
-  // États pour les onglets (indépendants pour chaque joueur)
   const [tabP1, setTabP1] = useState<'PROFIL' | 'STATS' | 'PSYCHO' | 'CALENDRIER' | 'H2H' | 'ENJEUX'>('PROFIL');
   const [tabP2, setTabP2] = useState<'PROFIL' | 'STATS' | 'PSYCHO' | 'CALENDRIER' | 'H2H' | 'ENJEUX'>('PROFIL');
 
-  // Fonction générique de mise à jour
   const handleChange = (path: string[], value: string) => {
     const newReport = { ...report };
     let current: any = newReport;
@@ -26,9 +25,16 @@ export const GodModeTable: React.FC<Props> = ({ report, onUpdate }) => {
 
   // --- SOUS-COMPOSANT : FICHE JOUEUR ---
   const PlayerCard = ({ 
-    playerKey, name, data, activeTab, setActiveTab, colorClass 
+    playerKey, name, data, activeTab, setActiveTab, colorClass, opponentName 
   }: { 
-    playerKey: 'p1' | 'p2', name: string, data: any, activeTab: string, setActiveTab: (t: any) => void, colorClass: string
+    // ✅ CORRECTION : Ajout explicite de opponentName et colorClass dans le type
+    playerKey: 'p1' | 'p2', 
+    name: string, 
+    data: any, 
+    activeTab: string, 
+    setActiveTab: (t: any) => void, 
+    colorClass: string,
+    opponentName: string 
   }) => (
     <div className="bg-surface border border-neutral-800 rounded-xl overflow-hidden flex flex-col h-full shadow-lg">
       
@@ -65,7 +71,6 @@ export const GodModeTable: React.FC<Props> = ({ report, onUpdate }) => {
       {/* CONTENU */}
       <div className="p-4 space-y-6 overflow-y-auto h-[500px] scrollbar-thin scrollbar-thumb-neutral-700 bg-[#1a1a1a]">
           
-          {/* ONGLET PROFIL */}
           {activeTab === 'PROFIL' && (
             <>
               <div className="space-y-2">
@@ -105,7 +110,6 @@ export const GodModeTable: React.FC<Props> = ({ report, onUpdate }) => {
             </>
           )}
 
-          {/* ONGLET STATS */}
           {activeTab === 'STATS' && (
               <div className="space-y-4">
                  <div className="space-y-2">
@@ -142,15 +146,14 @@ export const GodModeTable: React.FC<Props> = ({ report, onUpdate }) => {
               </div>
           )}
 
-          {/* ONGLET PSYCHO */}
           {activeTab === 'PSYCHO' && (
               <div className="space-y-2">
                   <div className="text-xs font-bold text-purple-400 uppercase flex gap-2"><Brain size={14}/> Psychologie</div>
                   <div className="border border-neutral-700 rounded-lg overflow-hidden text-xs bg-black/20">
                       {[
                           {l: 'Motivation', k: 'motivation'},
-                          {l: 'Pression', k: 'form'}, // Utilise form comme placeholder
-                          {l: 'Confiance', k: 'style'}, // Utilise style comme placeholder
+                          {l: 'Pression', k: 'form'},
+                          {l: 'Confiance', k: 'style'},
                       ].map((row, i) => (
                           <div key={i} className="grid grid-cols-[40%_60%] border-b border-neutral-800 last:border-0">
                               <div className="bg-neutral-900/50 p-2 text-gray-400 font-semibold border-r border-neutral-800">{row.l}</div>
@@ -161,7 +164,6 @@ export const GodModeTable: React.FC<Props> = ({ report, onUpdate }) => {
               </div>
           )}
 
-          {/* ONGLET CALENDRIER (Matchs à venir) */}
           {activeTab === 'CALENDRIER' && (
               <div className="space-y-2">
                   <div className="text-xs font-bold text-white uppercase">📅 Calendrier Prochain</div>
@@ -174,16 +176,10 @@ export const GodModeTable: React.FC<Props> = ({ report, onUpdate }) => {
                           <span>{report.identity.tournament}</span>
                           <span className="text-red-500 font-bold">🔥 MAX</span>
                       </div>
-                      <div className="grid grid-cols-[60px_1fr_60px] p-2 hover:bg-white/5 text-gray-500">
-                          <span>10.12</span>
-                          <span>Prochain Tournoi</span>
-                          <span>-</span>
-                      </div>
                   </div>
               </div>
           )}
 
-          {/* ONGLET H2H (Spécifique joueur) */}
           {activeTab === 'H2H' && (
               <div className="space-y-2">
                   <div className="text-xs font-bold text-orange-500 uppercase">⚔️ Historique vs Adversaire</div>
@@ -193,7 +189,6 @@ export const GodModeTable: React.FC<Props> = ({ report, onUpdate }) => {
               </div>
           )}
           
-          {/* ONGLET ENJEUX */}
           {activeTab === 'ENJEUX' && (
               <div className="space-y-2">
                   <div className="text-xs font-bold text-green-400 uppercase">💰 Enjeux Financiers & Points</div>
@@ -233,13 +228,9 @@ export const GodModeTable: React.FC<Props> = ({ report, onUpdate }) => {
                       <Calendar size={14} className="text-gray-400"/> <input value={report.identity.date} onChange={(e) => handleChange(['identity', 'date'], e.target.value)} className="bg-transparent w-24 outline-none"/>
                   </div>
                   <div className="flex items-center gap-2 bg-white/5 px-3 py-1 rounded border border-white/10">
-                      <Clock size={14} className="text-gray-400"/> <input value={report.identity.time || "16:40"} onChange={(e) => handleChange(['identity', 'time'], e.target.value)} className="bg-transparent w-16 outline-none"/>
+                      {/* ✅ CORRECTION : On accède à 'time' via 'any' pour éviter l'erreur TS */}
+                      <Clock size={14} className="text-gray-400"/> <input value={(report.identity as any).time || "16:40"} onChange={(e) => handleChange(['identity', 'time'], e.target.value)} className="bg-transparent w-16 outline-none"/>
                   </div>
-              </div>
-              <div className="mt-2">
-                 <span className="inline-flex items-center gap-2 bg-green-500/20 text-green-400 px-3 py-1 rounded text-xs font-bold border border-green-500/50">
-                    🟢 EN COURS - Set 1
-                 </span>
               </div>
           </div>
 
@@ -274,64 +265,35 @@ export const GodModeTable: React.FC<Props> = ({ report, onUpdate }) => {
           />
       </div>
 
-      {/* 3. BOTTOM : COTES & H2H */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          {/* COTES */}
-          <div className="bg-surface border border-neutral-800 rounded-xl p-5">
-              <div className="text-xs font-bold text-orange-500 uppercase mb-4 border-b border-neutral-800 pb-2">💰 Cotes Bookmakers</div>
-              <div className="space-y-3 text-sm font-mono">
-                  <div className="flex justify-between items-center">
-                      <span className="text-gray-400">BET365</span>
-                      <div className="flex gap-4 text-white font-bold">
-                          <span>1.80</span> <span className="text-gray-600">|</span> <span>1.91</span>
-                      </div>
-                  </div>
-                  <div className="flex justify-between items-center">
-                      <span className="text-gray-400">UNIBET</span>
-                      <div className="flex gap-4 text-white font-bold">
-                          <span>1.81</span> <span className="text-gray-600">|</span> <span>1.90</span>
-                      </div>
-                  </div>
-                  <div className="mt-4 pt-2 border-t border-neutral-800 grid grid-cols-2 gap-4 text-xs">
-                      <div>
-                          <span className="text-orange-500 font-bold">Ouverture:</span> <span className="text-white">1.85 / 2.05</span>
-                      </div>
-                      <div>
-                          <span className="text-green-500 font-bold">Mouvement:</span> <span className="text-white">BAISSE J1 (Smart Money)</span>
-                      </div>
-                  </div>
-              </div>
-          </div>
-
-          {/* H2H RÉSUMÉ */}
-          <div className="bg-surface border border-neutral-800 rounded-xl p-5">
-              <div className="text-xs font-bold text-purple-500 uppercase mb-4 border-b border-neutral-800 pb-2">⚔️ Résumé H2H</div>
-              <div className="grid grid-cols-2 gap-6 text-center">
-                  <div>
-                      <div className="text-[10px] text-gray-500 uppercase">Score Global</div>
-                      <input 
-                        value={report.h2h.global} 
-                        onChange={(e) => handleChange(['h2h', 'global'], e.target.value)}
-                        className="text-3xl font-black text-white bg-transparent text-center w-full outline-none"
-                      />
-                  </div>
-                  <div>
-                      <div className="text-[10px] text-gray-500 uppercase">Sur Surface</div>
-                      <input 
-                        value={report.h2h.surface} 
-                        onChange={(e) => handleChange(['h2h', 'surface'], e.target.value)}
-                        className="text-3xl font-black text-white bg-transparent text-center w-full outline-none"
-                      />
-                  </div>
-              </div>
-              <div className="mt-4 bg-black/30 p-2 rounded text-xs text-gray-400 text-center italic">
+      {/* 3. BOTTOM : H2H */}
+      <div className="bg-surface border border-neutral-800 rounded-xl p-5">
+          <div className="text-xs font-bold text-purple-500 uppercase mb-4 border-b border-neutral-800 pb-2">⚔️ Résumé H2H</div>
+          <div className="grid grid-cols-2 gap-6 text-center">
+              <div>
+                  <div className="text-[10px] text-gray-500 uppercase">Score Global</div>
                   <input 
-                    value={report.h2h.lastMatches} 
-                    onChange={(e) => handleChange(['h2h', 'lastMatches'], e.target.value)}
-                    className="bg-transparent w-full text-center outline-none"
-                    placeholder="Dernier match..."
+                    value={report.h2h.global} 
+                    onChange={(e) => handleChange(['h2h', 'global'], e.target.value)}
+                    className="text-3xl font-black text-white bg-transparent text-center w-full outline-none"
                   />
               </div>
+              <div>
+                  <div className="text-[10px] text-gray-500 uppercase">Sur Surface</div>
+                  <input 
+                    value={report.h2h.surface} 
+                    onChange={(e) => handleChange(['h2h', 'surface'], e.target.value)}
+                    className="text-3xl font-black text-white bg-transparent text-center w-full outline-none"
+                  />
+              </div>
+          </div>
+          <div className="mt-4 bg-black/30 p-2 rounded text-xs text-gray-400 text-center italic">
+              {/* ✅ CORRECTION : lastMatch (singulier) comme dans les Types */}
+              <input 
+                value={report.h2h.lastMatch} 
+                onChange={(e) => handleChange(['h2h', 'lastMatch'], e.target.value)}
+                className="bg-transparent w-full text-center outline-none"
+                placeholder="Dernier match..."
+              />
           </div>
       </div>
 
