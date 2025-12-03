@@ -1,10 +1,10 @@
 import React from 'react';
-import { GodModeReport } from '../engine/types';
+import { GodModeReportV2 } from '../engine/types';
 import { Save, Edit3 } from 'lucide-react';
 
 interface Props {
-  report: GodModeReport;
-  onUpdate: (newReport: GodModeReport) => void;
+  report: GodModeReportV2;
+  onUpdate: (newReport: GodModeReportV2) => void;
 }
 
 export const GodModeTable: React.FC<Props> = ({ report, onUpdate }) => {
@@ -21,10 +21,9 @@ export const GodModeTable: React.FC<Props> = ({ report, onUpdate }) => {
     onUpdate(newReport);
   };
 
-  // Un petit composant pour une ligne du tableau
-  const Row = ({ label, val, onChange }: { label: string, val: string, onChange: (v: string) => void }) => (
-    <div className="flex border-b border-neutral-700">
-        <div className="w-1/3 bg-neutral-900 p-2 text-xs text-gray-400 font-bold border-r border-neutral-700 flex items-center">
+  const InputRow = ({ label, val, onChange }: { label: string, val: string, onChange: (v: string) => void }) => (
+    <div className="flex border-b border-neutral-800 last:border-0">
+        <div className="w-1/3 bg-neutral-900/50 p-2 text-[10px] text-gray-400 font-bold border-r border-neutral-800 flex items-center">
             {label}
         </div>
         <div className="w-2/3 p-0">
@@ -32,72 +31,72 @@ export const GodModeTable: React.FC<Props> = ({ report, onUpdate }) => {
                 type="text" 
                 value={val} 
                 onChange={(e) => onChange(e.target.value)}
-                className="w-full bg-transparent p-2 text-xs text-white focus:bg-neutral-800 outline-none font-mono"
+                className={`w-full bg-transparent p-2 text-xs outline-none font-mono focus:bg-neutral-800 transition-colors ${val.includes('Non trouvé') ? 'text-orange-500 italic' : 'text-white'}`}
             />
         </div>
     </div>
   );
 
   return (
-    <div className="mt-6 bg-surface border border-neutral-700 rounded-xl overflow-hidden shadow-2xl">
+    <div className="mt-6 bg-black border border-neutral-700 rounded-xl overflow-hidden shadow-2xl">
+      
+      {/* HEADER TITLE */}
       <div className="bg-gradient-to-r from-purple-900 to-blue-900 p-3 flex justify-between items-center">
-          <h3 className="text-white font-bold text-sm flex items-center gap-2"><Edit3 size={16}/> FICHE MATCH – ORACLEBET (GOD MODE)</h3>
-          <button className="text-[10px] bg-black/30 hover:bg-black/50 text-white px-3 py-1 rounded flex items-center gap-1">
-              <Save size={10}/> Sauvegarder Fiche
+          <h3 className="text-white font-bold text-sm flex items-center gap-2"><Edit3 size={16}/> FICHE MATCH – ORACLEBET (V2)</h3>
+          <button className="text-[10px] bg-black/30 hover:bg-black/50 text-white px-3 py-1 rounded flex items-center gap-1 border border-white/10">
+              <Save size={10}/> Sauvegarder
           </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-0 divide-x divide-neutral-700">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 divide-x divide-neutral-700">
           
-          {/* COLONNE GAUCHE : JOUEUR A */}
+          {/* COLONNE GAUCHE : IDENTITÉ & JOUEUR 1 */}
           <div>
-              <div className="bg-neutral-800 p-2 text-center text-neon font-bold border-b border-neutral-700">{report.identity.p1}</div>
-              <Row label="Classement" val={report.playerA.rank} onChange={(v) => handleChange('playerA', 'rank', v)} />
-              <Row label="Âge / Taille" val={`${report.playerA.age} / ${report.playerA.height}`} onChange={(v) => handleChange('playerA', 'age', v)} />
-              <Row label="Forme (1-10)" val={report.playerA.form} onChange={(v) => handleChange('playerA', 'form', v)} />
-              <Row label="Style de jeu" val={report.playerA.style} onChange={(v) => handleChange('playerA', 'style', v)} />
-              <Row label="Motivation" val={report.playerA.motivation} onChange={(v) => handleChange('playerA', 'motivation', v)} />
-              <Row label="Derniers Matchs" val={report.momentum.p1.last5} onChange={(v) => handleChange('momentum', 'last5', v, 'p1')} />
-              <Row label="Blessure ?" val={report.playerA.injury} onChange={(v) => handleChange('playerA', 'injury', v)} />
+              <div className="bg-neutral-800 p-1 text-center text-[10px] text-neon font-bold uppercase">1. Identité Match</div>
+              <InputRow label="Joueur 1" val={report.identity.p1Name} onChange={(v) => handleChange('identity', 'p1Name', v)} />
+              <InputRow label="Joueur 2" val={report.identity.p2Name} onChange={(v) => handleChange('identity', 'p2Name', v)} />
+              <InputRow label="Tournoi" val={report.identity.tournament} onChange={(v) => handleChange('identity', 'tournament', v)} />
+              <InputRow label="Surface" val={report.identity.surface} onChange={(v) => handleChange('identity', 'surface', v)} />
+
+              <div className="bg-neutral-800 p-1 text-center text-[10px] text-blue-400 font-bold uppercase mt-4">2. Profil {report.identity.p1Name}</div>
+              <InputRow label="Classement" val={report.p1.rank} onChange={(v) => handleChange('p1', 'rank', v)} />
+              <InputRow label="Âge / Taille" val={`${report.p1.age} / ${report.p1.height}`} onChange={(v) => handleChange('p1', 'age', v)} />
+              <InputRow label="Nationalité" val={report.p1.nationality} onChange={(v) => handleChange('p1', 'nationality', v)} />
+              <InputRow label="Forme (1-10)" val={report.p1.form} onChange={(v) => handleChange('p1', 'form', v)} />
+              <InputRow label="Blessures" val={report.p1.injuries} onChange={(v) => handleChange('p1', 'injuries', v)} />
+              <InputRow label="Derniers Matchs" val={report.p1.last5} onChange={(v) => handleChange('p1', 'last5', v)} />
           </div>
 
-          {/* COLONNE DROITE : JOUEUR B */}
+          {/* COLONNE DROITE : JOUEUR 2 & H2H */}
           <div>
-              <div className="bg-neutral-800 p-2 text-center text-white font-bold border-b border-neutral-700">{report.identity.p2}</div>
-              <Row label="Classement" val={report.playerB.rank} onChange={(v) => handleChange('playerB', 'rank', v)} />
-              <Row label="Âge / Taille" val={`${report.playerB.age} / ${report.playerB.height}`} onChange={(v) => handleChange('playerB', 'age', v)} />
-              <Row label="Forme (1-10)" val={report.playerB.form} onChange={(v) => handleChange('playerB', 'form', v)} />
-              <Row label="Style de jeu" val={report.playerB.style} onChange={(v) => handleChange('playerB', 'style', v)} />
-              <Row label="Motivation" val={report.playerB.motivation} onChange={(v) => handleChange('playerB', 'motivation', v)} />
-              <Row label="Derniers Matchs" val={report.momentum.p2.last5} onChange={(v) => handleChange('momentum', 'last5', v, 'p2')} />
-              <Row label="Blessure ?" val={report.playerB.injury} onChange={(v) => handleChange('playerB', 'injury', v)} />
+              <div className="bg-neutral-800 p-1 text-center text-[10px] text-orange-400 font-bold uppercase">3. Profil {report.identity.p2Name}</div>
+              <InputRow label="Classement" val={report.p2.rank} onChange={(v) => handleChange('p2', 'rank', v)} />
+              <InputRow label="Âge / Taille" val={`${report.p2.age} / ${report.p2.height}`} onChange={(v) => handleChange('p2', 'age', v)} />
+              <InputRow label="Nationalité" val={report.p2.nationality} onChange={(v) => handleChange('p2', 'nationality', v)} />
+              <InputRow label="Forme (1-10)" val={report.p2.form} onChange={(v) => handleChange('p2', 'form', v)} />
+              <InputRow label="Blessures" val={report.p2.injuries} onChange={(v) => handleChange('p2', 'injuries', v)} />
+              <InputRow label="Derniers Matchs" val={report.p2.last5} onChange={(v) => handleChange('p2', 'last5', v)} />
+
+              <div className="bg-neutral-800 p-1 text-center text-[10px] text-purple-400 font-bold uppercase mt-4">4. Head to Head</div>
+              <InputRow label="H2H Global" val={report.h2h.total} onChange={(v) => handleChange('h2h', 'total', v)} />
+              <InputRow label="Derniers affront." val={report.h2h.lastMatches} onChange={(v) => handleChange('h2h', 'lastMatches', v)} />
+              <InputRow label="Analyse Matchup" val={report.h2h.analysis} onChange={(v) => handleChange('h2h', 'analysis', v)} />
           </div>
       </div>
 
-      {/* SECTION CENTRALE : CONTEXTE & ANALYSE */}
+      {/* BAS : CONDITIONS & SYNTHÈSE */}
       <div className="border-t border-neutral-700">
-          <div className="bg-neutral-800 p-1 text-center text-xs text-gray-400 font-bold">CONTEXTE & H2H</div>
-          <Row label="H2H Global" val={report.h2h.global} onChange={(v) => handleChange('h2h', 'global', v)} />
-          <Row label="Météo / Conditions" val={`${report.conditions.weather} / ${report.conditions.temp}`} onChange={(v) => handleChange('conditions', 'weather', v)} />
-          <Row label="Surface Advantage" val={report.conditions.advantage} onChange={(v) => handleChange('conditions', 'advantage', v)} />
-          <Row label="Avis Bookmaker" val={`Cote A: ${report.bookmaker.oddA} | Cote B: ${report.bookmaker.oddB}`} onChange={(v) => handleChange('bookmaker', 'oddA', v)} />
-      </div>
-
-      <div className="border-t border-neutral-700 bg-purple-900/10">
-          <div className="bg-purple-900/50 p-1 text-center text-xs text-white font-bold">SYNTHÈSE GOD MODE</div>
-          <div className="p-4 grid grid-cols-2 gap-4">
-              <div className="text-center">
-                  <p className="text-[10px] text-purple-300 uppercase">Probabilité {report.identity.p1}</p>
-                  <input className="bg-transparent text-2xl font-bold text-white text-center w-full border-b border-purple-500/30 focus:border-neon outline-none" 
-                         value={report.prediction.probA} onChange={(e) => handleChange('prediction', 'probA', e.target.value)} />
-              </div>
-              <div className="text-center">
-                   <p className="text-[10px] text-purple-300 uppercase">Probabilité {report.identity.p2}</p>
-                   <input className="bg-transparent text-2xl font-bold text-white text-center w-full border-b border-purple-500/30 focus:border-neon outline-none" 
-                          value={report.prediction.probB} onChange={(e) => handleChange('prediction', 'probB', e.target.value)} />
-              </div>
+          <div className="bg-neutral-800 p-1 text-center text-[10px] text-green-400 font-bold uppercase">5. Conditions & Synthèse</div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-0 divide-x divide-neutral-700">
+             <div>
+                 <InputRow label="Météo" val={report.conditions.weather} onChange={(v) => handleChange('conditions', 'weather', v)} />
+                 <InputRow label="Altitude" val={report.conditions.altitude} onChange={(v) => handleChange('conditions', 'altitude', v)} />
+             </div>
+             <div>
+                 <InputRow label="Risque Global" val={report.synthesis.risk} onChange={(v) => handleChange('synthesis', 'risk', v)} />
+                 <InputRow label="Facteur X" val={report.synthesis.xFactor} onChange={(v) => handleChange('synthesis', 'xFactor', v)} />
+             </div>
           </div>
-          <Row label="RECOMMANDATION" val={report.prediction.recoWinner} onChange={(v) => handleChange('prediction', 'recoWinner', v)} />
       </div>
 
     </div>
