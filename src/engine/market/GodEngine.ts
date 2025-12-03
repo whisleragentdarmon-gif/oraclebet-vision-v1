@@ -1,36 +1,31 @@
-import { GodModeReport } from '../types'; // ✅ CORRECTION DU CHEMIN D'IMPORT (../ au lieu de ../../)
-import { Match } from '../../types';      // Match est bien dans le dossier racine src/types.ts donc ../../
+import { GodModeReportV2, Match } from '../../types';
 
 export const GodEngine = {
-  generateReport: async (match: Match): Promise<GodModeReport> => {
-    const p1 = match.player1.name;
-    const p2 = match.player2.name;
-
-    // 1. Initialisation du tableau vide
-    const report: GodModeReport = {
+  generateReportV2: async (p1Name: string, p2Name: string, tournament: string): Promise<GodModeReportV2> => {
+    
+    // 1. Initialisation vide (Template V2)
+    const report: GodModeReportV2 = {
       identity: {
-        p1, p2, tournament: match.tournament, category: "ATP/WTA/Challenger", surface: match.surface, format: "Bo3", time: match.time
+        p1Name, p2Name, tournament, level: "Non trouvé (modifiable)", round: "Non trouvé (modifiable)", surface: "Non trouvé (modifiable)",
+        location: "Non trouvé (modifiable)", dateTime: "Non trouvé (modifiable)", timezone: "UTC", importance: "Moyenne"
       },
-      playerA: createEmptyProfile(),
-      playerB: createEmptyProfile(),
-      h2h: { global: "Non trouvé", surface: "Non trouvé", sets: "-", games: "-", context: "Analyse requise", styleMatchup: "À définir" },
-      conditions: { weather: "Recherche...", temp: "-", wind: "-", humidity: "-", altitude: "-", speed: "-", indoor: "-", advantage: "-" },
-      momentum: { p1: createEmptyMomentum(), p2: createEmptyMomentum() },
-      bookmaker: { oddA: match.odds.p1.toString(), oddB: match.odds.p2.toString(), value: "Analyse en cours", movement: "Stable", trap: "Non", volume: "Inconnu" },
-      psychology: { p1: "Non déterminé", p2: "Non déterminé" },
-      synthesis: { stat: "-", mental: "-", physical: "-", surface: "-", momentum: "-" },
-      prediction: { probA: "-", probB: "-", probOver: "-", probTieBreak: "-", probUpset: "-", risk: "-", recoWinner: "-", recoOver: "-", recoSet: "-" }
+      p1: createEmptyProfile(),
+      p2: createEmptyProfile(),
+      h2h: { total: "Non trouvé (modifiable)", surface: "-", sets: "-", games: "-", lastMatches: "-", analysis: "-" },
+      conditions: { weather: "Non trouvé (modifiable)", temp: "-", wind: "-", humidity: "-", altitude: "-", advantage: "-" },
+      bookmaker: { oddA: "-", oddB: "-", movement: "-", valueIndex: "-", trapIndex: "-", smartMoney: "-" },
+      synthesis: { tech: "-", mental: "-", physical: "-", surface: "-", momentum: "-", xFactor: "-", risk: "-" }
     };
 
     try {
-      // 2. Lancement des Agents de Recherche
+      // 2. Recherches Web Ciblées (Deep Search)
       const queries = [
-        `${p1} tennis player profile ranking height age style`, 
-        `${p2} tennis player profile ranking height age style`, 
-        `${p1} vs ${p2} h2h stats tennis head to head`,        
-        `weather ${match.tournament} tennis forecast`,         
-        `${p1} recent form last matches tennis`,               
-        `${p2} recent form last matches tennis`                
+        `${p1Name} tennis player profile ranking height weight age nationality`, // 0
+        `${p2Name} tennis player profile ranking height weight age nationality`, // 1
+        `${p1Name} vs ${p2Name} head to head tennis stats h2h`,                 // 2
+        `${p1Name} recent form last matches tennis stats`,                      // 3
+        `${p2Name} recent form last matches tennis stats`,                      // 4
+        `weather forecast ${tournament} tennis`                                 // 5
       ];
 
       const responses = await Promise.all(
@@ -43,44 +38,48 @@ export const GodEngine = {
         )
       );
 
-      // 3. Remplissage Automatique
-      
-      // -- Joueur A --
+      // 3. Parsing Intelligent des Résultats Google (Snippets)
+
+      // -- Joueur 1 --
       const resP1 = responses[0]?.results || [];
-      if (resP1.length > 0) {
-          const text = JSON.stringify(resP1).toLowerCase();
-          report.playerA.rank = text.match(/rank[:\s]+(\d+)/)?.[1] || "Non trouvé";
-          report.playerA.age = text.match(/(\d{2})\s?years/)?.[1] || "Non trouvé";
-          report.playerA.height = text.match(/(\d\.\d{2})\s?m/)?.[1] || "Non trouvé";
-      }
-
-      // -- Joueur B --
+      const textP1 = JSON.stringify(resP1).toLowerCase();
+      report.p1.rank = extractRegex(textP1, /(?:rank|#)\s?(\d+)/) || "Non trouvé (modifiable)";
+      report.p1.age = extractRegex(textP1, /(\d{2})\s?years/) || "Non trouvé (modifiable)";
+      report.p1.height = extractRegex(textP1, /(\d\.\d{2})\s?m/) || "Non trouvé (modifiable)";
+      report.p1.nationality = extractRegex(textP1, /national(?:ity)?\s?:?\s?(\w+)/) || "Non trouvé (modifiable)";
+      
+      // -- Joueur 2 --
       const resP2 = responses[1]?.results || [];
-      if (resP2.length > 0) {
-          const text = JSON.stringify(resP2).toLowerCase();
-          report.playerB.rank = text.match(/rank[:\s]+(\d+)/)?.[1] || "Non trouvé";
-          report.playerB.age = text.match(/(\d{2})\s?years/)?.[1] || "Non trouvé";
-      }
-
+      const textP2 = JSON.stringify(resP2).toLowerCase();
+      report.p2.rank = extractRegex(textP2, /(?:rank|#)\s?(\d+)/) || "Non trouvé (modifiable)";
+      report.p2.age = extractRegex(textP2, /(\d{2})\s?years/) || "Non trouvé (modifiable)";
+      report.p2.height = extractRegex(textP2, /(\d\.\d{2})\s?m/) || "Non trouvé (modifiable)";
+      
       // -- H2H --
       const resH2H = responses[2]?.results || [];
       if (resH2H.length > 0) {
-          if (JSON.stringify(resH2H).includes(p1)) report.h2h.global = "Données disponibles via source";
-          report.h2h.context = resH2H[0]?.title || "Source H2H";
+          report.h2h.lastMatches = resH2H[0].title + " : " + resH2H[0].snippet;
+          report.h2h.analysis = "Voir sources pour détail.";
       }
+
+      // -- Forme Récente --
+      const resForm1 = responses[3]?.results || [];
+      if (resForm1.length > 0) report.p1.last5 = resForm1[0].snippet.substring(0, 100) + "...";
+      
+      const resForm2 = responses[4]?.results || [];
+      if (resForm2.length > 0) report.p2.last5 = resForm2[0].snippet.substring(0, 100) + "...";
 
       // -- Météo --
-      const resWeather = responses[3]?.results || [];
+      const resWeather = responses[5]?.results || [];
       if (resWeather.length > 0) {
-          report.conditions.weather = resWeather[0]?.snippet || "-";
+          const wText = resWeather[0].snippet;
+          if (wText.match(/\d+/)) {
+              report.conditions.weather = wText.substring(0, 80);
+          }
       }
 
-      // -- Synthèse Pré-calculée --
-      report.synthesis.surface = `Avantage ${match.surface === 'Clay' ? 'Terre' : 'Dur'}`;
-      report.prediction.recoWinner = match.ai?.recommendedBet || "À définir";
-
     } catch (e) {
-      console.error("Erreur GodEngine", e);
+      console.error("Erreur GodEngine V2", e);
     }
 
     return report;
@@ -88,10 +87,15 @@ export const GodEngine = {
 };
 
 function createEmptyProfile() {
-    return { rank: "Non trouvé", bestRank: "Non trouvé", age: "-", height: "-", style: "Modifiable", hand: "D", strength: "-", weakness: "-", injury: "Non", form: "5/10", matchesCount: "-", timeOnCourt: "-", winSeason: "-", winCareer: "-", winSurface: "-", tieBreak: "-", vsTop10: "-", motivation: "-", social: "-" };
+    return { 
+        rank: "Non trouvé (modifiable)", bestRank: "Non trouvé (modifiable)", age: "-", height: "-", weight: "-", nationality: "-", 
+        style: "-", hand: "-", winrateCareer: "-", winrateSeason: "-", winrateSurface: "-", 
+        aces: "-", doubleFaults: "-", serveStats: "-", returnStats: "-", 
+        form: "-", injuries: "R.A.S", instagram: "-", twitter: "-", motivation: "Moyenne", fatigue: "Faible", last5: "-" 
+    };
 }
 
-function createEmptyMomentum() {
-    // ✅ CORRECTION ICI : 'last5' au lieu de 'last5Matches' pour correspondre à l'interface MomentumData
-    return { last5: "V-D-V...", results: "-", fatigue: "Moyenne", pointsToDefend: "-", motivation: "Haute" };
+function extractRegex(text: string, regex: RegExp): string | null {
+    const match = text.match(regex);
+    return match ? match[1] : null;
 }
