@@ -83,12 +83,12 @@ export const AnalysisPage: React.FC = () => {
     <>
       <OracleReactor isVisible={isComputing} onComplete={() => setIsComputing(false)} />
 
-      <div className="flex flex-col lg:flex-row gap-6 h-full">
+      <div className="flex flex-col lg:flex-row gap-6 w-full h-full overflow-hidden">
         
         {/* COLONNE GAUCHE : LISTE */}
-        <div className="lg:w-1/3 flex flex-col gap-4">
-          <h2 className="text-2xl font-bold mb-2">Sélectionner un Match</h2>
-          <div className="overflow-y-auto pr-2 space-y-3 max-h-[80vh]">
+        <div className="lg:w-1/4 xl:w-1/5 flex flex-col gap-4 flex-shrink-0 overflow-hidden">
+          <h2 className="text-2xl font-bold mb-2 flex-shrink-0">Sélectionner un Match</h2>
+          <div className="overflow-y-auto pr-2 space-y-3">
             {activeMatches.map((match) => (
               <MatchCard 
                 key={match.id} 
@@ -103,13 +103,13 @@ export const AnalysisPage: React.FC = () => {
         </div>
 
         {/* COLONNE DROITE : TABLEAU GOD MODE */}
-        <div className="lg:w-2/3">
+        <div className="flex-1 overflow-hidden">
           {selectedMatch ? (
-            <div className="bg-surface border border-neutral-800 rounded-2xl p-6 h-full shadow-2xl animate-fade-in overflow-y-auto relative">
+            <div className="w-full h-full flex flex-col overflow-hidden">
               
               {/* EN-TÊTE */}
-              <div className="flex justify-between items-start mb-4 border-b border-neutral-800 pb-4">
-                 <div>
+              <div className="flex justify-between items-start mb-4 border-b border-neutral-800 pb-4 flex-shrink-0 px-2">
+                 <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
                         <Globe size={14} className={getCircuitColor(selectedMatch.ai?.circuit || 'ATP')} />
                         <span className={`text-xs font-bold ${getCircuitColor(selectedMatch.ai?.circuit || 'ATP')}`}>{selectedMatch.ai?.circuit || 'ATP'}</span>
@@ -120,20 +120,22 @@ export const AnalysisPage: React.FC = () => {
                     </h2>
                  </div>
                  
-                 {!currentReport ? (
-                   <button onClick={runGodMode} className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-bold py-3 px-6 rounded-xl flex items-center gap-2 shadow-lg shadow-purple-500/20 transition-all transform hover:scale-105 animate-pulse">
-                      <Cpu size={20} /> LANCER GOD MODE
-                   </button>
-                 ) : (
-                     <div className="px-4 py-2 bg-green-900/30 border border-green-500/30 rounded-lg text-green-400 text-xs font-bold flex items-center gap-2">
-                         <CheckCircle2 size={14} /> FICHE GÉNÉRÉE
-                     </div>
-                 )}
+                 <div className="flex-shrink-0 ml-4">
+                   {!currentReport ? (
+                     <button onClick={runGodMode} className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-bold py-3 px-6 rounded-xl flex items-center gap-2 shadow-lg shadow-purple-500/20 transition-all transform hover:scale-105 animate-pulse">
+                        <Cpu size={20} /> LANCER GOD MODE
+                     </button>
+                   ) : (
+                       <div className="px-4 py-2 bg-green-900/30 border border-green-500/30 rounded-lg text-green-400 text-xs font-bold flex items-center gap-2">
+                           <CheckCircle2 size={14} /> FICHE GÉNÉRÉE
+                       </div>
+                   )}
+                 </div>
               </div>
 
               {/* 🔒 ECRAN DE VERROUILLAGE */}
               {!currentReport && (
-                  <div className="flex flex-col items-center justify-center h-[400px] border border-dashed border-neutral-800 rounded-xl bg-black/20 mt-8">
+                  <div className="flex flex-col items-center justify-center flex-1 border border-dashed border-neutral-800 rounded-xl bg-black/20 m-2">
                       <div className="relative">
                           <div className="absolute inset-0 bg-neon/20 blur-xl rounded-full"></div>
                           <Lock size={64} className="text-neon relative z-10" />
@@ -147,14 +149,13 @@ export const AnalysisPage: React.FC = () => {
 
               {/* 🔓 TABLEAU ULTIME (GodModeTable) */}
               {currentReport && (
-                  <div className="animate-fade-in">
-                      {/* On appelle ici le composant TABLEAU MODIFIABLE */}
+                  <div className="animate-fade-in flex-1 overflow-hidden">
                       <GodModeTable 
                           report={currentReport} 
                           onUpdate={handleReportUpdate} 
                       />
                       
-                      <div className="mt-4 text-center">
+                      <div className="mt-2 text-center pb-2 flex-shrink-0">
                           <p className="text-[10px] text-gray-500 uppercase">Toutes les données sont modifiables manuellement pour affiner la prédiction.</p>
                       </div>
                   </div>
