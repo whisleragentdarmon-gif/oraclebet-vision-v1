@@ -36,55 +36,49 @@ export const GodEngine = {
     };
 
     try {
-      console.log("🔍 God Mode ULTRA lancé - Recherche agressive...");
+      console.log("🔍 God Mode lancé - Recherche intensive...");
 
-      // 20+ REQUÊTES CIBLÉES ET INTELLIGENTES
+      // 20+ REQUÊTES CIBLÉES
       const queries = [
         // PROFILS
         { key: 'p1Profile', q: `${p1Name} tennis ranking current 2024 2025 WTA ATP` },
         { key: 'p2Profile', q: `${p2Name} tennis ranking current 2024 2025 WTA ATP` },
-        { key: 'p1Stats', q: `${p1Name} tennis stats ace break point hold percentage` },
-        { key: 'p2Stats', q: `${p2Name} tennis stats ace break point hold percentage` },
+        { key: 'p1Stats', q: `${p1Name} tennis stats ace percentage first serve` },
+        { key: 'p2Stats', q: `${p2Name} tennis stats ace percentage first serve` },
         
         // RÉSULTATS RÉCENTS
-        { key: 'p1Recent', q: `${p1Name} tennis results wins losses 2024 form` },
-        { key: 'p2Recent', q: `${p2Name} tennis results wins losses 2024 form` },
-        { key: 'p1Injury', q: `${p1Name} tennis injury status blessure 2024` },
-        { key: 'p2Injury', q: `${p2Name} tennis injury status blessure 2024` },
+        { key: 'p1Recent', q: `${p1Name} tennis results wins losses 2024 2025` },
+        { key: 'p2Recent', q: `${p2Name} tennis results wins losses 2024 2025` },
+        { key: 'p1Injury', q: `${p1Name} tennis injury blessure status 2024` },
+        { key: 'p2Injury', q: `${p2Name} tennis injury blessure status 2024` },
         
         // H2H ET COMPARAISONS
-        { key: 'h2h', q: `${p1Name} vs ${p2Name} head to head h2h history matches` },
-        { key: 'h2hSurface', q: `${p1Name} vs ${p2Name} hard court dur results` },
-        { key: 'p1vsMains', q: `${p1Name} performance against right-handers left-handers vs droitiers gauchers` },
-        { key: 'p2vsMains', q: `${p2Name} performance against right-handers left-handers vs droitiers gauchers` },
+        { key: 'h2h', q: `${p1Name} vs ${p2Name} head to head matches history` },
+        { key: 'h2hSurface', q: `${p1Name} vs ${p2Name} hard court dur` },
+        { key: 'p1vsMains', q: `${p1Name} performance right-handers left-handers` },
+        { key: 'p2vsMains', q: `${p2Name} performance right-handers left-handers` },
         
         // SURFACES ET STYLES
-        { key: 'p1Surface', q: `${p1Name} tennis hard court performance speed stats` },
-        { key: 'p2Surface', q: `${p2Name} tennis hard court performance speed stats` },
-        { key: 'p1Style', q: `${p1Name} tennis playing style aggressive defensive power baseline` },
-        { key: 'p2Style', q: `${p2Name} tennis playing style aggressive defensive power baseline` },
+        { key: 'p1Surface', q: `${p1Name} tennis hard court performance` },
+        { key: 'p2Surface', q: `${p2Name} tennis hard court performance` },
+        { key: 'p1Style', q: `${p1Name} tennis playing style aggressive defensive` },
+        { key: 'p2Style', q: `${p2Name} tennis playing style aggressive defensive` },
         
-        // TOURNOIS MAJEURS
-        { key: 'p1Grands', q: `${p1Name} Grand Slam performance Wimbledon US Open Australian` },
-        { key: 'p2Grands', q: `${p2Name} Grand Slam performance Wimbledon US Open Australian` },
-        { key: 'p1Mental', q: `${p1Name} tennis pressure handling comebacks psychology confidence` },
-        { key: 'p2Mental', q: `${p2Name} tennis pressure handling comebacks psychology confidence` },
-        
-        // DONNÉES CONTEXTUELLES
-        { key: 'weather', q: `weather ${tournament} forecast temperature wind humidity` },
-        { key: 'odds', q: `${p1Name} vs ${p2Name} tennis odds betting predictions` },
-        { key: 'p1News', q: `${p1Name} tennis news 2024 2025 latest updates` },
-        { key: 'p2News', q: `${p2Name} tennis news 2024 2025 latest updates` },
+        // CONTEXTE
+        { key: 'weather', q: `weather ${tournament} temperature wind humidity forecast` },
+        { key: 'odds', q: `${p1Name} vs ${p2Name} tennis odds betting` },
+        { key: 'p1News', q: `${p1Name} tennis news 2024 2025` },
+        { key: 'p2News', q: `${p2Name} tennis news 2024 2025` },
       ];
 
       // Requêtes parallèles
       const responses = await Promise.all(
-        queries.map(({ key, q }) =>
+        queries.map(({ q }) =>
           fetch('/api/search', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ query: q })
-          }).then(r => r.json()).catch(() => ({ results: [], key }))
+          }).then(r => r.json()).catch(() => ({ results: [] }))
         )
       );
 
@@ -101,7 +95,8 @@ export const GodEngine = {
         report.p1.bestRank = extractNumber(text, /(?:career high|meilleur)[\s:]*(?:#)?(\d+)/i) || "-";
         
         const ageMatch = text.match(/(?:age|born|né)[\s:]*(\d{1,2})/i);
-        report.p1.ageHeight = ageMatch ? `${ageMatch[1]} / ${extractNumber(text, /(\d{3})cm|(\d{2})"/i) || "-"}` : "- / -";
+        const heightVal = extractNumber(text, /(\d{3})cm|(\d{5,6})ft/i);
+        report.p1.ageHeight = (ageMatch || heightVal) ? `${ageMatch ? ageMatch[1] : "-"} / ${heightVal || "-"}` : "- / -";
         report.p1.nationality = extractText(text, /(?:from|nationality)[\s:]*([A-Za-z\s]{2,20})/i) || "-";
         report.p1.hand = includes(text, ["right", "droitiere"]) ? "Droitière" : includes(text, ["left", "gauche"]) ? "Gauchère" : "-";
         report.p1.style = includes(text, ["aggressive"]) ? "Offensive" : includes(text, ["defensive"]) ? "Défensive" : "Mixte";
@@ -111,8 +106,6 @@ export const GodEngine = {
         const text = data.p1Stats.map((r: any) => r.snippet).join(' ').toLowerCase();
         report.p1.aces = extractNumber(text, /(?:aces)[\s:]*(\d+)/i) || "-";
         report.p1.firstServe = extractNumber(text, /(?:first serve)[\s:]*(\d+)/i) ? (extractNumber(text, /(?:first serve)[\s:]*(\d+)/i) + "%") : "-";
-        report.p1.holdPercent = extractNumber(text, /(?:hold[\s%]*)[\s:]*(\d+)/i) ? (extractNumber(text, /(?:hold[\s%]*)[\s:]*(\d+)/i) + "%") : calculateHold(report.p1.rank) + "%";
-        report.p1.breakPercent = extractNumber(text, /(?:break[\s%]*)[\s:]*(\d+)/i) ? (extractNumber(text, /(?:break[\s%]*)[\s:]*(\d+)/i) + "%") : calculateBreak(report.p1.rank) + "%";
       }
 
       if (data.p1Recent.length > 0) {
@@ -120,13 +113,12 @@ export const GodEngine = {
         const wCount = (text.match(/won|victoire|win|defeated/gi) || []).length;
         const lCount = (text.match(/lost|loss|defeat|perte/gi) || []).length;
         report.p1.winrateSeason = wCount > 0 ? `${wCount}-${lCount}` : "-";
-        report.p1.trend = wCount >= lCount ? (wCount - lCount > 2 ? "↑↑" : "↑") : "↓";
+        report.p1.last5 = text.substring(0, 100);
       }
 
       if (data.p1Injury.length > 0) {
         const text = data.p1Injury.map((r: any) => r.snippet).join(' ').toLowerCase();
         report.p1.injury = includes(text, ["no injury", "pas blessure", "fit", "healthy"]) ? "Non" : "Oui";
-        report.p1.fatigue = includes(text, ["fatigue", "tired", "fatigué"]) ? "Élevée" : includes(text, ["fresh", "repos"]) ? "Faible" : "Modérée";
       }
 
       if (data.p1Surface.length > 0) {
@@ -136,22 +128,7 @@ export const GodEngine = {
 
       if (data.p1Style.length > 0) {
         const text = data.p1Style.map((r: any) => r.snippet).join(' ').toLowerCase();
-        report.p1.style = includes(text, ["aggressive", "powerful", "attaque"]) ? "Offensive" : includes(text, ["defensive", "solid"]) ? "Défensive" : "Mixte";
-      }
-
-      if (data.p1Grands.length > 0) {
-        const text = data.p1Grands.map((r: any) => r.snippet).join(' ').toLowerCase();
-        report.p1.grandSlams = extractNumber(text, /(?:grand slam|major)[\s:]*(\d+)%/i) ? (extractNumber(text, /(?:grand slam|major)[\s:]*(\d+)%/i) + "%") : "-";
-      }
-
-      if (data.p1Mental.length > 0) {
-        const text = data.p1Mental.map((r: any) => r.snippet).join(' ').toLowerCase();
-        report.p1.confidence = includes(text, ["confident", "strong"]) ? "Élevée" : includes(text, ["doubt", "struggle"]) ? "Faible" : "Modérée";
-        report.p1.pressureHandling = includes(text, ["handle pressure", "gère pression"]) ? "Excellente" : "Modérée";
-      }
-
-      if (data.p1News.length > 0) {
-        report.p1.news = data.p1News.slice(0, 2).map((r: any) => r.snippet).join(" | ");
+        report.p1.style = includes(text, ["aggressive", "powerful"]) ? "Offensive" : includes(text, ["defensive", "solid"]) ? "Défensive" : "Mixte";
       }
 
       // ===== PARSING P2 (identique) =====
@@ -161,7 +138,8 @@ export const GodEngine = {
         report.p2.bestRank = extractNumber(text, /(?:career high|meilleur)[\s:]*(?:#)?(\d+)/i) || "-";
         
         const ageMatch = text.match(/(?:age|born|né)[\s:]*(\d{1,2})/i);
-        report.p2.ageHeight = ageMatch ? `${ageMatch[1]} / ${extractNumber(text, /(\d{3})cm|(\d{2})"/i) || "-"}` : "- / -";
+        const heightVal = extractNumber(text, /(\d{3})cm|(\d{5,6})ft/i);
+        report.p2.ageHeight = (ageMatch || heightVal) ? `${ageMatch ? ageMatch[1] : "-"} / ${heightVal || "-"}` : "- / -";
         report.p2.nationality = extractText(text, /(?:from|nationality)[\s:]*([A-Za-z\s]{2,20})/i) || "-";
         report.p2.hand = includes(text, ["right", "droitiere"]) ? "Droitière" : includes(text, ["left", "gauche"]) ? "Gauchère" : "-";
         report.p2.style = includes(text, ["aggressive"]) ? "Offensive" : includes(text, ["defensive"]) ? "Défensive" : "Mixte";
@@ -171,8 +149,6 @@ export const GodEngine = {
         const text = data.p2Stats.map((r: any) => r.snippet).join(' ').toLowerCase();
         report.p2.aces = extractNumber(text, /(?:aces)[\s:]*(\d+)/i) || "-";
         report.p2.firstServe = extractNumber(text, /(?:first serve)[\s:]*(\d+)/i) ? (extractNumber(text, /(?:first serve)[\s:]*(\d+)/i) + "%") : "-";
-        report.p2.holdPercent = extractNumber(text, /(?:hold[\s%]*)[\s:]*(\d+)/i) ? (extractNumber(text, /(?:hold[\s%]*)[\s:]*(\d+)/i) + "%") : calculateHold(report.p2.rank) + "%";
-        report.p2.breakPercent = extractNumber(text, /(?:break[\s%]*)[\s:]*(\d+)/i) ? (extractNumber(text, /(?:break[\s%]*)[\s:]*(\d+)/i) + "%") : calculateBreak(report.p2.rank) + "%";
       }
 
       if (data.p2Recent.length > 0) {
@@ -180,13 +156,12 @@ export const GodEngine = {
         const wCount = (text.match(/won|victoire|win|defeated/gi) || []).length;
         const lCount = (text.match(/lost|loss|defeat|perte/gi) || []).length;
         report.p2.winrateSeason = wCount > 0 ? `${wCount}-${lCount}` : "-";
-        report.p2.trend = wCount >= lCount ? (wCount - lCount > 2 ? "↑↑" : "↑") : "↓";
+        report.p2.last5 = text.substring(0, 100);
       }
 
       if (data.p2Injury.length > 0) {
         const text = data.p2Injury.map((r: any) => r.snippet).join(' ').toLowerCase();
         report.p2.injury = includes(text, ["no injury", "pas blessure", "fit"]) ? "Non" : "Oui";
-        report.p2.fatigue = includes(text, ["fatigue", "tired"]) ? "Élevée" : includes(text, ["fresh"]) ? "Faible" : "Modérée";
       }
 
       if (data.p2Surface.length > 0) {
@@ -226,7 +201,7 @@ export const GodEngine = {
         }
       }
 
-      console.log("✅ God Mode ULTRA terminé - 80%+ rempli!");
+      console.log("✅ God Mode terminé - Données enrichies!");
       
     } catch (e) {
       console.error("❌ Erreur God Mode:", e);
@@ -240,19 +215,28 @@ export const GodEngine = {
 
 function createEmptyProfile() {
   return {
-    rank: "-", bestRank: "-", ageHeight: "- / -", nationality: "-", hand: "-", style: "-",
-    winrateCareer: "-", winrateSeason: "-", winrateSurface: "-", aces: "-", doubleFaults: "-",
-    firstServe: "-", form: "-", confidence: "-", injury: "Non", fatigue: "Faible",
-    lastMatchDate: "-", serveStats: "-", returnStats: "-", motivation: "-", social: "-", last5: "-",
-    holdPercent: "-", breakPercent: "-", trend: "-", avgSets: "-", tbPercent: "-", firstSetWin: "-",
-    windImpact: "-", coldImpact: "-", over21_5: "-", over2_5: "-", overAces: "-", underAces: "-",
-    afterLoss: "-", afterWin: "-", relaxation: "-", pressureHandling: "-", grandSlams: "-", wta1000: "-",
-    challengers: "-", asFavorite: "-", asOutsider: "-", similarPlayer: "-", similarScore: "-",
-    match0_date: "-", match0_tournament: "-", match0_priority: "-", match1_date: "-", match1_tournament: "-",
-    match1_priority: "-", match2_date: "-", match2_tournament: "-", match2_priority: "-", match3_date: "-",
-    match3_tournament: "-", match3_priority: "-", match4_date: "-", match4_tournament: "-", match4_priority: "-",
-    nextMatchPriority: "-", h2hMeetings: "-", h2hSurface: "-", h2hLastWin: "-", h2hAvgSets: "-",
-    h2hTB: "-", h2hHold: "-", h2hBreak: "-", stake: "-", points: "-", objective: "-", pressureLevel: "-", news: ""
+    rank: "-",
+    bestRank: "-",
+    ageHeight: "- / -",
+    nationality: "-",
+    hand: "-",
+    style: "-",
+    winrateCareer: "-",
+    winrateSeason: "-",
+    winrateSurface: "-",
+    aces: "-",
+    doubleFaults: "-",
+    firstServe: "-",
+    form: "-",
+    confidence: "-",
+    injury: "Non",
+    fatigue: "Faible",
+    lastMatchDate: "-",
+    serveStats: "-",
+    returnStats: "-",
+    motivation: "-",
+    social: "-",
+    last5: "-"
   };
 }
 
@@ -268,14 +252,4 @@ function extractText(text: string, regex: RegExp): string | null {
 
 function includes(text: string, keywords: string[]): boolean {
   return keywords.some(k => text.includes(k.toLowerCase()));
-}
-
-function calculateHold(rank: string): number {
-  const num = parseInt(rank.replace(/\D/g, "")) || 100;
-  return Math.max(55, Math.min(85, 80 - (num / 10)));
-}
-
-function calculateBreak(rank: string): number {
-  const num = parseInt(rank.replace(/\D/g, "")) || 100;
-  return Math.max(25, Math.min(55, 40 - (num / 20)));
 }
