@@ -1,4 +1,4 @@
-import { H2HFullProfile } from '../types'; // Correction du chemin
+import { H2HFullProfile } from '../types';
 
 export const H2HEngine = {
   fetchFullProfile: async (p1: string, p2: string, tournament: string): Promise<H2HFullProfile> => {
@@ -8,16 +8,17 @@ export const H2HEngine = {
       p2: { age: "N/A", height: "N/A", rank: "N/A", plays: "N/A", style: "Analyse...", nationality: "" },
       h2hMatches: [],
       surfaceStats: { clay: {p1:"-", p2:"-"}, hard: {p1:"-", p2:"-"}, grass: {p1:"-", p2:"-"} },
-      context: { weather: "N/A", altitude: "N/A", motivation: "Neutre" },
+      context: { weather: "Non trouvé", altitude: "0m", motivation: "Neutre" },
       sources: []
     };
 
     try {
       const queries = [
-        `${p1} tennis player profile ranking height`,
-        `${p2} tennis player profile ranking height`,
-        `${p1} vs ${p2} h2h stats tennis`,
-        `weather ${tournament} tennis forecast`
+        `${p1} tennis player ranking age height`, 
+        `${p2} tennis player ranking age height`, 
+        `${p1} vs ${p2} head to head tennis stats`,        
+        `weather forecast ${tournament} tennis`,         
+        `${p1} recent results tennis`
       ];
 
       const responses = await Promise.all(
@@ -30,27 +31,57 @@ export const H2HEngine = {
         )
       );
 
-      // Parsing P1
+      // --- PARSING PLUS STRICT ---
+
+      // 1. Joueur 1
       const resP1 = responses[0]?.results || [];
       if (resP1.length > 0) {
          const text = JSON.stringify(resP1).toLowerCase();
-         profile.p1.rank = text.match(/rank[:\s]+(\d+)/)?.[1] || "Top 100";
-         profile.p1.age = text.match(/(\d{2})\s?years/)?.[1] || "25";
+         // On cherche un chiffre après "rank" ou "#"
+         const rankMatch = text.match(/(?:rank|#)\s?(\d+)/);
+         if (rankMatch) profile.p1.rank = rankMatch[1];
+
+         // On cherche l'âge (XX years)
+         const ageMatch = text.match(/(\d{2})\s?years/);
+         if (ageMatch) profile.p1.age = ageMatch[1];
+         
          profile.sources.push(resP1[0].link);
       }
 
-      // Parsing P2
+      // 2. Joueur 2
       const resP2 = responses[1]?.results || [];
       if (resP2.length > 0) {
          const text = JSON.stringify(resP2).toLowerCase();
-         profile.p2.rank = text.match(/rank[:\s]+(\d+)/)?.[1] || "Top 100";
-         profile.p2.age = text.match(/(\d{2})\s?years/)?.[1] || "25";
+         const rankMatch = text.match(/(?:rank|#)\s?(\d+)/);
+         if (rankMatch) profile.p2.rank = rankMatch[1];
+
+         const ageMatch = text.match(/(\d{2})\s?years/);
+         if (ageMatch) profile.p2.age = ageMatch[1];
       }
 
-      // Parsing Météo (Correction de l'erreur TS2353)
+      // 3. H2H
+      const resH2H = responses[2]?.results || [];
+      if (resH2H.length > 0) {
+          // Si on trouve un titre pertinent, on l'ajoute aux sources
+          profile.h2hMatches.push({
+              date: "Voir source",
+              winner: "?",
+              score: "Voir lien",
+              surface: "N/A"
+          });
+          profile.sources.push(resH2H[0].link);
+      }
+
+      // 4. Météo (FILTRE STRICT)
       const resWeather = responses[3]?.results || [];
       if (resWeather.length > 0) {
-          profile.context.weather = resWeather[0].snippet.substring(0, 40);
+          const snippet = resWeather[0].snippet;
+          // On ne prend le texte que s'il contient des mots météo ou des degrés
+          if (snippet.match(/\d+°|sunny|rain|wind|cloud|degre/i)) {
+              profile.context.weather = snippet.substring(0, 60) + "...";
+          } else {
+              profile.context.weather = "Pas de données météo fiables.";
+          }
       }
 
     } catch (e) {
