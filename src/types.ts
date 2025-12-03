@@ -1,4 +1,3 @@
-// On importe tout depuis le moteur principal
 import { 
   OddsAnalysis, 
   AIPrediction, 
@@ -8,7 +7,9 @@ import {
   PressAnalysis,
   SocialSentiment,
   GeoCondition,
-  GodModeReport // Ajouté
+  GodModeReport,
+  FullMatchDossier,
+  WebScrapedData
 } from './engine/types';
 
 export interface PastMatch {
@@ -36,7 +37,7 @@ export interface MatchOdds {
   p2: number;
 }
 
-// Exportation groupée pour que les autres fichiers trouvent tout
+// Exportation groupée
 export type { 
   AIPrediction, 
   OddsAnalysis, 
@@ -46,7 +47,9 @@ export type {
   PressAnalysis,
   SocialSentiment,
   GeoCondition,
-  GodModeReport
+  GodModeReport,
+  FullMatchDossier,
+  WebScrapedData
 };
 
 export interface Match {
