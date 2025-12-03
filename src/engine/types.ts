@@ -61,3 +61,44 @@ export interface AIPrediction { winner: string; confidence: number; recommendedB
 export interface MatchOdds { player1: number; player2: number; p1: number; p2: number; }
 export interface Match { id: string; tournament: string; date: string; time: string; status: 'SCHEDULED' | 'LIVE' | 'FINISHED' | 'TODAY' | 'UPCOMING'; player1: Player; player2: Player; score?: string; odds: MatchOdds; ai?: AIPrediction; surface: 'Hard' | 'Clay' | 'Grass' | 'Indoor'; validationResult?: 'CORRECT' | 'WRONG' | 'PENDING'; dossier?: FullMatchDossier; }
 export type MatchStatus = Match['status'];
+// --- STRUCTURE FICHE MATCH GOD MODE ---
+export interface GodModeReport {
+  identity: {
+    p1: string; p2: string; tournament: string; category: string; surface: string; format: string; time: string;
+  };
+  playerA: PlayerProfile;
+  playerB: PlayerProfile;
+  h2h: {
+    global: string; surface: string; sets: string; games: string; context: string; styleMatchup: string;
+  };
+  conditions: {
+    weather: string; temp: string; wind: string; humidity: string; altitude: string; speed: string; indoor: string; advantage: string;
+  };
+  momentum: {
+    p1: MomentumData; p2: MomentumData;
+  };
+  bookmaker: {
+    oddA: string; oddB: string; value: string; movement: string; trap: string; volume: string;
+  };
+  psychology: {
+    p1: string; p2: string;
+  };
+  synthesis: {
+    stat: string; mental: string; physical: string; surface: string; momentum: string;
+  };
+  prediction: {
+    probA: string; probB: string; probOver: string; probTieBreak: string; probUpset: string; risk: string;
+    recoWinner: string; recoOver: string; recoSet: string;
+  };
+}
+
+export interface PlayerProfile {
+  rank: string; bestRank: string; age: string; height: string; style: string; hand: string;
+  strength: string; weakness: string; injury: string; form: string; 
+  matchesCount: string; timeOnCourt: string; winSeason: string; winCareer: string; winSurface: string;
+  tieBreak: string; vsTop10: string; motivation: string; social: string;
+}
+
+export interface MomentumData {
+  last5: string; results: string; fatigue: string; pointsToDefend: string; motivation: string;
+}
