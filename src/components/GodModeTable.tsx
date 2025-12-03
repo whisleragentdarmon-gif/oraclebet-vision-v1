@@ -288,8 +288,7 @@ export const GodModeTable: React.FC<Props> = ({ report, onUpdate }) => {
           </div>
           <div className="mt-4 bg-black/30 p-2 rounded text-xs text-gray-400 text-center italic">
               {/* ✅ CORRECTION : lastMatch (singulier) comme dans les Types */}
-              <input 
-                value={report.h2h.lastMatch} 
+              <input value={report.h2h.lastMatches} onChange={(e) => handleChange(['h2h', 'lastMatches'], e.target.value)} ...
                 onChange={(e) => handleChange(['h2h', 'lastMatch'], e.target.value)}
                 className="bg-transparent w-full text-center outline-none"
                 placeholder="Dernier match..."
