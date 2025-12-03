@@ -3,7 +3,7 @@ import { GodModeReportV2 } from '../types';
 export const GodEngine = {
   generateReportV2: async (p1Name: string, p2Name: string, tournament: string): Promise<GodModeReportV2> => {
     
-    console.log(`🚀 God Mode OPTIMISÉ - Tennis API v1 + Serper...`);
+    console.log(`🚀 God Mode FINAL lancé - Tennis API v1 + Serper...`);
 
     const report: GodModeReportV2 = {
       identity: {
@@ -71,135 +71,78 @@ export const GodEngine = {
         }
       };
 
-      // Chercher les joueurs dans les rankings
-      console.log(`🔍 Searching for ${p1Name} and ${p2Name}...`);
+      // Chercher les joueurs
+      console.log(`🔍 Searching for ${p1Name}...`);
+      const p1Data = await tennisApiCall('/search', { name: p1Name });
       
-      const rankings = await tennisApiCall('/rankings', { limit: '1000' });
-      
-      let p1Data = null;
-      let p2Data = null;
-      let p1Id = null;
-      let p2Id = null;
-
-      if (rankings?.data) {
-        // Chercher p1 dans les rankings
-        p1Data = rankings.data.find((player: any) => 
-          player.name?.toLowerCase().includes(p1Name.toLowerCase())
-        );
-        
-        // Chercher p2 dans les rankings
-        p2Data = rankings.data.find((player: any) => 
-          player.name?.toLowerCase().includes(p2Name.toLowerCase())
-        );
-
-        if (p1Data) {
-          p1Id = p1Data.playerId;
-          console.log(`✅ ${p1Name} trouvé (ID: ${p1Id})`);
-        } else {
-          console.warn(`⚠️ ${p1Name} non trouvé dans les rankings`);
-        }
-
-        if (p2Data) {
-          p2Id = p2Data.playerId;
-          console.log(`✅ ${p2Name} trouvé (ID: ${p2Id})`);
-        } else {
-          console.warn(`⚠️ ${p2Name} non trouvé dans les rankings`);
-        }
-      }
-
-      // ===== RÉCUPÉRER LES DONNÉES COMPLÈTES =====
+      console.log(`🔍 Searching for ${p2Name}...`);
+      const p2Data = await tennisApiCall('/search', { name: p2Name });
 
       let p1Profile = null;
       let p2Profile = null;
-      let p1Results = null;
-      let p2Results = null;
-      let p1News = null;
-      let p2News = null;
-      let p1Schedule = null;
-      let p2Schedule = null;
 
-      if (p1Id) {
-        p1Profile = await tennisApiCall('/player-profile', { playerId: p1Id.toString() });
-        p1Results = await tennisApiCall('/player-result', { playerId: p1Id.toString(), limit: '10' });
-        p1News = await tennisApiCall('/news', { playerId: p1Id.toString() });
-        p1Schedule = await tennisApiCall('/schedule', { playerId: p1Id.toString() });
+      // Si la recherche retourne un joueur, récupère son profil
+      if (p1Data?.playerInfo) {
+        p1Profile = p1Data;
+        console.log(`✅ ${p1Name} trouvé`);
       }
 
-      if (p2Id) {
-        p2Profile = await tennisApiCall('/player-profile', { playerId: p2Id.toString() });
-        p2Results = await tennisApiCall('/player-result', { playerId: p2Id.toString(), limit: '10' });
-        p2News = await tennisApiCall('/news', { playerId: p2Id.toString() });
-        p2Schedule = await tennisApiCall('/schedule', { playerId: p2Id.toString() });
+      if (p2Data?.playerInfo) {
+        p2Profile = p2Data;
+        console.log(`✅ ${p2Name} trouvé`);
       }
 
       console.log("✅ Phase 1 Tennis API complétée");
 
       // ===== PARSING TENNIS API =====
 
-      // P1 Profile
-      if (p1Profile?.data) {
-        const p = p1Profile.data;
-        report.p1.rank = p1Data?.ranking?.toString() || p.ranking?.toString() || "-";
-        report.p1.bestRank = p.bestRanking?.toString() || "-";
-        report.p1.nationality = p.country || p.nationality || "-";
-        report.p1.hand = p.hand || "-";
-        report.p1.style = p.playingStyle || "Mixte";
-        report.p1.ageHeight = `${calculateAge(p.birthDate)} / ${p.height || "-"}`;
+      // Parse P1
+      if (p1Profile?.playerInfo) {
+        const info = p1Profile.playerInfo;
+        report.p1.rank = extractRankFromString(info.Rank) || "-";
+        report.p1.nationality = info.nationality || "-";
+        report.p1.hand = info.plays || "-";
+        report.p1.ageHeight = `${extractAge(info.birthDate)} / ${info.height || "-"}`;
+        report.p1.winrateSeason = info.singlesWL || "-";
+        report.p1.winrateCareer = info.careerSinglesWL || "-";
       }
 
-      // P1 Results
-      if (p1Results?.data && p1Results.data.length > 0) {
-        const recent = p1Results.data.slice(0, 5);
-        const wins = recent.filter((m: any) => m.winner === p1Id).length;
-        const losses = recent.length - wins;
-        report.p1.winrateSeason = `${wins}-${losses}`;
-        report.p1.last5 = recent.map((m: any) => m.winner === p1Id ? 'W' : 'L').join('');
-        report.p1.form = wins >= 3 ? "Excellente" : wins >= 1 ? "Bonne" : "Faible";
+      // Parse P1 Stats
+      if (p1Profile?.stats && p1Profile.stats.length > 0) {
+        const currentYear = new Date().getFullYear();
+        const yearStats = p1Profile.stats.find((s: any) => parseInt(s.year) === currentYear);
+        if (yearStats) {
+          report.p1.form = calculateFormFromStats(yearStats.singlesWL);
+          report.p1.motivation = calculateMotivation(yearStats.prizeMoney);
+        }
+        
+        // Prendre les 5 derniers years pour calculer la forme
+        const last5 = p1Profile.stats.slice(0, 5);
+        report.p1.last5 = calculateLast5(last5);
       }
 
-      // P1 News (propriété non disponible)
-
-      // P1 Schedule
-      if (p1Schedule?.data && p1Schedule.data.length > 0) {
-        const upcoming = p1Schedule.data.slice(0, 3);
-        upcoming.forEach((match: any, i: number) => {
-          report.p1[`match${i}_date`] = match.date || "JJ.MM";
-          report.p1[`match${i}_tournament`] = match.tournament || "Tournoi";
-          report.p1[`match${i}_priority`] = "✓";
-        });
+      // Parse P2
+      if (p2Profile?.playerInfo) {
+        const info = p2Profile.playerInfo;
+        report.p2.rank = extractRankFromString(info.Rank) || "-";
+        report.p2.nationality = info.nationality || "-";
+        report.p2.hand = info.plays || "-";
+        report.p2.ageHeight = `${extractAge(info.birthDate)} / ${info.height || "-"}`;
+        report.p2.winrateSeason = info.singlesWL || "-";
+        report.p2.winrateCareer = info.careerSinglesWL || "-";
       }
 
-      // P2 Profile
-      if (p2Profile?.data) {
-        const p = p2Profile.data;
-        report.p2.rank = p2Data?.ranking?.toString() || p.ranking?.toString() || "-";
-        report.p2.bestRank = p.bestRanking?.toString() || "-";
-        report.p2.nationality = p.country || p.nationality || "-";
-        report.p2.hand = p.hand || "-";
-        report.p2.style = p.playingStyle || "Mixte";
-        report.p2.ageHeight = `${calculateAge(p.birthDate)} / ${p.height || "-"}`;
-      }
-
-      // P2 Results
-      if (p2Results?.data && p2Results.data.length > 0) {
-        const recent = p2Results.data.slice(0, 5);
-        const wins = recent.filter((m: any) => m.winner === p2Id).length;
-        const losses = recent.length - wins;
-        report.p2.winrateSeason = `${wins}-${losses}`;
-        report.p2.last5 = recent.map((m: any) => m.winner === p2Id ? 'W' : 'L').join('');
-        report.p2.form = wins >= 3 ? "Excellente" : wins >= 1 ? "Bonne" : "Faible";
-      }
-
-      // P2 News (propriété non disponible)
-
-      // P2 Schedule
-      if (p2Schedule?.data && p2Schedule.data.length > 0) {
-        const upcoming = p2Schedule.data.slice(0, 3);
-        upcoming.forEach((match: any, i: number) => {
-          report.p2[`match${i}_date`] = match.date || "JJ.MM";
-          report.p2[`match${i}_tournament`] = match.tournament || "Tournoi";
-          report.p2[`match${i}_priority`] = "✓";
-        });
+      // Parse P2 Stats
+      if (p2Profile?.stats && p2Profile.stats.length > 0) {
+        const currentYear = new Date().getFullYear();
+        const yearStats = p2Profile.stats.find((s: any) => parseInt(s.year) === currentYear);
+        if (yearStats) {
+          report.p2.form = calculateFormFromStats(yearStats.singlesWL);
+          report.p2.motivation = calculateMotivation(yearStats.prizeMoney);
+        }
+        
+        const last5 = p2Profile.stats.slice(0, 5);
+        report.p2.last5 = calculateLast5(last5);
       }
 
       // ===== PHASE 2: SERPER (Données manquantes) =====
@@ -273,7 +216,7 @@ export const GodEngine = {
         }
       }
 
-      console.log("✅ God Mode OPTIMISÉ COMPLET!");
+      console.log("✅ God Mode FINAL COMPLET!");
       
     } catch (e) {
       console.error("❌ Erreur God Mode:", e);
@@ -285,20 +228,61 @@ export const GodEngine = {
 
 // ========== FONCTIONS UTILITAIRES ==========
 
-function calculateAge(birthDate: string): number {
+function extractAge(birthDate: string): number {
   if (!birthDate) return 0;
   try {
-    const birth = new Date(birthDate);
-    const today = new Date();
-    let age = today.getFullYear() - birth.getFullYear();
-    const monthDiff = today.getMonth() - birth.getMonth();
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
-      age--;
+    const ageMatch = birthDate.match(/\(Age:\s*(\d+)\)/);
+    if (ageMatch) return parseInt(ageMatch[1]);
+    
+    const dateMatch = birthDate.match(/(\w+)\s*(\d+),\s*(\d{4})/);
+    if (dateMatch) {
+      const birth = new Date(`${dateMatch[1]} ${dateMatch[2]}, ${dateMatch[3]}`);
+      const today = new Date();
+      let age = today.getFullYear() - birth.getFullYear();
+      const monthDiff = today.getMonth() - birth.getMonth();
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+        age--;
+      }
+      return age > 0 ? age : 0;
     }
-    return age > 0 ? age : 0;
   } catch {
     return 0;
   }
+  return 0;
+}
+
+function extractRankFromString(rankStr: string): string | null {
+  const match = rankStr?.match(/(\d+)/);
+  return match ? match[1] : null;
+}
+
+function calculateFormFromStats(wlStr: string): string {
+  if (!wlStr || wlStr === "0-0") return "Faible";
+  const [wins, losses] = wlStr.split('-').map(Number);
+  const total = wins + losses;
+  if (total === 0) return "Faible";
+  const winRate = wins / total;
+  if (winRate >= 0.7) return "Excellente";
+  if (winRate >= 0.5) return "Bonne";
+  return "Faible";
+}
+
+function calculateMotivation(prizeStr: string): string {
+  if (!prizeStr) return "6/10";
+  const prize = parseInt(prizeStr.replace(/[^0-9]/g, '')) || 0;
+  if (prize > 1000000) return "9/10";
+  if (prize > 500000) return "8/10";
+  if (prize > 100000) return "7/10";
+  return "6/10";
+}
+
+function calculateLast5(stats: any[]): string {
+  let result = '';
+  for (let i = 0; i < Math.min(5, stats.length); i++) {
+    const [wins, losses] = stats[i].singlesWL?.split('-').map(Number) || [0, 0];
+    result += wins > losses ? 'W' : losses > wins ? 'L' : 'D';
+  }
+  return result || "-";
 }
 
 function extractWeather(text: string): string {
@@ -329,9 +313,6 @@ function createEmptyProfile() {
     rank: "-", bestRank: "-", ageHeight: "- / -", nationality: "-", hand: "-", style: "-",
     winrateCareer: "-", winrateSeason: "-", winrateSurface: "-", aces: "-", doubleFaults: "-",
     firstServe: "-", form: "-", confidence: "-", injury: "Non", fatigue: "Faible",
-    serveStats: "-", returnStats: "-", motivation: "-", last5: "-",
-    match0_date: "-", match0_tournament: "-", match0_priority: "-",
-    match1_date: "-", match1_tournament: "-", match1_priority: "-",
-    match2_date: "-", match2_tournament: "-", match2_priority: "-"
+    serveStats: "-", returnStats: "-", motivation: "-", last5: "-"
   };
 }
