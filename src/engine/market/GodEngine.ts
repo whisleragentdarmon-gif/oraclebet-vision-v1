@@ -89,7 +89,7 @@ export const GodEngine = {
         
         // Aces et stats
         report.p1.aces = extractNumber(p1Text, /(?:aces)[\s:]*(\d+)/i) || "-";
-        report.p1.firstServe = extractNumber(p1Text, /(?:first serve)[\s:]*(\d+)%/i) + "%" || "-";
+        report.p1.firstServe = extractNumber(p1Text, /(?:first serve)[\s:]*(\d+)%/i) ? (extractNumber(p1Text, /(?:first serve)[\s:]*(\d+)%/i) + "%") : "-";
       }
 
       // 4. PARSING DES PROFILS JOUEUR 2 (identique à P1)
@@ -112,7 +112,7 @@ export const GodEngine = {
                          p2Text.includes("defensive") || p2Text.includes("défensive") ? "Défensive" : "Mixte";
         
         report.p2.aces = extractNumber(p2Text, /(?:aces)[\s:]*(\d+)/i) || "-";
-        report.p2.firstServe = extractNumber(p2Text, /(?:first serve)[\s:]*(\d+)%/i) + "%" || "-";
+        report.p2.firstServe = extractNumber(p2Text, /(?:first serve)[\s:]*(\d+)%/i) ? (extractNumber(p2Text, /(?:first serve)[\s:]*(\d+)%/i) + "%") : "-";
       }
 
       // 5. PARSING RÉSULTATS RÉCENTS
@@ -158,22 +158,17 @@ export const GodEngine = {
                                    weatherText.includes("rainy") || weatherText.includes("pluie") ? "Pluvieux" :
                                    weatherText.includes("cloudy") || weatherText.includes("nuageux") ? "Nuageux" : "Non trouvé";
         
-        report.conditions.temp = extractNumber(weatherText, /(\d+)°?c?/i) ? extractNumber(weatherText, /(\d+)°?c?/i) + "°C" : "-";
+        report.conditions.temp = extractNumber(weatherText, /(\d+)°?c?/i) ? (extractNumber(weatherText, /(\d+)°?c?/i) + "°C") : "-";
         report.conditions.wind = weatherText.includes("wind") ? "Présent" : "-";
-        report.conditions.humidity = extractNumber(weatherText, /(?:humidity)[\s:]*(\d+)%/i) ? extractNumber(weatherText, /(?:humidity)[\s:]*(\d+)%/i) + "%" : "-";
+        report.conditions.humidity = extractNumber(weatherText, /(?:humidity)[\s:]*(\d+)%/i) ? (extractNumber(weatherText, /(?:humidity)[\s:]*(\d+)%/i) + "%") : "-";
       }
 
-      // 8. DÉTERMINATION FAVORI/OUTSIDER
+      // 8. DÉTERMINATION FAVORI/OUTSIDER (pour logs)
       const p1Rank = parseInt(report.p1.rank.replace("+", "").replace(/\D/g, "")) || 200;
       const p2Rank = parseInt(report.p2.rank.replace("+", "").replace(/\D/g, "")) || 200;
       
-      if (p1Rank < p2Rank) {
-        report.p1 = { ...report.p1, tournamentRank: "1/2" };
-        report.p2 = { ...report.p2, tournamentRank: "2/2" };
-      } else {
-        report.p1 = { ...report.p1, tournamentRank: "2/2" };
-        report.p2 = { ...report.p2, tournamentRank: "1/2" };
-      }
+      const isFavori = p1Rank < p2Rank;
+      console.log(`📊 ${isFavori ? p1Name : p2Name} est favori(e)`);
 
       console.log("✅ God Mode terminé - Rapport généré");
       
@@ -191,7 +186,6 @@ function createEmptyProfile() {
   return {
     rank: "-",
     bestRank: "-",
-    tournamentRank: "-",
     ageHeight: "- / -",
     nationality: "-",
     hand: "-",
