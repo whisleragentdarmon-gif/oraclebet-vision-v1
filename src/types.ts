@@ -1,24 +1,14 @@
+// On importe tout depuis le moteur principal
 import { 
   OddsAnalysis, 
   AIPrediction, 
   PlayerAttributes, 
-  Circuit, 
-  H2HFullProfile, 
-  HumanFactors,
-  WebScrapedData,
-  ComboStrategy,
-  ComboSelection,
-  FullMatchDossier,
-  PlayerProfileData,
-  MomentumData,
-  PsychData,
-  BetRecord,          // ✅ Manquait
-  BankrollState,      // ✅ Manquait
-  GeoCondition,       // ✅ Manquait
-  PressAnalysis,      // ✅ Manquait
-  SocialSentiment,    // ✅ Manquait
-  BookmakerOdds,      // ✅ Manquait
-  ArbitrageResult     // ✅ Manquait
+  Circuit,
+  H2HFullProfile,
+  PressAnalysis,
+  SocialSentiment,
+  GeoCondition,
+  GodModeReport // Ajouté
 } from './engine/types';
 
 export interface PastMatch {
@@ -46,28 +36,17 @@ export interface MatchOdds {
   p2: number;
 }
 
-// ON RÉ-EXPORTE TOUT LE MONDE
+// Exportation groupée pour que les autres fichiers trouvent tout
 export type { 
   AIPrediction, 
   OddsAnalysis, 
   PlayerAttributes, 
-  Circuit, 
-  H2HFullProfile, 
-  HumanFactors,
-  WebScrapedData,
-  ComboStrategy,
-  ComboSelection,
-  FullMatchDossier,
-  PlayerProfileData,
-  MomentumData,
-  PsychData,
-  BetRecord,
-  BankrollState,
-  GeoCondition,
+  Circuit,
+  H2HFullProfile,
   PressAnalysis,
   SocialSentiment,
-  BookmakerOdds,
-  ArbitrageResult
+  GeoCondition,
+  GodModeReport
 };
 
 export interface Match {
@@ -83,7 +62,6 @@ export interface Match {
   ai?: AIPrediction;
   surface: 'Hard' | 'Clay' | 'Grass' | 'Indoor';
   validationResult?: 'CORRECT' | 'WRONG' | 'PENDING';
-  dossier?: FullMatchDossier;
 }
 
 export type MatchStatus = Match['status'];
