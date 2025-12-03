@@ -7,7 +7,7 @@ interface Props {
   onUpdate: (newReport: GodModeReportV2) => void;
 }
 
-export const GodModeTableComplete: React.FC<Props> = ({ report, onUpdate }) => {
+export const GodModeTable: React.FC<Props> = ({ report, onUpdate }) => {
   
   const [tabP1, setTabP1] = useState<'PROFIL' | 'STATS' | 'PSYCHO' | 'CALENDRIER' | 'H2H' | 'ENJEUX'>('PROFIL');
   const [tabP2, setTabP2] = useState<'PROFIL' | 'STATS' | 'PSYCHO' | 'CALENDRIER' | 'H2H' | 'ENJEUX'>('PROFIL');
@@ -16,6 +16,7 @@ export const GodModeTableComplete: React.FC<Props> = ({ report, onUpdate }) => {
     const newReport = { ...report };
     let current: any = newReport;
     for (let i = 0; i < path.length - 1; i++) {
+      if (!current[path[i]]) current[path[i]] = {};
       current = current[path[i]];
     }
     current[path[path.length - 1]] = value;
@@ -35,17 +36,13 @@ export const GodModeTableComplete: React.FC<Props> = ({ report, onUpdate }) => {
           <div>
             <div className={`text-lg font-black uppercase flex items-center gap-2 ${colorClass}`}>
                 <span className="text-2xl">●</span> 
-                <input 
-                  value={name} 
-                  onChange={(e) => handleChange([playerKey, 'name'], e.target.value)}
-                  className="bg-transparent outline-none font-black uppercase"
-                />
+                <span>{name}</span>
             </div>
             <div className="flex gap-2 mt-2 flex-wrap text-xs">
               <span className="inline-flex items-center gap-1 bg-black/50 px-2 py-1 rounded border border-neutral-700 text-gray-300 font-mono">
                   <Trophy size={11} className={colorClass}/> RANG: 
                   <input 
-                      value={data.rank || '0'} 
+                      value={data?.rank || '0'} 
                       onChange={(e) => handleChange([playerKey, 'rank'], e.target.value)}
                       className="bg-transparent w-10 text-white outline-none font-bold text-center"
                   />
@@ -53,7 +50,7 @@ export const GodModeTableComplete: React.FC<Props> = ({ report, onUpdate }) => {
               <span className="inline-flex items-center gap-1 bg-black/50 px-2 py-1 rounded border border-neutral-700 text-gray-300 font-mono">
                   🏆 Tournoi: 
                   <input 
-                      value={data.tournamentRank || '1/2'} 
+                      value={data?.tournamentRank || '1/2'} 
                       onChange={(e) => handleChange([playerKey, 'tournamentRank'], e.target.value)}
                       className="bg-transparent w-12 text-white outline-none font-bold text-center"
                   />
@@ -92,7 +89,7 @@ export const GodModeTableComplete: React.FC<Props> = ({ report, onUpdate }) => {
                     ].map((row, i) => (
                         <div key={i} className="grid grid-cols-[40%_60%] border-b border-neutral-800 last:border-0 text-[10px]">
                             <div className="bg-neutral-900/50 p-2 text-gray-400 font-semibold border-r border-neutral-800">{row.l}</div>
-                            <input value={data[row.k] || ''} onChange={(e) => handleChange([playerKey, row.k], e.target.value)} className="bg-transparent text-white p-2 outline-none w-full font-mono"/>
+                            <input value={data?.[row.k] || ''} onChange={(e) => handleChange([playerKey, row.k], e.target.value)} className="bg-transparent text-white p-2 outline-none w-full font-mono"/>
                         </div>
                     ))}
                 </div>
@@ -109,7 +106,7 @@ export const GodModeTableComplete: React.FC<Props> = ({ report, onUpdate }) => {
                     ].map((row, i) => (
                         <div key={i} className="grid grid-cols-[40%_60%] border-b border-neutral-800 last:border-0 text-[10px]">
                             <div className="bg-neutral-900/50 p-2 text-gray-400 font-semibold border-r border-neutral-800">{row.l}</div>
-                            <input value={data[row.k] || ''} onChange={(e) => handleChange([playerKey, row.k], e.target.value)} className="bg-transparent text-white p-2 outline-none w-full font-mono"/>
+                            <input value={data?.[row.k] || ''} onChange={(e) => handleChange([playerKey, row.k], e.target.value)} className="bg-transparent text-white p-2 outline-none w-full font-mono"/>
                         </div>
                     ))}
                 </div>
@@ -124,7 +121,7 @@ export const GodModeTableComplete: React.FC<Props> = ({ report, onUpdate }) => {
                     ].map((row, i) => (
                         <div key={i} className="grid grid-cols-[40%_60%] border-b border-neutral-800 last:border-0 text-[10px]">
                             <div className="bg-neutral-900/50 p-2 text-gray-400 font-semibold border-r border-neutral-800">{row.l}</div>
-                            <input value={data[row.k] || ''} onChange={(e) => handleChange([playerKey, row.k], e.target.value)} className="bg-transparent text-white p-2 outline-none w-full font-mono"/>
+                            <input value={data?.[row.k] || ''} onChange={(e) => handleChange([playerKey, row.k], e.target.value)} className="bg-transparent text-white p-2 outline-none w-full font-mono"/>
                         </div>
                     ))}
                 </div>
@@ -140,11 +137,11 @@ export const GodModeTableComplete: React.FC<Props> = ({ report, onUpdate }) => {
                     <div className="grid grid-cols-1 gap-2 text-[10px]">
                         <div className="bg-green-900/15 border border-green-500/40 p-2 rounded flex justify-between items-center">
                             <span className="text-green-400 font-bold">HOLD % 🔑</span>
-                            <input value={data.holdPercent || '82%'} onChange={(e) => handleChange([playerKey, 'holdPercent'], e.target.value)} className="bg-transparent text-right w-16 outline-none text-white font-bold"/>
+                            <input value={data?.holdPercent || '82%'} onChange={(e) => handleChange([playerKey, 'holdPercent'], e.target.value)} className="bg-transparent text-right w-16 outline-none text-white font-bold"/>
                         </div>
                         <div className="bg-red-900/15 border border-red-500/40 p-2 rounded flex justify-between items-center">
                             <span className="text-red-400 font-bold">BREAK % 🔑</span>
-                            <input value={data.breakPercent || '42%'} onChange={(e) => handleChange([playerKey, 'breakPercent'], e.target.value)} className="bg-transparent text-right w-16 outline-none text-white font-bold"/>
+                            <input value={data?.breakPercent || '42%'} onChange={(e) => handleChange([playerKey, 'breakPercent'], e.target.value)} className="bg-transparent text-right w-16 outline-none text-white font-bold"/>
                         </div>
                     </div>
                  </div>
@@ -160,7 +157,7 @@ export const GodModeTableComplete: React.FC<Props> = ({ report, onUpdate }) => {
                         ].map((row, i) => (
                             <div key={i} className="grid grid-cols-[40%_60%] border-b border-neutral-800 last:border-0 p-2">
                                 <span className="text-gray-400 font-semibold">{row.l}</span>
-                                <input value={data[row.k] || ''} onChange={(e) => handleChange([playerKey, row.k], e.target.value)} className="bg-transparent text-right outline-none text-white font-mono"/>
+                                <input value={data?.[row.k] || ''} onChange={(e) => handleChange([playerKey, row.k], e.target.value)} className="bg-transparent text-right outline-none text-white font-mono"/>
                             </div>
                         ))}
                     </div>
@@ -171,11 +168,11 @@ export const GodModeTableComplete: React.FC<Props> = ({ report, onUpdate }) => {
                     <div className="border border-neutral-700 rounded-lg overflow-hidden text-[10px] bg-black/40 grid grid-cols-2">
                         <div className="border-b border-r border-neutral-800 p-2">
                             <span className="text-gray-400 text-[9px] block">Vent Impact</span>
-                            <input value={data.windImpact || '+8%'} onChange={(e) => handleChange([playerKey, 'windImpact'], e.target.value)} className="bg-transparent text-white outline-none w-full font-bold text-sm"/>
+                            <input value={data?.windImpact || '+8%'} onChange={(e) => handleChange([playerKey, 'windImpact'], e.target.value)} className="bg-transparent text-white outline-none w-full font-bold text-sm"/>
                         </div>
                         <div className="border-b border-neutral-800 p-2">
                             <span className="text-gray-400 text-[9px] block">Froid Impact</span>
-                            <input value={data.coldImpact || '-10%'} onChange={(e) => handleChange([playerKey, 'coldImpact'], e.target.value)} className="bg-transparent text-white outline-none w-full font-bold text-sm"/>
+                            <input value={data?.coldImpact || '-10%'} onChange={(e) => handleChange([playerKey, 'coldImpact'], e.target.value)} className="bg-transparent text-white outline-none w-full font-bold text-sm"/>
                         </div>
                     </div>
                  </div>
@@ -191,7 +188,7 @@ export const GodModeTableComplete: React.FC<Props> = ({ report, onUpdate }) => {
                         ].map((row, i) => (
                             <div key={i} className={`${i % 2 === 0 ? 'border-r' : ''} ${i < 2 ? 'border-b' : ''} border-neutral-800 p-2`}>
                                 <span className="text-gray-400 text-[9px] block">{row.l}</span>
-                                <input value={data[row.k] || ''} onChange={(e) => handleChange([playerKey, row.k], e.target.value)} className="bg-transparent text-white outline-none w-full font-bold text-sm"/>
+                                <input value={data?.[row.k] || ''} onChange={(e) => handleChange([playerKey, row.k], e.target.value)} className="bg-transparent text-white outline-none w-full font-bold text-sm"/>
                             </div>
                         ))}
                     </div>
@@ -213,7 +210,7 @@ export const GodModeTableComplete: React.FC<Props> = ({ report, onUpdate }) => {
                         ].map((row, i) => (
                             <div key={i} className="grid grid-cols-[40%_60%] border-b border-neutral-800 last:border-0">
                                 <div className="bg-neutral-900/50 p-2 text-gray-400 font-semibold border-r border-neutral-800">{row.l}</div>
-                                <input value={data[row.k] || ''} onChange={(e) => handleChange([playerKey, row.k], e.target.value)} className="bg-transparent text-white p-2 outline-none w-full text-[9px]"/>
+                                <input value={data?.[row.k] || ''} onChange={(e) => handleChange([playerKey, row.k], e.target.value)} className="bg-transparent text-white p-2 outline-none w-full text-[9px]"/>
                             </div>
                         ))}
                     </div>
@@ -229,7 +226,7 @@ export const GodModeTableComplete: React.FC<Props> = ({ report, onUpdate }) => {
                         ].map((row, i) => (
                             <div key={i} className="grid grid-cols-[40%_60%] border-b border-neutral-800 last:border-0">
                                 <div className="bg-neutral-900/50 p-2 text-gray-400 font-semibold border-r border-neutral-800">{row.l}</div>
-                                <input value={data[row.k] || ''} onChange={(e) => handleChange([playerKey, row.k], e.target.value)} className="bg-transparent text-white p-2 outline-none w-full text-[9px]"/>
+                                <input value={data?.[row.k] || ''} onChange={(e) => handleChange([playerKey, row.k], e.target.value)} className="bg-transparent text-white p-2 outline-none w-full text-[9px]"/>
                             </div>
                         ))}
                     </div>
@@ -244,7 +241,7 @@ export const GodModeTableComplete: React.FC<Props> = ({ report, onUpdate }) => {
                         ].map((row, i) => (
                             <div key={i} className="grid grid-cols-[40%_60%] border-b border-neutral-800 last:border-0">
                                 <div className="bg-neutral-900/50 p-2 text-gray-400 font-semibold border-r border-neutral-800">{row.l}</div>
-                                <input value={data[row.k] || ''} onChange={(e) => handleChange([playerKey, row.k], e.target.value)} className="bg-transparent text-white p-2 outline-none w-full text-[9px]"/>
+                                <input value={data?.[row.k] || ''} onChange={(e) => handleChange([playerKey, row.k], e.target.value)} className="bg-transparent text-white p-2 outline-none w-full text-[9px]"/>
                             </div>
                         ))}
                     </div>
@@ -261,7 +258,7 @@ export const GodModeTableComplete: React.FC<Props> = ({ report, onUpdate }) => {
                         ].map((row, i) => (
                             <div key={i} className="grid grid-cols-[40%_60%] border-b border-neutral-800 last:border-0">
                                 <div className="bg-neutral-900/50 p-2 text-gray-400 font-semibold border-r border-neutral-800 text-[9px]">{row.l}</div>
-                                <input value={data[row.k] || ''} onChange={(e) => handleChange([playerKey, row.k], e.target.value)} className="bg-transparent text-white p-2 outline-none w-full text-[9px]"/>
+                                <input value={data?.[row.k] || ''} onChange={(e) => handleChange([playerKey, row.k], e.target.value)} className="bg-transparent text-white p-2 outline-none w-full text-[9px]"/>
                             </div>
                         ))}
                     </div>
@@ -279,15 +276,15 @@ export const GodModeTableComplete: React.FC<Props> = ({ report, onUpdate }) => {
                       </div>
                       {[0, 1, 2, 3, 4].map((i) => (
                         <div key={i} className="grid grid-cols-[60px_1fr_60px] p-1 hover:bg-white/5 border-b border-neutral-800 text-gray-300">
-                            <input value={data[`match${i}_date`] || ''} onChange={(e) => handleChange([playerKey, `match${i}_date`], e.target.value)} placeholder="JJ.MM" className="bg-transparent outline-none text-[9px]"/>
-                            <input value={data[`match${i}_tournament`] || ''} onChange={(e) => handleChange([playerKey, `match${i}_tournament`], e.target.value)} placeholder="Tournoi" className="bg-transparent outline-none text-[9px] px-1"/>
-                            <input value={data[`match${i}_priority`] || ''} onChange={(e) => handleChange([playerKey, `match${i}_priority`], e.target.value)} placeholder="Priorité" className="bg-transparent outline-none text-right text-[9px]"/>
+                            <input value={data?.[`match${i}_date`] || ''} onChange={(e) => handleChange([playerKey, `match${i}_date`], e.target.value)} placeholder="JJ.MM" className="bg-transparent outline-none text-[9px]"/>
+                            <input value={data?.[`match${i}_tournament`] || ''} onChange={(e) => handleChange([playerKey, `match${i}_tournament`], e.target.value)} placeholder="Tournoi" className="bg-transparent outline-none text-[9px] px-1"/>
+                            <input value={data?.[`match${i}_priority`] || ''} onChange={(e) => handleChange([playerKey, `match${i}_priority`], e.target.value)} placeholder="Priorité" className="bg-transparent outline-none text-right text-[9px]"/>
                         </div>
                       ))}
                   </div>
                   <div className="text-[9px] text-gray-400 bg-blue-900/10 border border-blue-500/20 p-2 rounded">
                     <strong>⭐ Prochain match important?</strong>
-                    <input value={data.nextMatchPriority || ''} onChange={(e) => handleChange([playerKey, 'nextMatchPriority'], e.target.value)} className="bg-transparent w-full outline-none mt-1 text-[9px] text-white"/>
+                    <input value={data?.nextMatchPriority || ''} onChange={(e) => handleChange([playerKey, 'nextMatchPriority'], e.target.value)} className="bg-transparent w-full outline-none mt-1 text-[9px] text-white"/>
                   </div>
               </div>
           )}
@@ -299,7 +296,7 @@ export const GodModeTableComplete: React.FC<Props> = ({ report, onUpdate }) => {
                   <div className="border border-neutral-700 rounded-lg overflow-hidden text-[10px] bg-black/40">
                       {[
                           {l: 'Ils se sont affrontés', k: 'h2hMeetings'},
-                          {l: 'Score Global', k: 'h2hScore'},
+                          {l: 'Score Global', k: 'global'},
                           {l: 'Surface Dur', k: 'h2hSurface'},
                           {l: 'Dernière vic', k: 'h2hLastWin'},
                           {l: 'Sets moyens', k: 'h2hAvgSets'},
@@ -309,7 +306,7 @@ export const GodModeTableComplete: React.FC<Props> = ({ report, onUpdate }) => {
                       ].map((row, i) => (
                           <div key={i} className="grid grid-cols-[40%_60%] border-b border-neutral-800 last:border-0 p-2">
                               <span className="text-gray-400 font-semibold">{row.l}</span>
-                              <input value={data[row.k] || ''} onChange={(e) => handleChange([playerKey, row.k], e.target.value)} className="bg-transparent text-right outline-none text-white font-mono text-[9px]"/>
+                              <input value={data?.[row.k] || ''} onChange={(e) => handleChange([playerKey, row.k], e.target.value)} className="bg-transparent text-right outline-none text-white font-mono text-[9px]"/>
                           </div>
                       ))}
                   </div>
@@ -331,7 +328,7 @@ export const GodModeTableComplete: React.FC<Props> = ({ report, onUpdate }) => {
                         ].map((row, i) => (
                             <div key={i} className="grid grid-cols-[40%_60%] border-b border-neutral-800 last:border-0">
                                 <div className="bg-neutral-900/50 p-2 text-gray-400 font-semibold border-r border-neutral-800">{row.l}</div>
-                                <input value={data[row.k] || ''} onChange={(e) => handleChange([playerKey, row.k], e.target.value)} className="bg-transparent text-white p-2 outline-none w-full text-[9px]"/>
+                                <input value={data?.[row.k] || ''} onChange={(e) => handleChange([playerKey, row.k], e.target.value)} className="bg-transparent text-white p-2 outline-none w-full text-[9px]"/>
                             </div>
                         ))}
                     </div>
@@ -340,7 +337,7 @@ export const GodModeTableComplete: React.FC<Props> = ({ report, onUpdate }) => {
                   <div className="space-y-2">
                     <div className="text-xs font-bold text-blue-400 uppercase flex gap-1"><List size={13}/> Actualités Récentes</div>
                     <textarea 
-                      value={data.news || ''} 
+                      value={data?.news || ''} 
                       onChange={(e) => handleChange([playerKey, 'news'], e.target.value)}
                       placeholder="Actualités, infos récentes..."
                       className="w-full h-20 bg-black/40 border border-neutral-700 rounded p-2 text-[9px] text-gray-300 outline-none focus:border-orange-500/50 resize-none"
@@ -364,17 +361,9 @@ export const GodModeTableComplete: React.FC<Props> = ({ report, onUpdate }) => {
               </div>
               
               <div className="text-2xl lg:text-3xl font-black flex flex-col lg:flex-row items-center gap-2 lg:gap-4">
-                  <input 
-                    value={report.identity.p1Name} 
-                    onChange={(e) => handleChange(['identity', 'p1Name'], e.target.value)} 
-                    className="bg-transparent text-blue-500 outline-none flex-1 text-center lg:text-right font-black uppercase"
-                  />
+                  <span className="text-blue-500">{report.identity.p1Name}</span>
                   <span className="text-gray-600 text-lg font-normal">vs</span>
-                  <input 
-                    value={report.identity.p2Name} 
-                    onChange={(e) => handleChange(['identity', 'p2Name'], e.target.value)} 
-                    className="bg-transparent text-orange-500 outline-none flex-1 text-center lg:text-left font-black uppercase"
-                  />
+                  <span className="text-orange-500">{report.identity.p2Name}</span>
               </div>
 
               <div className="flex flex-wrap gap-3 text-sm">
@@ -525,7 +514,7 @@ export const GodModeTableComplete: React.FC<Props> = ({ report, onUpdate }) => {
               <div>
                   <div className="text-[10px] text-gray-500 uppercase mb-2">Score Global</div>
                   <input 
-                    value={report.h2h.global || '12-3'} 
+                    value={report.h2h?.global || '12-3'} 
                     onChange={(e) => handleChange(['h2h', 'global'], e.target.value)}
                     className="text-2xl font-black text-white bg-transparent text-center w-full outline-none"
                   />
@@ -533,23 +522,23 @@ export const GodModeTableComplete: React.FC<Props> = ({ report, onUpdate }) => {
               <div>
                   <div className="text-[10px] text-gray-500 uppercase mb-2">Surface</div>
                   <input 
-                    value={report.h2h.surface || '5-1'} 
+                    value={report.h2h?.surface || '5-1'} 
                     onChange={(e) => handleChange(['h2h', 'surface'], e.target.value)}
                     className="text-2xl font-black text-white bg-transparent text-center w-full outline-none"
                   />
               </div>
               <div>
-                  <div className="text-[10px] text-gray-500 uppercase mb-2">TB</div>
+                  <div className="text-[10px] text-gray-500 uppercase mb-2">Advantage</div>
                   <input 
-                    value={report.h2h.tb || '9-1'} 
-                    onChange={(e) => handleChange(['h2h', 'tb'], e.target.value)}
+                    value={report.h2h?.advantage || 'P1'} 
+                    onChange={(e) => handleChange(['h2h', 'advantage'], e.target.value)}
                     className="text-2xl font-black text-white bg-transparent text-center w-full outline-none"
                   />
               </div>
               <div>
                   <div className="text-[10px] text-gray-500 uppercase mb-2">Tendance</div>
                   <input 
-                    value={report.h2h.trend || 'K gagne 4/4'} 
+                    value={report.h2h?.trend || 'P1 gagne 4/4'} 
                     onChange={(e) => handleChange(['h2h', 'trend'], e.target.value)}
                     className="text-lg font-black text-white bg-transparent text-center w-full outline-none"
                   />
@@ -558,7 +547,7 @@ export const GodModeTableComplete: React.FC<Props> = ({ report, onUpdate }) => {
           <div className="bg-black/30 p-3 rounded text-xs text-gray-400">
               <div className="font-bold text-white mb-2">📋 Derniers Matchs (Scores Exacts + Dates):</div>
               <textarea 
-                value={report.h2h.lastMatches || ''} 
+                value={report.h2h?.lastMatches || ''} 
                 onChange={(e) => handleChange(['h2h', 'lastMatches'], e.target.value)}
                 className="w-full h-16 bg-black/20 border border-neutral-700 rounded p-2 text-[10px] outline-none focus:border-orange-500/50 resize-none"
               />
