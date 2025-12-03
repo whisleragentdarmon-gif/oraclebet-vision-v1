@@ -1,14 +1,12 @@
-// Fichier : src/engine/types.ts
-
 export type Circuit = 'ATP' | 'WTA' | 'CHALLENGER' | 'ITF';
 export type RiskLevel = 'SAFE' | 'MODERATE' | 'RISKY' | 'Safe' | 'Moderate' | 'Risky' | 'NO_BET' | 'High' | 'Low';
 export type PlayerStyle = 'Aggressive' | 'Defensive' | 'ServeVolley' | 'Balanced';
 
-// --- GOD MODE V2 (Structure Validée) ---
+// --- STRUCTURE V2 COMPLÈTE ---
 export interface PlayerProfileV2 {
   rank: string;
   bestRank: string;
-  ageHeight: string;
+  ageHeight: string; // Combiné
   nationality: string;
   hand: string;
   winrateCareer: string;
@@ -22,44 +20,48 @@ export interface PlayerProfileV2 {
   injury: string;
   motivation: string;
   last5: string;
-  // Champs optionnels de compatibilité
-  age?: string; height?: string; weight?: string; serveStats?: string; returnStats?: string; 
-  injuries?: string; instagram?: string; twitter?: string;
+  // Champs techniques optionnels
+  age?: string; height?: string; weight?: string; serveStats?: string; returnStats?: string; injuries?: string; instagram?: string; twitter?: string;
 }
 
 export interface GodModeReportV2 {
   identity: {
     p1Name: string; p2Name: string; tournament: string; surface: string; date: string;
-    // ✅ AJOUTS POUR CORRIGER LES ERREURS :
-    time?: string;
-    city?: string;
-    enjeu?: string;
-    importanceP1?: string;
-    importanceP2?: string;
-    // Champs existants
-    level?: string; round?: string; location?: string; dateTime?: string; timezone?: string; importance?: string; p1?: string; p2?: string; category?: string; format?: string;
+    // Champs techniques
+    time?: string; level?: string; round?: string; location?: string; dateTime?: string; timezone?: string; importance?: string; p1?: string; p2?: string; category?: string; format?: string; city?: string; enjeu?: string; importanceP1?: string; importanceP2?: string;
   };
   p1: PlayerProfileV2;
   p2: PlayerProfileV2;
   h2h: {
-    global: string; surface: string; advantage: string;
-    total?: string; sets?: string; games?: string; lastMatches?: string; analysis?: string; context?: string; styleMatchup?: string;
+    global: string; surface: string; advantage: string; 
+    lastMatches: string; // C'est lui le bon nom
+    // Champs techniques
+    total?: string; sets?: string; games?: string; analysis?: string; context?: string; styleMatchup?: string; lastMatch?: string; trend?: string;
   };
   conditions: {
     weather: string; temp: string; wind: string; altitude: string;
-    humidity?: string; advantage?: string; speed?: string; indoor?: string;
+    // Champs techniques
+    humidity?: string; advantage?: string; speed?: string; indoor?: string; courtSpeed?: string; ballType?: string; fatigueImpact?: string;
   };
   bookmaker: {
-    oddA: string; oddB: string;
-    movement?: string; valueIndex?: string; trapIndex?: string; smartMoney?: string; value?: string; trap?: string; volume?: string;
+    oddA: string; oddB: string; movement: string;
+    // Champs techniques
+    valueIndex?: string; trapIndex?: string; smartMoney?: string; value?: string; trap?: string; volume?: string; spread?: string; p1Odd?: string; p2Odd?: string;
+    // ✅ AJOUT POUR GOD ENGINE
+    specialOdds?: { market: string; odd: string; analysis: string }[];
   };
+  // ✅ AJOUT POUR GOD ENGINE
+  factors?: { factor: string; importance: string; impact: string }[];
+  
   synthesis: {
     tech: string; mental: string; physical: string; surface: string; momentum: string; xFactor: string; risk: string;
     stat?: string;
   };
   prediction?: {
+    // On combine tout ici
     probA: string; probB: string; probOver: string; probTieBreak: string; probUpset: string; risk: string;
     recoWinner: string; recoOver: string; recoSet: string;
+    winner?: string; score?: string; duration?: string; volatility?: string; confidence?: string; bestBet?: string; avoidBet?: string; altBet?: string;
   };
 }
 
@@ -69,7 +71,7 @@ export type FullMatchDossier = GodModeReportV2;
 export type H2HFullProfile = GodModeReportV2;
 export type WebScrapedData = any;
 
-// --- TYPES EXISTANTS (MOTEUR BANKROLL & IA) ---
+// --- TYPES MOTEURS (Ne pas toucher) ---
 export interface AIModelWeights { surfaceWeight: number; formWeight: number; h2hWeight: number; fatigueFactor: number; mentalWeight: number; variance: number; momentumWeight?: number; serveDominance?: number; }
 export interface LearningExperience { matchId: string; date: string; timestamp?: number; prediction: string; outcome: 'WIN' | 'LOSS' | 'VOID'; circuit: Circuit; adjustments: string; result?: string; weightsUsed?: any; }
 export interface PlayerAttributes { power: number; serve: number; return: number; mental: number; form: number; stamina?: number; speed?: number; }
