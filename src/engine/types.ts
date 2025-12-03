@@ -1,11 +1,11 @@
 // Fichier : src/engine/types.ts
 
-// --- Types de base ---
+// --- 1. Types de base ---
 export type Circuit = 'ATP' | 'WTA' | 'CHALLENGER' | 'ITF';
 export type RiskLevel = 'SAFE' | 'MODERATE' | 'RISKY' | 'Safe' | 'Moderate' | 'Risky' | 'NO_BET';
 export type PlayerStyle = 'Aggressive' | 'Defensive' | 'ServeVolley' | 'Balanced';
 
-// --- IA & Apprentissage ---
+// --- 2. IA & Apprentissage ---
 export interface AIModelWeights {
   surfaceWeight: number;
   formWeight: number;
@@ -29,7 +29,7 @@ export interface LearningExperience {
   weightsUsed?: any;
 }
 
-// --- Joueurs & Attributs ---
+// --- 3. Joueurs & Attributs ---
 export interface PlayerAttributes {
   power: number;
   serve: number;
@@ -40,7 +40,7 @@ export interface PlayerAttributes {
   speed?: number;
 }
 
-// --- Cotes & Bookmakers ---
+// --- 4. Cotes & Bookmakers ---
 export type BookmakerName = 'Winamax' | 'Betclic' | 'Unibet' | 'Pinnacle' | 'Bwin';
 
 export interface BookmakerOdds {
@@ -71,7 +71,7 @@ export interface OddsAnalysis {
   bookmakers: BookmakerOdds[];
 }
 
-// --- Bankroll ---
+// --- 5. Bankroll ---
 export interface BankrollSimulationMetric {
   finalBankroll: number;
   riskOfRuin: number;
@@ -108,9 +108,36 @@ export interface BankrollState {
     history: BetRecord[];
 }
 
-// --- H2H & Profils Complets ---
+// --- 6. GOD MODE & DATA MARKET (Les Types Manquants sont ici) ---
+
+export interface PressAnalysis {
+  sentimentScore: number;
+  scandalAlert: boolean;
+  mentalPressureIndex: number;
+  recentQuotes: { source: string; text: string; sentiment: string }[];
+  rumors: string[];
+}
+
+export interface SocialSentiment {
+  twitterHype: number;
+  redditMood: string;
+  instagramActivity: string;
+  publicBettingTrend: number;
+}
+
+export interface GeoCondition {
+  altitude: number;
+  humidity: number;
+  windSpeed: number;
+  courtSpeedIndex: number;
+  ballType: string;
+  isIndoor: boolean;
+}
+
+// --- 7. H2H & Profils Complets ---
 export interface H2HFullProfile {
   p1: {
+    // J'ai enlevé 'name' car il n'était pas dans l'interface originale et causait l'erreur
     age: string; height: string; rank: string; plays: string; style: string; nationality: string;
   };
   p2: {
@@ -128,9 +155,9 @@ export interface H2HFullProfile {
   sources: string[];
 }
 
-// --- GOD MODE DATA (Rapport Complet) ---
+// --- 8. GOD MODE DATA (Rapport Complet) ---
 export interface MomentumData {
-  last5: string; // C'est ici que c'est défini
+  last5: string;
   results: string;
   fatigue: string;
   pointsToDefend: string;
@@ -174,6 +201,7 @@ export interface GodModeReport {
   };
 }
 
+// Structure d'analyse utilisée par AnalysisPage
 export interface GodModeAnalysis {
     social: { sentimentScore: number; scandalAlert: boolean; mentalPressure: number; socialTrend: string };
     geo: { altitude: number; humidity: number; wind: number; speed: string; type: string };
@@ -188,7 +216,7 @@ export interface GodModeAnalysis {
     noBetReason?: string;
 }
 
-// --- Prédictions ---
+// --- 9. Prédictions ---
 export interface AIPrediction {
   winner: string;
   confidence: number;
@@ -221,7 +249,7 @@ export interface LiveUpdatePayload {
   momentum: number;
 }
 
-// --- Combinés ---
+// --- 10. Combinés ---
 export interface ComboSelection {
     matchId: string;
     player1: string;
