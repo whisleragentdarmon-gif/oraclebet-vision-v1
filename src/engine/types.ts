@@ -3,11 +3,14 @@ export type RiskLevel = 'SAFE' | 'MODERATE' | 'RISKY' | 'Safe' | 'Moderate' | 'R
 
 // --- NOUVELLE STRUCTURE V3 (Fiche Technique Complète) ---
 
+// ...
 export interface GodModeReportV2 {
   identity: {
-    p1Name: string; p2Name: string; tournament: string; surface: string; date: string;
-    round: string; city: string; timezone: string; importanceP1: string; importanceP2: string; enjeu: string;
+    p1Name: string; p2Name: string; tournament: string; surface: string; 
+    date: string; time?: string; // ✅ AJOUT DE time
+    level?: string; round?: string; location?: string; dateTime?: string; timezone?: string; importance?: string; p1?: string; p2?: string; category?: string; format?: string;
   };
+// ... (la suite ne change pas)
   
   p1: PlayerProfileV3;
   p2: PlayerProfileV3;
