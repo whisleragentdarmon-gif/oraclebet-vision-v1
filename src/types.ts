@@ -7,7 +7,8 @@ import {
   PressAnalysis,
   SocialSentiment,
   GeoCondition,
-  GodModeReport,
+  GodModeReport, // Alias vers V2
+  GodModeReportV2,
   FullMatchDossier,
   WebScrapedData
 } from './engine/types';
@@ -37,7 +38,6 @@ export interface MatchOdds {
   p2: number;
 }
 
-// Exportation groupée
 export type { 
   AIPrediction, 
   OddsAnalysis, 
@@ -48,6 +48,7 @@ export type {
   SocialSentiment,
   GeoCondition,
   GodModeReport,
+  GodModeReportV2,
   FullMatchDossier,
   WebScrapedData
 };
