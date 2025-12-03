@@ -47,16 +47,18 @@ export const AnalysisPage: React.FC = () => {
   const runGodMode = async () => {
     setIsComputing(true);
     if (selectedMatch) {
+        const p1 = selectedMatch.player1.name;
+        const p2 = selectedMatch.player2.name;
+        
         try {
-           // 1. APPEL AU MOTEUR CENTRAL (Il fait tout : Google, Météo, Stats)
-           const report = await GodEngine.generateReport(selectedMatch);
+           // ✅ CORRECTION : Appel à generateReportV2
+           const report = await GodEngine.generateReportV2(p1, p2, selectedMatch.tournament);
            
-           // 2. SAUVEGARDE
+           // Sauvegarde
            saveAnalysis(selectedMatch.id, report);
            setCurrentReport(report);
         } catch (e) {
            console.error("Erreur God Mode:", e);
-           alert("Erreur lors de la génération du rapport.");
         }
     }
     setIsComputing(false);
