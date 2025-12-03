@@ -155,13 +155,9 @@ export const GodEngine = {
         report.p1.winrateSeason = `${wins}-${losses}`;
         report.p1.last5 = recent.map((m: any) => m.winner === p1Id ? 'W' : 'L').join('');
         report.p1.form = wins >= 3 ? "Excellente" : wins >= 1 ? "Bonne" : "Faible";
-        report.p1.lastMatchDate = recent[0]?.date || "-";
       }
 
-      // P1 News
-      if (p1News?.data && p1News.data.length > 0) {
-        report.p1.social = p1News.data[0].title?.substring(0, 50) || "-";
-      }
+      // P1 News (propriété non disponible)
 
       // P1 Schedule
       if (p1Schedule?.data && p1Schedule.data.length > 0) {
@@ -192,13 +188,9 @@ export const GodEngine = {
         report.p2.winrateSeason = `${wins}-${losses}`;
         report.p2.last5 = recent.map((m: any) => m.winner === p2Id ? 'W' : 'L').join('');
         report.p2.form = wins >= 3 ? "Excellente" : wins >= 1 ? "Bonne" : "Faible";
-        report.p2.lastMatchDate = recent[0]?.date || "-";
       }
 
-      // P2 News
-      if (p2News?.data && p2News.data.length > 0) {
-        report.p2.social = p2News.data[0].title?.substring(0, 50) || "-";
-      }
+      // P2 News (propriété non disponible)
 
       // P2 Schedule
       if (p2Schedule?.data && p2Schedule.data.length > 0) {
@@ -337,7 +329,7 @@ function createEmptyProfile() {
     rank: "-", bestRank: "-", ageHeight: "- / -", nationality: "-", hand: "-", style: "-",
     winrateCareer: "-", winrateSeason: "-", winrateSurface: "-", aces: "-", doubleFaults: "-",
     firstServe: "-", form: "-", confidence: "-", injury: "Non", fatigue: "Faible",
-    lastMatchDate: "-", serveStats: "-", returnStats: "-", motivation: "-", social: "-", last5: "-",
+    serveStats: "-", returnStats: "-", motivation: "-", last5: "-",
     match0_date: "-", match0_tournament: "-", match0_priority: "-",
     match1_date: "-", match1_tournament: "-", match1_priority: "-",
     match2_date: "-", match2_tournament: "-", match2_priority: "-"
