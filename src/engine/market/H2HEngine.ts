@@ -1,28 +1,41 @@
-import { GodModeReportV2 } from '../../types'; // On utilise le type V2
+import { GodModeReportV2 } from '../../types';
 
 export const H2HEngine = {
-  // On change le type de retour pour qu'il corresponde au nouveau standard
-  fetchFullProfile: async (p1: string, p2: string, tournament: string): Promise<GodModeReportV2> => {
+  fetchFullProfile: async (p1Name: string, p2Name: string, tournament: string): Promise<GodModeReportV2> => {
     
-    // 1. Initialisation du Template V2 (Le même que GodEngine)
+    // 1. Initialisation STRICTE selon le type GodModeReportV2 / PlayerProfileV3
     const report: GodModeReportV2 = {
       identity: {
-        p1Name: p1, p2Name: p2, tournament, surface: "Non trouvé", date: "Aujourd'hui",
-        level: "-", round: "-", location: "-", dateTime: "-", timezone: "-", importance: "-"
+        p1Name, p2Name, tournament, surface: "Non trouvé", date: "Aujourd'hui",
+        round: "1er Tour", city: "Non trouvé", timezone: "UTC", 
+        importanceP1: "Moyenne", importanceP2: "Moyenne", enjeu: "Points classement"
       },
-      p1: createEmptyStats(),
-      p2: createEmptyStats(),
-      h2h: { global: "-", surface: "-", advantage: "-", total: "-", sets: "-", games: "-", lastMatches: "-", analysis: "-" },
-      conditions: { weather: "-", temp: "-", wind: "-", altitude: "-", humidity: "-", advantage: "-", speed: "-", indoor: "-" },
-      bookmaker: { oddA: "-", oddB: "-", movement: "-", valueIndex: "-", trapIndex: "-", smartMoney: "-" },
-      synthesis: { tech: "-", mental: "-", physical: "-", surface: "-", momentum: "-", xFactor: "-", risk: "-" }
+      p1: createEmptyProfile(),
+      p2: createEmptyProfile(),
+      h2h: { 
+        global: "0 - 0", surface: "0 - 0", lastMatch: "-", trend: "Neutre", analysis: "-" 
+      },
+      conditions: { 
+        weather: "-", temp: "-", wind: "-", humidity: "-", 
+        courtSpeed: "Moyen", ballType: "Standard", fatigueImpact: "Faible" 
+      },
+      bookmaker: { 
+        p1Odd: "-", p2Odd: "-", spread: "-", movement: "Stable", 
+        smartMoney: "Non", valueIndex: "0", 
+        specialOdds: [] 
+      },
+      factors: [],
+      prediction: { 
+        winner: "-", score: "-", duration: "-", volatility: "-", confidence: "-", 
+        bestBet: "-", avoidBet: "-", altBet: "-" 
+      }
     };
 
     try {
       const queries = [
-        `${p1} tennis profile ranking height`,
-        `${p2} tennis profile ranking height`,
-        `${p1} vs ${p2} h2h stats tennis`,
+        `${p1Name} tennis profile ranking age height`,
+        `${p2Name} tennis profile ranking age height`,
+        `${p1Name} vs ${p2Name} h2h stats tennis`,
         `weather ${tournament} tennis forecast`
       ];
 
@@ -36,28 +49,36 @@ export const H2HEngine = {
         )
       );
 
-      // --- Parsing Simplifié pour V2 ---
-
-      // Joueur 1
+      // --- PARSING P1 ---
       const resP1 = responses[0]?.results || [];
-      const textP1 = JSON.stringify(resP1).toLowerCase();
-      report.p1.rank = extract(textP1, /(?:rank|#)\s?(\d+)/) || "Non trouvé";
-      report.p1.ageHeight = extract(textP1, /(\d{2})\s?years/) + " ans / " + (extract(textP1, /(\d\.\d{2})/) || "?") + "m";
-      
-      // Joueur 2
-      const resP2 = responses[1]?.results || [];
-      const textP2 = JSON.stringify(resP2).toLowerCase();
-      report.p2.rank = extract(textP2, /(?:rank|#)\s?(\d+)/) || "Non trouvé";
-      report.p2.ageHeight = extract(textP2, /(\d{2})\s?years/) + " ans / " + (extract(textP2, /(\d\.\d{2})/) || "?") + "m";
-
-      // H2H
-      const resH2H = responses[2]?.results || [];
-      if (resH2H.length > 0) {
-          report.h2h.global = "Voir sources";
-          report.h2h.lastMatches = resH2H[0].title;
+      if (resP1.length > 0) {
+         const text = JSON.stringify(resP1).toLowerCase();
+         report.p1.rank = extract(text, /(?:rank|#)\s?(\d+)/) || "N/A";
+         report.p1.age = extract(text, /(\d{2})\s?years/) || "?";
+         report.p1.height = extract(text, /(\d\.\d{2})/) || "?"; // Hauteur séparée
+         report.p1.nationality = extract(text, /nationality\s?(\w+)/) || "-";
       }
 
-      // Météo
+      // --- PARSING P2 ---
+      const resP2 = responses[1]?.results || [];
+      if (resP2.length > 0) {
+         const text = JSON.stringify(resP2).toLowerCase();
+         report.p2.rank = extract(text, /(?:rank|#)\s?(\d+)/) || "N/A";
+         report.p2.age = extract(text, /(\d{2})\s?years/) || "?";
+         report.p2.height = extract(text, /(\d\.\d{2})/) || "?"; // Hauteur séparée
+         report.p2.nationality = extract(text, /nationality\s?(\w+)/) || "-";
+      }
+
+      // --- PARSING H2H ---
+      const resH2H = responses[2]?.results || [];
+      if (resH2H.length > 0) {
+          const textH2H = JSON.stringify(resH2H).toLowerCase();
+          const h2hScore = textH2H.match(/(\d+)\s?-\s?(\d+)/);
+          if (h2hScore) report.h2h.global = `${h2hScore[1]} - ${h2hScore[2]}`;
+          report.h2h.lastMatch = resH2H[0].title; // Titre du résultat Google
+      }
+
+      // --- PARSING MÉTÉO ---
       const resWeather = responses[3]?.results || [];
       if (resWeather.length > 0) {
           report.conditions.weather = resWeather[0].snippet.substring(0, 50);
@@ -71,14 +92,14 @@ export const H2HEngine = {
   }
 };
 
-// Helpers V2
-function createEmptyStats() {
+// Helper pour initialiser un profil V3 complet
+function createEmptyProfile() {
     return {
-        rank: "N/A", bestRank: "-", ageHeight: "- / -", nationality: "-", hand: "-",
-        winrateCareer: "-", winrateSeason: "-", winrateSurface: "-",
-        aces: "-", doubleFaults: "-", firstServe: "-",
-        style: "-", form: "-", injury: "R.A.S", motivation: "-", last5: "-",
-        age: "-", height: "-", weight: "-", serveStats: "-", returnStats: "-", injuries: "-", instagram: "-", twitter: "-"
+        rank: "-", bestRank: "-", age: "-", height: "-", nationality: "-",
+        hand: "-", style: "-", strongPoint: "-", weakPoint: "-",
+        winrateYear: "-", winrateSurface: "-", last5: "V-D-V...",
+        form: "5/10", confidence: "Moyenne", injury: "Non", fatigue: "Faible", lastMatchDate: "-",
+        serveStats: "-", returnStats: "-", motivation: "-", social: "-"
     };
 }
 
