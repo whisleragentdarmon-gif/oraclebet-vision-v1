@@ -1,11 +1,12 @@
-import { GodModeReport, Match } from '../../types';
+import { GodModeReport } from '../types'; // ✅ CORRECTION DU CHEMIN D'IMPORT (../ au lieu de ../../)
+import { Match } from '../../types';      // Match est bien dans le dossier racine src/types.ts donc ../../
 
 export const GodEngine = {
   generateReport: async (match: Match): Promise<GodModeReport> => {
     const p1 = match.player1.name;
     const p2 = match.player2.name;
 
-    // 1. Initialisation du tableau vide (Template)
+    // 1. Initialisation du tableau vide
     const report: GodModeReport = {
       identity: {
         p1, p2, tournament: match.tournament, category: "ATP/WTA/Challenger", surface: match.surface, format: "Bo3", time: match.time
@@ -24,12 +25,12 @@ export const GodEngine = {
     try {
       // 2. Lancement des Agents de Recherche
       const queries = [
-        `${p1} tennis player profile ranking height age style`, // 0
-        `${p2} tennis player profile ranking height age style`, // 1
-        `${p1} vs ${p2} h2h stats tennis head to head`,        // 2
-        `weather ${match.tournament} tennis forecast`,         // 3
-        `${p1} recent form last matches tennis`,               // 4
-        `${p2} recent form last matches tennis`                // 5
+        `${p1} tennis player profile ranking height age style`, 
+        `${p2} tennis player profile ranking height age style`, 
+        `${p1} vs ${p2} h2h stats tennis head to head`,        
+        `weather ${match.tournament} tennis forecast`,         
+        `${p1} recent form last matches tennis`,               
+        `${p2} recent form last matches tennis`                
       ];
 
       const responses = await Promise.all(
@@ -42,7 +43,7 @@ export const GodEngine = {
         )
       );
 
-      // 3. Remplissage Automatique (Parsing basique des résultats)
+      // 3. Remplissage Automatique
       
       // -- Joueur A --
       const resP1 = responses[0]?.results || [];
@@ -64,15 +65,14 @@ export const GodEngine = {
       // -- H2H --
       const resH2H = responses[2]?.results || [];
       if (resH2H.length > 0) {
-          report.h2h.context = `Sources trouvées: ${resH2H[0].title}`;
-          // Ici on extrait sommairement
           if (JSON.stringify(resH2H).includes(p1)) report.h2h.global = "Données disponibles via source";
+          report.h2h.context = resH2H[0]?.title || "Source H2H";
       }
 
       // -- Météo --
       const resWeather = responses[3]?.results || [];
       if (resWeather.length > 0) {
-          report.conditions.weather = resWeather[0].snippet;
+          report.conditions.weather = resWeather[0]?.snippet || "-";
       }
 
       // -- Synthèse Pré-calculée --
@@ -92,5 +92,6 @@ function createEmptyProfile() {
 }
 
 function createEmptyMomentum() {
+    // ✅ CORRECTION ICI : 'last5' au lieu de 'last5Matches' pour correspondre à l'interface MomentumData
     return { last5: "V-D-V...", results: "-", fatigue: "Moyenne", pointsToDefend: "-", motivation: "Haute" };
 }
