@@ -3,7 +3,7 @@ import { GodModeReportV2 } from '../types';
 export const GodEngine = {
   generateReportV2: async (p1Name: string, p2Name: string, tournament: string): Promise<GodModeReportV2> => {
     
-    console.log(`🔥 God Mode ULTRA lancé pour ${p1Name} vs ${p2Name}...`);
+    console.log(`🔥 God Mode lancé pour ${p1Name} vs ${p2Name}...`);
 
     const report: GodModeReportV2 = {
       identity: {
@@ -76,12 +76,6 @@ export const GodEngine = {
         `${p1Name} tennis calendar upcoming tournaments 2024 2025`,
         `${p2Name} tennis calendar upcoming tournaments 2024 2025`,
         
-        // PSYCHOLOGIE & PERFORMANCE (4)
-        `${p1Name} tennis come back after loss pressure handling`,
-        `${p2Name} tennis come back after loss pressure handling`,
-        `${p1Name} tennis Grand Slam performance vs WTA 1000 vs Challenger`,
-        `${p2Name} tennis Grand Slam performance vs WTA 1000 vs Challenger`,
-        
         // CONTEXTE MATCH (2)
         `${tournament} ${p1Name} ${p2Name} betting odds cotes`,
         `weather ${tournament} temperature wind humidity forecast`
@@ -121,20 +115,14 @@ export const GodEngine = {
 
       if (responses[4].results.length > 0) {
         const text = responses[4].results.map((r: any) => r.snippet).join(' ').toLowerCase();
-        report.p1.avgSets = extractAvgSets(text) || "-";
         report.p1.winrateSeason = extractWinrate(text) || "-";
-      }
-
-      if (responses[6].results.length > 0) {
-        const text = responses[6].results.map((r: any) => r.snippet).join(' ').toLowerCase();
-        report.p1.tbPercent = extractTB(text) || "-";
-        report.p1.firstSetWin = extractFirstSet(text) || "-";
       }
 
       if (responses[8].results.length > 0) {
         const text = responses[8].results.map((r: any) => r.snippet).join(' ').toLowerCase();
         report.p1.aces = extractAces(text) || "-";
         report.p1.doubleFaults = extractDoubleFaults(text) || "-";
+        report.p1.firstServe = extractFirstServe(text) || "-";
       }
 
       if (responses[10].results.length > 0) {
@@ -147,31 +135,19 @@ export const GodEngine = {
         report.p1.style = extractStyle(text) || "Mixte";
       }
 
-      if (responses[18].results.length > 0) {
-        const text = responses[18].results.map((r: any) => r.snippet).join(' ');
+      if (responses[20].results.length > 0) {
+        const text = responses[20].results.map((r: any) => r.snippet).join(' ');
         report.p1.last5 = extractLast5(text) || "-";
       }
 
-      if (responses[20].results.length > 0) {
-        const text = responses[20].results.map((r: any) => r.snippet).join(' ').toLowerCase();
-        report.p1.trend = extractTrend(text) || "-";
-      }
-
       if (responses[22].results.length > 0) {
-        const text = responses[22].results.map((r: any) => r.snippet).join(' ');
-        extractCalendar(text, report.p1);
+        const text = responses[22].results.map((r: any) => r.snippet).join(' ').toLowerCase();
+        report.p1.form = extractForm(text) || "-";
       }
 
       if (responses[24].results.length > 0) {
-        const text = responses[24].results.map((r: any) => r.snippet).join(' ').toLowerCase();
-        report.p1.afterLoss = text.includes("win after loss") ? "Bonne" : text.includes("struggle") ? "Difficile" : "-";
-        report.p1.pressureHandling = text.includes("pressure") ? "Bonne" : "-";
-      }
-
-      if (responses[26].results.length > 0) {
-        const text = responses[26].results.map((r: any) => r.snippet).join(' ').toLowerCase();
-        report.p1.grandSlams = extractPercentage(text, "grand slam") || "-";
-        report.p1.wta1000 = extractPercentage(text, "wta 1000") || "-";
+        const text = responses[24].results.map((r: any) => r.snippet).join(' ');
+        extractCalendar(text, report.p1);
       }
 
       // Parser P2 (identique)
@@ -189,20 +165,14 @@ export const GodEngine = {
 
       if (responses[5].results.length > 0) {
         const text = responses[5].results.map((r: any) => r.snippet).join(' ').toLowerCase();
-        report.p2.avgSets = extractAvgSets(text) || "-";
         report.p2.winrateSeason = extractWinrate(text) || "-";
-      }
-
-      if (responses[7].results.length > 0) {
-        const text = responses[7].results.map((r: any) => r.snippet).join(' ').toLowerCase();
-        report.p2.tbPercent = extractTB(text) || "-";
-        report.p2.firstSetWin = extractFirstSet(text) || "-";
       }
 
       if (responses[9].results.length > 0) {
         const text = responses[9].results.map((r: any) => r.snippet).join(' ').toLowerCase();
         report.p2.aces = extractAces(text) || "-";
         report.p2.doubleFaults = extractDoubleFaults(text) || "-";
+        report.p2.firstServe = extractFirstServe(text) || "-";
       }
 
       if (responses[11].results.length > 0) {
@@ -215,18 +185,18 @@ export const GodEngine = {
         report.p2.style = extractStyle(text) || "Mixte";
       }
 
-      if (responses[19].results.length > 0) {
-        const text = responses[19].results.map((r: any) => r.snippet).join(' ');
+      if (responses[21].results.length > 0) {
+        const text = responses[21].results.map((r: any) => r.snippet).join(' ');
         report.p2.last5 = extractLast5(text) || "-";
       }
 
-      if (responses[21].results.length > 0) {
-        const text = responses[21].results.map((r: any) => r.snippet).join(' ').toLowerCase();
-        report.p2.trend = extractTrend(text) || "-";
+      if (responses[23].results.length > 0) {
+        const text = responses[23].results.map((r: any) => r.snippet).join(' ').toLowerCase();
+        report.p2.form = extractForm(text) || "-";
       }
 
-      if (responses[23].results.length > 0) {
-        const text = responses[23].results.map((r: any) => r.snippet).join(' ');
+      if (responses[25].results.length > 0) {
+        const text = responses[25].results.map((r: any) => r.snippet).join(' ');
         extractCalendar(text, report.p2);
       }
 
@@ -249,21 +219,16 @@ export const GodEngine = {
         }
       }
 
-      if (responses[17].results.length > 0) {
-        const text = responses[17].results.map((r: any) => r.snippet).join(' ').toLowerCase();
-        report.h2h.trend = extractLeader(text, p1Name) || "Équilibré";
-      }
-
       // Météo
-      if (responses[28].results.length > 0) {
-        const text = responses[28].results.map((r: any) => r.snippet).join(' ').toLowerCase();
+      if (responses[26].results.length > 0) {
+        const text = responses[26].results.map((r: any) => r.snippet).join(' ').toLowerCase();
         report.conditions.weather = extractWeather(text);
         report.conditions.temp = extractTemp(text) || "-";
         report.conditions.wind = extractWind(text) || "-";
         report.conditions.humidity = extractHumidity(text) || "-";
       }
 
-      console.log("✅ God Mode ULTRA COMPLET!");
+      console.log("✅ God Mode COMPLET!");
       
     } catch (e) {
       console.error("❌ Erreur God Mode:", e);
@@ -273,7 +238,7 @@ export const GodEngine = {
   }
 };
 
-// ========== FONCTIONS D'EXTRACTION ULTRA ==========
+// ========== FONCTIONS D'EXTRACTION ==========
 
 function extractRank(text: string): string | null {
   const m = text.match(/(?:rank|classement|#)\s*(?:no\.?\s*)?(\d+)/i);
@@ -299,25 +264,10 @@ function extractNationality(text: string): string | null {
   return m ? m[1].trim() : null;
 }
 
-function extractAvgSets(text: string): string | null {
-  const m = text.match(/(?:average|moyenne)\s*sets\s*(\d\.?\d?)/i);
-  return m ? m[1] : null;
-}
-
 function extractWinrate(text: string): string {
   const wins = (text.match(/victoire|won|win/gi) || []).length;
   const losses = (text.match(/défaite|lost|loss|perte/gi) || []).length;
   return wins > 0 ? `${wins}-${losses}` : "-";
-}
-
-function extractTB(text: string): string | null {
-  const m = text.match(/(?:tiebreak|tb)\s*(?:percentage|%)?\s*(\d+)%?/i);
-  return m ? m[1] + "%" : null;
-}
-
-function extractFirstSet(text: string): string | null {
-  const m = text.match(/(?:first set|1er set)\s*(?:win|victoire)?\s*(\d+)%/i);
-  return m ? m[1] + "%" : null;
 }
 
 function extractAces(text: string): string | null {
@@ -328,6 +278,11 @@ function extractAces(text: string): string | null {
 function extractDoubleFaults(text: string): string | null {
   const m = text.match(/(\d+(?:\.\d)?)\s*(?:double fault|double faute)/i);
   return m ? m[1] : null;
+}
+
+function extractFirstServe(text: string): string | null {
+  const m = text.match(/(\d+)\s*%\s*(?:first serve|1er service)/i);
+  return m ? m[1] + "%" : null;
 }
 
 function extractHand(text: string): string {
@@ -347,14 +302,9 @@ function extractLast5(text: string): string {
   return matches ? matches[0] : "-";
 }
 
-function extractTrend(text: string): string {
+function extractForm(text: string): string {
   const wins = (text.match(/won|win|victoire/gi) || []).length;
-  const losses = (text.match(/lost|loss|defeat/gi) || []).length;
-  if (wins > losses + 2) return "↑↑";
-  if (wins > losses) return "↑";
-  if (losses > wins + 2) return "↓↓";
-  if (losses > wins) return "↓";
-  return "→";
+  return wins >= 3 ? "Excellente" : wins >= 1 ? "Bonne" : "Faible";
 }
 
 function extractCalendar(text: string, profile: any): void {
@@ -366,16 +316,6 @@ function extractCalendar(text: string, profile: any): void {
       profile[`match${i}_priority`] = "✓";
     });
   }
-}
-
-function extractPercentage(text: string, keyword: string): string | null {
-  const m = text.match(new RegExp(`${keyword}.*?(\\d+)%`, 'i'));
-  return m ? m[1] + "%" : null;
-}
-
-function extractLeader(text: string, p1Name: string): string | null {
-  if (text.includes("leads")) return "Équilibré";
-  return null;
 }
 
 function extractWeather(text: string): string {
@@ -401,18 +341,27 @@ function extractHumidity(text: string): string | null {
 
 function createEmptyProfile() {
   return {
-    rank: "-", bestRank: "-", ageHeight: "- / -", nationality: "-", hand: "-", style: "-",
-    winrateCareer: "-", winrateSeason: "-", winrateSurface: "-", aces: "-", doubleFaults: "-",
-    firstServe: "-", form: "-", confidence: "-", injury: "Non", fatigue: "Faible",
-    lastMatchDate: "-", serveStats: "-", returnStats: "-", motivation: "-", social: "-", last5: "-",
-    holdPercent: "-", breakPercent: "-", trend: "-", avgSets: "-", tbPercent: "-", firstSetWin: "-",
-    windImpact: "-", coldImpact: "-", over21_5: "-", over2_5: "-", overAces: "-", underAces: "-",
-    afterLoss: "-", afterWin: "-", relaxation: "-", pressureHandling: "-", grandSlams: "-", wta1000: "-",
-    challengers: "-", asFavorite: "-", asOutsider: "-", similarPlayer: "-", similarScore: "-",
-    match0_date: "-", match0_tournament: "-", match0_priority: "-", match1_date: "-", match1_tournament: "-",
-    match1_priority: "-", match2_date: "-", match2_tournament: "-", match2_priority: "-", match3_date: "-",
-    match3_tournament: "-", match3_priority: "-", match4_date: "-", match4_tournament: "-", match4_priority: "-",
-    nextMatchPriority: "-", h2hMeetings: "-", h2hSurface: "-", h2hLastWin: "-", h2hAvgSets: "-",
-    h2hTB: "-", h2hHold: "-", h2hBreak: "-", stake: "-", points: "-", objective: "-", pressureLevel: "-", news: ""
+    rank: "-",
+    bestRank: "-",
+    ageHeight: "- / -",
+    nationality: "-",
+    hand: "-",
+    style: "-",
+    winrateCareer: "-",
+    winrateSeason: "-",
+    winrateSurface: "-",
+    aces: "-",
+    doubleFaults: "-",
+    firstServe: "-",
+    form: "-",
+    confidence: "-",
+    injury: "Non",
+    fatigue: "Faible",
+    lastMatchDate: "-",
+    serveStats: "-",
+    returnStats: "-",
+    motivation: "-",
+    social: "-",
+    last5: "-"
   };
 }
