@@ -178,7 +178,12 @@ export const GodEngine = {
 
 function extractRank(text: string): string | null {
   const m = text.match(/(?:rank|classement|#)\s*(?:no\.?\s*)?(\d+)(?![0-9])/i);
-  return m ? m[1] : null;
+  if (m) {
+    const rank = parseInt(m[1]);
+    // Valider: classement ATP/WTA entre 1 et 2000
+    if (rank >= 1 && rank <= 2000) return m[1];
+  }
+  return null;
 }
 
 function extractBestRank(text: string): string | null {
@@ -203,15 +208,32 @@ function extractFirstServe(text: string): string | null {
 
 function extractAge(text: string): string {
   const m = text.match(/(?:born|né|age|âge).*?(?:(\d{1,2})\s*(?:ans|years|yo)|(?:19|20)(\d{2}))/i);
-  if (m && m[1]) return `${m[1]} / -`;
+  if (m && m[1]) {
+    const age = parseInt(m[1]);
+    // Valider: un joueur pro a entre 15 et 75 ans
+    if (age >= 15 && age <= 75) return `${age} / -`;
+  }
   if (m && m[2]) {
-    const age = new Date().getFullYear() - parseInt(m[2]);
-    return `${age} / -`;
+    const year = parseInt(m[2]);
+    const fullYear = year > 50 ? 1900 + year : 2000 + year;
+    const age = new Date().getFullYear() - fullYear;
+    // Valider: année de naissance entre 1950 et 2009
+    if (fullYear >= 1950 && fullYear <= 2009 && age >= 15 && age <= 75) {
+      return `${age} / -`;
+    }
   }
   return "- / -";
 }
 
 function extractNationality(text: string): string | null {
+  const countries = ['argentina', 'france', 'spain', 'canada', 'usa', 'australia', 'russia', 'ukraine', 'italy', 'germany', 'japan', 'brazil', 'greece', 'czech', 'serbia', 'switzerland', 'sweden', 'peru', 'romania', 'poland'];
+  
+  for (const country of countries) {
+    if (text.includes(country)) {
+      return country.charAt(0).toUpperCase() + country.slice(1);
+    }
+  }
+  
   const m = text.match(/(?:nationality|nationalité|from|de|pays)\s*(?::|is)?\s*([A-Za-z\s]{2,20})(?:\.|,|\s|$)/i);
   return m ? m[1].trim().split(/[\s,]/)[0] : null;
 }
