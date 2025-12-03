@@ -73,10 +73,13 @@ export const GodEngine = {
 
       // Chercher les joueurs
       console.log(`🔍 Searching for ${p1Name}...`);
+      console.log(`📡 Using API Key: ${TENNIS_API_KEY.substring(0, 10)}...`);
       const p1Data = await tennisApiCall('/search', { name: p1Name });
+      console.log(`🎾 P1 Data:`, JSON.stringify(p1Data).substring(0, 200));
       
       console.log(`🔍 Searching for ${p2Name}...`);
       const p2Data = await tennisApiCall('/search', { name: p2Name });
+      console.log(`🎾 P2 Data:`, JSON.stringify(p2Data).substring(0, 200));
 
       let p1Profile = null;
       let p2Profile = null;
