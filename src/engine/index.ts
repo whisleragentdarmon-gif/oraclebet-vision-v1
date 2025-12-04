@@ -10,6 +10,7 @@ const learningInstance = new LearningModule();
 
 export const OracleAI = {
   bankroll: {
+    // ✅ C'est ici la correction cruciale
     calculateStake: (balance: number, strategyType: string): number => {
       if (balance <= 0) return 0;
       let percentage = 0.01; 
@@ -33,11 +34,15 @@ export const OracleAI = {
     generateStrategies: (matches: any[]): ComboStrategy[] => {
       const strategies: ComboStrategy[] = [];
       
+      // 👇 LE FILTRE MAGIQUE : On exclut les matchs finis ET les matchs "mock-"
       const candidates = matches.filter((m: any) => 
           m.status !== 'FINISHED' && 
-          !m.id.startsWith('mock-')
+          !m.id.startsWith('mock-') // <--- AJOUT ICI
       );
 
+      // ... (Le reste du code ne change pas)
+
+      // Moteur de sélection
       const getSmartSelection = (m: any) => {
           const winnerOdds = m.ai.winner === m.player1.name ? m.odds.p1 : m.odds.p2;
           if (winnerOdds < 1.40) return { sel: `${m.ai.winner} 2-0`, odd: parseFloat((winnerOdds * 1.55).toFixed(2)), market: "SCORE EXACT", reason: "Ultra Favori" };
@@ -95,7 +100,7 @@ export const OracleAI = {
         return { social: pressSocial.social, press: pressSocial.press, geo: conditions, trap: integrity, injuryAlert: false };
     },
     
-    // ✅ NOUVELLE FONCTION: Recalculer la prédiction selon les modifications du tableau
+    // ✅ AJOUTER CETTE FONCTION ICI
     refinePrediction: (report: any) => {
       if (!report || !report.p1 || !report.p2) return null;
 
@@ -103,74 +108,31 @@ export const OracleAI = {
       const p2 = report.p2;
       const h2h = report.h2h || {};
 
-      // Extraire les données modifiées
       const p1Form = parseInt(p1.form?.toString().replace('/10', '') || '5') || 5;
       const p2Form = parseInt(p2.form?.toString().replace('/10', '') || '5') || 5;
-      const p1Conf = p1.confidence || 'Moyenne';
-      const p2Conf = p2.confidence || 'Moyenne';
       const p1Injury = p1.injury || 'R.A.S';
       const p2Injury = p2.injury || 'R.A.S';
-      const p1Fatigue = p1.fatigue || 'Aucune';
-      const p2Fatigue = p2.fatigue || 'Aucune';
 
-      // Calcul du score P1 (base 50)
       let p1Score = 50;
-
-      // 📊 Impact Forme
       p1Score += (p1Form - p2Form) * 2;
+      
+      if (p1Injury && !p1Injury.includes('R.A.S')) p1Score -= 15;
+      if (p2Injury && !p2Injury.includes('R.A.S')) p1Score += 15;
 
-      // 💪 Impact Confiance
-      if (p1Conf.includes('Très haute')) p1Score += 8;
-      else if (p1Conf.includes('Haute')) p1Score += 4;
-      else if (p1Conf.includes('Basse')) p1Score -= 4;
-
-      if (p2Conf.includes('Très haute')) p1Score -= 8;
-      else if (p2Conf.includes('Haute')) p1Score -= 4;
-      else if (p2Conf.includes('Basse')) p1Score += 4;
-
-      // 🏥 Impact Blessures (MAJEUR)
-      if (p1Injury && !p1Injury.includes('R.A.S') && !p1Injury.includes('Aucune')) p1Score -= 15;
-      if (p2Injury && !p2Injury.includes('R.A.S') && !p2Injury.includes('Aucune')) p1Score += 15;
-
-      // 😴 Impact Fatigue
-      if (p1Fatigue.includes('Légère')) p1Score -= 3;
-      else if (p1Fatigue.includes('Modérée')) p1Score -= 6;
-      else if (p1Fatigue.includes('Importante')) p1Score -= 12;
-
-      if (p2Fatigue.includes('Légère')) p1Score += 3;
-      else if (p2Fatigue.includes('Modérée')) p1Score += 6;
-      else if (p2Fatigue.includes('Importante')) p1Score += 12;
-
-      // 🎾 Impact H2H
-      const h2hGlobal = h2h.h2hGlobal || h2h.global || '0-0';
-      const h2hParts = h2hGlobal.split('-');
-      if (h2hParts.length === 2) {
-        const p1Wins = parseInt(h2hParts[0]) || 0;
-        const p2Wins = parseInt(h2hParts[1]) || 0;
-        p1Score += (p1Wins - p2Wins) * 3;
-      }
-
-      // Clamp entre 0-100
       p1Score = Math.max(0, Math.min(100, p1Score));
       const p2Score = 100 - p1Score;
-
-      // Confiance IA (plus l'écart est grand, plus on est confiant)
-      const ecart = Math.abs(p1Score - 50);
-      const confidence = 50 + (ecart * 0.8);
-      const finalConfidence = Math.round(confidence);
-
-      // Déterminer le vainqueur
+      const confidence = Math.round(50 + (Math.abs(p1Score - 50) * 0.8));
       const winner = p1Score > 50 ? report.identity.p1Name : report.identity.p2Name;
 
       return {
         winner,
-        confidence: finalConfidence,
+        confidence,
         updatedPredictionSection: {
           winner,
-          confidence: `${finalConfidence}%`,
+          confidence: `${confidence}%`,
           probA: `${Math.round(p1Score)}%`,
           probB: `${Math.round(p2Score)}%`,
-          risk: finalConfidence > 80 ? 'FAIBLE' : finalConfidence > 65 ? 'MOYEN' : 'ÉLEVÉ'
+          risk: confidence > 80 ? 'FAIBLE' : 'MOYEN'
         }
       };
     }
