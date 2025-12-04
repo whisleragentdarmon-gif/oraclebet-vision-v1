@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
-import { useRouter } from 'next/navigation';
 import { GodModeReportV2 } from '../engine/types';
 import { GodModeTable } from '../components/GodModeTable';
 import { ImageEngine } from '../engine/ImageEngine';
@@ -63,7 +62,7 @@ export const ProgramPage: React.FC = () => {
       
       // Redirection après 1s
       setTimeout(() => {
-        router.push('/analysis');
+        window.location.href = '/analysis';
       }, 1500);
     }
   };
