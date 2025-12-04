@@ -6,11 +6,54 @@ export const ImageEngine = {
     
     await new Promise(r => setTimeout(r, 2000));
 
+    // Helper pour générer 100 derniers matchs
+    const generateMatches = (count: number, player: string) => {
+      const opponents = ['Djokovic N.', 'Federer R.', 'Nadal R.', 'Medvedev D.', 'Thiem D.', 'Zverev A.', 'Berrettini M.', 'Rublev A.'];
+      const acc: any = {};
+      for (let i = 1; i <= count; i++) {
+        acc[`match${i}_date`] = `${String(i).padStart(2, '0')}.01.2025`;
+        acc[`match${i}_opponent`] = opponents[i % opponents.length];
+        acc[`match${i}_score`] = i % 3 === 0 ? '2-0' : i % 3 === 1 ? '2-1' : '0-2';
+        acc[`match${i}_result`] = i % 3 === 0 || i % 3 === 1 ? 'W' : 'L';
+        acc[`match${i}_tournament`] = ['Dubai', 'Qatar', 'Miami', 'Monte Carlo'][i % 4];
+        acc[`match${i}_time`] = `${14 + (i % 8)}:${String(i % 60).padStart(2, '0')}`;
+      }
+      return acc;
+    };
+
+    // Helper pour matchs par surface
+    const generateSurfaceMatches = (surface: string, count: number) => {
+      const opponents = ['Djokovic N.', 'Federer R.', 'Nadal R.', 'Medvedev D.', 'Thiem D.'];
+      const acc: any = {};
+      for (let i = 1; i <= count; i++) {
+        acc[`${surface.toLowerCase()}Match${i}_date`] = `${String(i).padStart(2, '0')}.01.2025`;
+        acc[`${surface.toLowerCase()}Match${i}_opponent`] = opponents[i % opponents.length];
+        acc[`${surface.toLowerCase()}Match${i}_score`] = i % 2 === 0 ? '6-4 6-2' : '6-3 7-5';
+        acc[`${surface.toLowerCase()}Match${i}_result`] = i % 3 !== 0 ? 'W' : 'L';
+      }
+      return acc;
+    };
+
+    // Helper pour tournois gagnés
+    const generateTournaments = (count: number) => {
+      const tournaments = ['Australian Open', 'Roland Garros', 'Wimbledon', 'US Open', 'Dubai', 'Miami', 'Monte Carlo'];
+      const surfaces = ['Dur', 'Terre', 'Gazon', 'Dur'];
+      const acc: any = {};
+      for (let i = 1; i <= count; i++) {
+        acc[`title${i}_tournament`] = tournaments[i % tournaments.length];
+        acc[`title${i}_year`] = 2025 - Math.floor(i / 3);
+        acc[`title${i}_surface`] = surfaces[i % surfaces.length];
+        acc[`title${i}_prize`] = `$${Math.floor(Math.random() * 5000000).toLocaleString()}`;
+      }
+      return acc;
+    };
+
     return {
       identity: {
         p1Name: 'Jannik Sinner',
         p2Name: 'Carlos Alcaraz',
         tournament: 'Australian Open',
+        tournamentLevel: 'Grand Slam',
         surface: 'Dur',
         date: new Date().toLocaleDateString('fr-FR'),
         round: 'Finale',
@@ -45,7 +88,7 @@ export const ImageEngine = {
         returnStats: '7.8/10',
         motivation: 'Maximale',
         social: 'Très bon moral',
-        last5: 'V-V-V-V-V',
+        last5: 'W-W-W-W-W',
         afterLoss: 'Se remet vite en question',
         afterWin: 'Reste concentré',
         relaxation: 'Minimal',
@@ -59,56 +102,64 @@ export const ImageEngine = {
         similarScore: '8.5/10',
         vsRightHanded: '78%',
         vsLeftHanded: '72%',
-        match0_date: '08.02',
-        match0_tournament: 'Dubai',
-        match0_priority: '★★★',
-        match1_date: '18.02',
-        match1_tournament: 'Qatar',
-        match1_priority: '★★★',
-        match2_date: '10.03',
-        match2_tournament: 'Miami',
-        match2_priority: '★★',
-        match3_date: '14.04',
-        match3_tournament: 'Monte Carlo',
-        match3_priority: '★★★',
-        match4_date: '21.05',
-        match4_tournament: 'Roland Garros',
-        match4_priority: '★★★',
-        news: 'En grande forme. Vient de remporter 3 tournois consécutifs.',
-        
-        // ✅ NOUVEAU: Cotes
+        favoriteSurface: 'Dur rapide',
+        favoriteConditions: 'Chaleur, pas de vent',
+        worstSurface: 'Terre battue lente',
+        worstConditions: 'Froid, humide',
         oddsPlayer: '1.72',
         oddBetfair: '1.75',
         oddPinnacle: '1.73',
         oddUnibet: '1.70',
         
-        // ✅ NOUVEAU: Terrain favori
-        favoriteSurface: 'Dur rapide',
-        favoriteConditions: 'Chaleur, pas de vent',
-        worstSurface: 'Terre battue lente',
-        worstConditions: 'Froid, humide',
+        // ✅ 100 derniers matchs
+        ...generateMatches(100, 'p1'),
         
-        // ✅ NOUVEAU: Derniers 30 matchs
-        ...Object.fromEntries(Array.from({length: 30}, (_, i) => [
-          `lastMatch${i+1}_date`,
-          i === 0 ? '05.02' : i === 1 ? '01.02' : `${String(25-i).padStart(2, '0')}.01`
+        // ✅ Matchs par surface
+        ...generateSurfaceMatches('Dur', 30),
+        ...generateSurfaceMatches('Argile', 25),
+        ...generateSurfaceMatches('Herbe', 15),
+        
+        // ✅ Bilan de saison (20 ans)
+        ...Object.fromEntries(Array.from({length: 20}, (_, i) => [
+          `season${i+1}_year`, 2025 - i
         ])),
-        ...Object.fromEntries(Array.from({length: 30}, (_, i) => [
-          `lastMatch${i+1}_opponent`,
-          ['Djokovic N.', 'Medvedev D.', 'Alcaraz C.', 'Rublev A.', 'Sinner J.'][i % 5]
+        ...Object.fromEntries(Array.from({length: 20}, (_, i) => [
+          `season${i+1}_rank`, Math.floor(Math.random() * 100) + 1
         ])),
-        ...Object.fromEntries(Array.from({length: 30}, (_, i) => [
-          `lastMatch${i+1}_score`,
-          i % 3 === 0 ? '6-4 6-2 V' : i % 3 === 1 ? '7-5 6-3 V' : '6-7 5-7 D'
+        ...Object.fromEntries(Array.from({length: 20}, (_, i) => [
+          `season${i+1}_titles`, Math.floor(Math.random() * 5)
         ])),
-        ...Object.fromEntries(Array.from({length: 30}, (_, i) => [
-          `lastMatch${i+1}_tournament`,
-          ['Dubai', 'Qatar', 'Miami', 'Monte Carlo', 'Roland Garros'][i % 5]
+        ...Object.fromEntries(Array.from({length: 20}, (_, i) => [
+          `season${i+1}_allMatches`, Math.floor(Math.random() * 100) + 30
         ])),
-        ...Object.fromEntries(Array.from({length: 30}, (_, i) => [
-          `lastMatch${i+1}_surface`,
-          i % 4 === 0 ? 'Dur' : i % 4 === 1 ? 'Terre' : i % 4 === 2 ? 'Gazon' : 'Dur rapide'
+        ...Object.fromEntries(Array.from({length: 20}, (_, i) => [
+          `season${i+1}_hardCourt`, Math.floor(Math.random() * 100) + 20
         ])),
+        ...Object.fromEntries(Array.from({length: 20}, (_, i) => [
+          `season${i+1}_clay`, Math.floor(Math.random() * 100) + 20
+        ])),
+        ...Object.fromEntries(Array.from({length: 20}, (_, i) => [
+          `season${i+1}_grass`, Math.floor(Math.random() * 100) + 10
+        ])),
+        
+        // ✅ Tournois gagnés
+        ...generateTournaments(20),
+        
+        // ✅ Antécédents de blessures
+        ...Object.fromEntries(Array.from({length: 5}, (_, i) => [
+          `injury${i+1}_since`, `${String(i+1).padStart(2, '0')}.01.202${3+Math.floor(i/2)}`
+        ])),
+        ...Object.fromEntries(Array.from({length: 5}, (_, i) => [
+          `injury${i+1}_until`, `${String(i+5).padStart(2, '0')}.01.202${3+Math.floor(i/2)}`
+        ])),
+        ...Object.fromEntries(Array.from({length: 5}, (_, i) => [
+          `injury${i+1}_name`, ['Poignet', 'Genou', 'Dos', 'Cheville', 'Coude'][i]
+        ])),
+        
+        match0_date: '08.02',
+        match0_tournament: 'Dubai',
+        match0_priority: '★★★',
+        news: 'En grande forme.'
       },
       p2: {
         rank: '2',
@@ -132,7 +183,7 @@ export const ImageEngine = {
         returnStats: '8.4/10',
         motivation: 'Haute',
         social: 'Préoccupé',
-        last5: 'V-V-D-V-V',
+        last5: 'W-W-L-W-W',
         afterLoss: 'Devient agressif',
         afterWin: 'Construit confiance',
         relaxation: 'Modéré',
@@ -146,56 +197,64 @@ export const ImageEngine = {
         similarScore: '8.2/10',
         vsRightHanded: '76%',
         vsLeftHanded: '71%',
-        match0_date: '10.02',
-        match0_tournament: 'Dubai',
-        match0_priority: '★★★',
-        match1_date: '16.02',
-        match1_tournament: 'Qatar',
-        match1_priority: '★★★',
-        match2_date: '12.03',
-        match2_tournament: 'Miami',
-        match2_priority: '★★',
-        match3_date: '16.04',
-        match3_tournament: 'Monte Carlo',
-        match3_priority: '★★★',
-        match4_date: '23.05',
-        match4_tournament: 'Roland Garros',
-        match4_priority: '★★★',
-        news: 'Récupération en cours après gêne au poignet.',
-        
-        // ✅ NOUVEAU: Cotes
+        favoriteSurface: 'Terre battue',
+        favoriteConditions: 'Froid, peu de vent',
+        worstSurface: 'Gazon',
+        worstConditions: 'Chaleur extrême',
         oddsPlayer: '2.05',
         oddBetfair: '2.10',
         oddPinnacle: '2.08',
         oddUnibet: '2.00',
         
-        // ✅ NOUVEAU: Terrain favori
-        favoriteSurface: 'Terre battue',
-        favoriteConditions: 'Froid, peu de vent',
-        worstSurface: 'Gazon',
-        worstConditions: 'Chaleur extrême',
+        // ✅ 100 derniers matchs
+        ...generateMatches(100, 'p2'),
         
-        // ✅ NOUVEAU: Derniers 30 matchs
-        ...Object.fromEntries(Array.from({length: 30}, (_, i) => [
-          `lastMatch${i+1}_date`,
-          i === 0 ? '04.02' : i === 1 ? '31.01' : `${String(28-i).padStart(2, '0')}.01`
+        // ✅ Matchs par surface
+        ...generateSurfaceMatches('Dur', 30),
+        ...generateSurfaceMatches('Argile', 25),
+        ...generateSurfaceMatches('Herbe', 15),
+        
+        // ✅ Bilan de saison (20 ans)
+        ...Object.fromEntries(Array.from({length: 20}, (_, i) => [
+          `season${i+1}_year`, 2025 - i
         ])),
-        ...Object.fromEntries(Array.from({length: 30}, (_, i) => [
-          `lastMatch${i+1}_opponent`,
-          ['Sinner J.', 'Rublev A.', 'Djokovic N.', 'Medvedev D.', 'Zverev S.'][i % 5]
+        ...Object.fromEntries(Array.from({length: 20}, (_, i) => [
+          `season${i+1}_rank`, Math.floor(Math.random() * 100) + 1
         ])),
-        ...Object.fromEntries(Array.from({length: 30}, (_, i) => [
-          `lastMatch${i+1}_score`,
-          i % 3 === 0 ? '7-6 6-4 V' : i % 3 === 1 ? '6-3 6-2 V' : '5-7 4-6 D'
+        ...Object.fromEntries(Array.from({length: 20}, (_, i) => [
+          `season${i+1}_titles`, Math.floor(Math.random() * 5)
         ])),
-        ...Object.fromEntries(Array.from({length: 30}, (_, i) => [
-          `lastMatch${i+1}_tournament`,
-          ['Dubai', 'Qatar', 'Miami', 'Monte Carlo', 'Roland Garros'][i % 5]
+        ...Object.fromEntries(Array.from({length: 20}, (_, i) => [
+          `season${i+1}_allMatches`, Math.floor(Math.random() * 100) + 30
         ])),
-        ...Object.fromEntries(Array.from({length: 30}, (_, i) => [
-          `lastMatch${i+1}_surface`,
-          i % 4 === 0 ? 'Dur' : i % 4 === 1 ? 'Terre' : i % 4 === 2 ? 'Gazon' : 'Dur rapide'
+        ...Object.fromEntries(Array.from({length: 20}, (_, i) => [
+          `season${i+1}_hardCourt`, Math.floor(Math.random() * 100) + 20
         ])),
+        ...Object.fromEntries(Array.from({length: 20}, (_, i) => [
+          `season${i+1}_clay`, Math.floor(Math.random() * 100) + 20
+        ])),
+        ...Object.fromEntries(Array.from({length: 20}, (_, i) => [
+          `season${i+1}_grass`, Math.floor(Math.random() * 100) + 10
+        ])),
+        
+        // ✅ Tournois gagnés
+        ...generateTournaments(20),
+        
+        // ✅ Antécédents de blessures
+        ...Object.fromEntries(Array.from({length: 5}, (_, i) => [
+          `injury${i+1}_since`, `${String(i+1).padStart(2, '0')}.01.202${3+Math.floor(i/2)}`
+        ])),
+        ...Object.fromEntries(Array.from({length: 5}, (_, i) => [
+          `injury${i+1}_until`, `${String(i+5).padStart(2, '0')}.01.202${3+Math.floor(i/2)}`
+        ])),
+        ...Object.fromEntries(Array.from({length: 5}, (_, i) => [
+          `injury${i+1}_name`, ['Poignet', 'Genou', 'Dos', 'Cheville', 'Coude'][i]
+        ])),
+        
+        match0_date: '10.02',
+        match0_tournament: 'Dubai',
+        match0_priority: '★★★',
+        news: 'Récupération en cours.'
       },
       h2h: {
         global: '2 - 1',
@@ -212,7 +271,6 @@ export const ImageEngine = {
         h2hHold: '88% Sinner / 85% Alcaraz',
         h2hBreak: '42% Sinner / 38% Alcaraz',
         
-        // ✅ NOUVEAU: Jusqu'à 10 derniers H2H
         ...Object.fromEntries(Array.from({length: 10}, (_, i) => [
           `h2hMatch${i+1}_date`,
           `${String(5-i).padStart(2, '0')}.02.202${4-Math.floor(i/3)}`
@@ -220,14 +278,6 @@ export const ImageEngine = {
         ...Object.fromEntries(Array.from({length: 10}, (_, i) => [
           `h2hMatch${i+1}_score`,
           i % 2 === 0 ? '7-6 6-3 Sinner' : '6-4 6-2 Alcaraz'
-        ])),
-        ...Object.fromEntries(Array.from({length: 10}, (_, i) => [
-          `h2hMatch${i+1}_tournament`,
-          ['Australian Open', 'Dubai', 'Miami', 'Monte Carlo', 'Roland Garros'][i % 5]
-        ])),
-        ...Object.fromEntries(Array.from({length: 10}, (_, i) => [
-          `h2hMatch${i+1}_surface`,
-          i % 3 === 0 ? 'Dur' : i % 3 === 1 ? 'Terre' : 'Gazon'
         ])),
       },
       conditions: {
@@ -239,7 +289,7 @@ export const ImageEngine = {
         ballType: 'Wilson US Open',
         fatigueImpact: 'Faible',
         altitude: 'Au niveau de la mer',
-        advantage: 'Sinner (favori du climat)'
+        advantage: 'Sinner'
       },
       bookmaker: {
         oddA: '1.72',
@@ -249,10 +299,7 @@ export const ImageEngine = {
         smartMoney: 'Oui',
         valueIndex: '7/10',
         trapIndex: 'Oui',
-        specialOdds: [
-          { name: 'Over 22.5', odd: '1.85' },
-          { name: 'Over 2.5', odd: '1.92' },
-        ]
+        specialOdds: []
       },
       factors: [],
       synthesis: {
@@ -261,7 +308,7 @@ export const ImageEngine = {
         physical: 'Sinner',
         surface: 'Sinner',
         momentum: 'Sinner',
-        xFactor: 'Confiance de Sinner',
+        xFactor: 'Confiance',
         risk: 'Faible'
       },
       prediction: {
@@ -271,7 +318,7 @@ export const ImageEngine = {
         volatility: 'Basse',
         confidence: '8/10',
         bestBet: 'Sinner -5.5',
-        avoidBet: 'Alcaraz upset',
+        avoidBet: 'Upset',
         altBet: 'Over 22.5',
         probA: '72',
         probB: '28',
@@ -279,13 +326,13 @@ export const ImageEngine = {
         probTieBreak: '35',
         probUpset: '18',
         risk: 'Faible',
-        recoWinner: 'Sinner favori net',
-        recoOver: 'Over 22.5 probable',
+        recoWinner: 'Sinner favori',
+        recoOver: 'Over 22.5',
         recoSet: 'Sinner 1er set'
       },
       stake: 'Grand Slam',
       points: '2000 points ATP',
-      objective: 'Remporter le titre',
+      objective: 'Titre',
       motivation: 'Maximale',
       pressureLevel: 'Haute'
     } as any;
