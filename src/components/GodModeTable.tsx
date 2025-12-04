@@ -1,4 +1,9 @@
 import React, { useState } from 'react';
+import { GodModeReportV2 } from '../types';
+// TON IMPORT ICI ↓
+import ScreenshotAnalyzer from '@/components/ScreenshotAnalyzer';
+// ← AJOUTE CETTE LIGNE
+import React, { useState } from 'react';
 import { GodModeReportV2 } from '../engine/types';
 import { Save, Trophy, Calendar, Activity, User, Globe, Clock, MapPin, Star, List, Wind, Thermometer, Droplets, Eye, TrendingUp, Zap, Target, AlertCircle } from 'lucide-react';
 
