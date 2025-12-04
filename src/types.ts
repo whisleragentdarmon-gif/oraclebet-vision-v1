@@ -1,23 +1,10 @@
-// On importe tout depuis le fichier moteur unique
+// Fichier : src/types.ts
 import { 
-  OddsAnalysis, 
-  AIPrediction, 
-  PlayerAttributes, 
-  Circuit,
-  H2HFullProfile,
-  PressAnalysis,
-  SocialSentiment,
-  GeoCondition,
-  GodModeReport,
-  GodModeReportV2,
-  FullMatchDossier,
-  WebScrapedData,
-  BetRecord,
-  ComboStrategy,
-  ComboStrategyResult,
-  BankrollState,
-  BankrollSimulationMetric,
-  BookmakerOdds
+  OddsAnalysis, AIPrediction, PlayerAttributes, Circuit, 
+  H2HFullProfile, PressAnalysis, SocialSentiment, GeoCondition, 
+  GodModeReport, GodModeReportV2, FullMatchDossier, WebScrapedData,
+  BetRecord, ComboStrategy, ComboStrategyResult, BankrollState,
+  BankrollSimulationMetric, BookmakerOdds
 } from './engine/types';
 
 export interface PastMatch {
@@ -47,24 +34,11 @@ export interface MatchOdds {
 
 // Exportation groupée
 export type { 
-  AIPrediction, 
-  OddsAnalysis, 
-  PlayerAttributes, 
-  Circuit,
-  H2HFullProfile,
-  PressAnalysis,
-  SocialSentiment,
-  GeoCondition,
-  GodModeReport,
-  GodModeReportV2,
-  FullMatchDossier,
-  WebScrapedData,
-  BetRecord,
-  ComboStrategy,
-  ComboStrategyResult,
-  BankrollState,
-  BankrollSimulationMetric,
-  BookmakerOdds
+  AIPrediction, OddsAnalysis, PlayerAttributes, Circuit, 
+  H2HFullProfile, PressAnalysis, SocialSentiment, GeoCondition, 
+  GodModeReport, GodModeReportV2, FullMatchDossier, WebScrapedData, 
+  BetRecord, ComboStrategy, ComboStrategyResult, BankrollState, 
+  BankrollSimulationMetric, BookmakerOdds
 };
 
 export interface Match {
