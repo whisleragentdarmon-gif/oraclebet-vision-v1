@@ -7,10 +7,13 @@ import {
   PressAnalysis,
   SocialSentiment,
   GeoCondition,
-  GodModeReport, // Alias vers V2
+  GodModeReport,
   GodModeReportV2,
   FullMatchDossier,
-  WebScrapedData
+  WebScrapedData,
+  BetRecord,
+  ComboStrategy,
+  ComboStrategyResult
 } from './engine/types';
 
 export interface PastMatch {
@@ -38,6 +41,7 @@ export interface MatchOdds {
   p2: number;
 }
 
+// Exportation groupée
 export type { 
   AIPrediction, 
   OddsAnalysis, 
@@ -50,7 +54,10 @@ export type {
   GodModeReport,
   GodModeReportV2,
   FullMatchDossier,
-  WebScrapedData
+  WebScrapedData,
+  BetRecord,
+  ComboStrategy,
+  ComboStrategyResult
 };
 
 export interface Match {
