@@ -1,94 +1,140 @@
-export type Circuit = 'ATP' | 'WTA' | 'CHALLENGER' | 'ITF';
-export type RiskLevel = 'SAFE' | 'MODERATE' | 'RISKY' | 'Safe' | 'Moderate' | 'Risky' | 'NO_BET' | 'High' | 'Low';
-export type PlayerStyle = 'Aggressive' | 'Defensive' | 'ServeVolley' | 'Balanced';
+import { Circuit, SimulationResult, ComboStrategy, GodModeReportV2 } from './types';
+import { MonteCarlo } from './MonteCarlo'; 
+import { OddsEngine } from './OddsEngine'; 
+import { LearningModule } from './LearningModule';
+import { ScandalEngine } from './market/ScandalEngine';
+import { TrapDetector } from './market/TrapDetector';
+import { GeoEngine } from './market/GeoEngine';
 
-// --- STRUCTURE V2 COMPLÈTE ---
-export interface PlayerProfileV2 {
-  rank: string;
-  bestRank: string;
-  ageHeight: string; // Combiné
-  nationality: string;
-  hand: string;
-  winrateCareer: string;
-  winrateSeason: string;
-  winrateSurface: string;
-  aces: string;
-  doubleFaults: string;
-  firstServe: string;
-  style: string;
-  form: string;
-  injury: string;
-  motivation: string;
-  last5: string;
-  // Champs techniques optionnels
-  age?: string; height?: string; weight?: string; serveStats?: string; returnStats?: string; injuries?: string; instagram?: string; twitter?: string;
-}
+const learningInstance = new LearningModule();
 
-export interface GodModeReportV2 {
-  identity: {
-    p1Name: string; p2Name: string; tournament: string; surface: string; date: string;
-    // Champs techniques
-    time?: string; level?: string; round?: string; location?: string; dateTime?: string; timezone?: string; importance?: string; p1?: string; p2?: string; category?: string; format?: string; city?: string; enjeu?: string; importanceP1?: string; importanceP2?: string;
-  };
-  p1: PlayerProfileV2;
-  p2: PlayerProfileV2;
-  h2h: {
-    global: string; surface: string; advantage: string; 
-    lastMatches: string; // C'est lui le bon nom
-    // Champs techniques
-    total?: string; sets?: string; games?: string; analysis?: string; context?: string; styleMatchup?: string; lastMatch?: string; trend?: string;
-  };
-  conditions: {
-    weather: string; temp: string; wind: string; altitude: string;
-    // Champs techniques
-    humidity?: string; advantage?: string; speed?: string; indoor?: string; courtSpeed?: string; ballType?: string; fatigueImpact?: string;
-  };
-  bookmaker: {
-    oddA: string; oddB: string; movement: string;
-    // Champs techniques
-    valueIndex?: string; trapIndex?: string; smartMoney?: string; value?: string; trap?: string; volume?: string; spread?: string; p1Odd?: string; p2Odd?: string;
-    // ✅ AJOUT POUR GOD ENGINE
-    specialOdds?: { market: string; odd: string; analysis: string }[];
-  };
-  // ✅ AJOUT POUR GOD ENGINE
-  factors?: { factor: string; importance: string; impact: string }[];
-  
-  synthesis: {
-    tech: string; mental: string; physical: string; surface: string; momentum: string; xFactor: string; risk: string;
-    stat?: string;
-  };
-  prediction?: {
-    // On combine tout ici
-    probA: string; probB: string; probOver: string; probTieBreak: string; probUpset: string; risk: string;
-    recoWinner: string; recoOver: string; recoSet: string;
-    winner?: string; score?: string; duration?: string; volatility?: string; confidence?: string; bestBet?: string; avoidBet?: string; altBet?: string;
-  };
-}
+export const OracleAI = {
+  bankroll: {
+    calculateStake: (balance: number, strategyType: string): number => {
+      if (balance <= 0) return 0;
+      let percentage = 0.01;
+      switch (strategyType) {
+          case 'Oracle Ultra Premium': percentage = 0.05; break;
+          case 'Safe': percentage = 0.03; break;
+          case 'Balanced': percentage = 0.02; break;
+          case 'Value': percentage = 0.015; break;
+          case 'Lotto': percentage = 0.005; break;
+          case 'HighConf': percentage = 0.025; break;
+          default: percentage = 0.01;
+      }
+      return parseFloat((balance * percentage).toFixed(2));
+    },
+    simulateFuture: (currentBalance: number, winRate: number, avgOdds: number): SimulationResult => {
+      return MonteCarlo.simulateFuture(currentBalance, winRate, avgOdds);
+    }
+  },
+  combo: {
+    generateStrategies: (matches: any[]): ComboStrategy[] => {
+      const strategies: ComboStrategy[] = [];
+      const candidates = matches.filter((m: any) => m.status !== 'FINISHED');
 
-// ALIAS
-export type GodModeReport = GodModeReportV2;
-export type FullMatchDossier = GodModeReportV2;
-export type H2HFullProfile = GodModeReportV2;
-export type WebScrapedData = any;
+      const getSmartSelection = (m: any) => {
+          const winnerName = m.ai.winner;
+          const winnerOdds = m.ai.winner === m.player1.name ? m.odds.p1 : m.odds.p2;
+          
+          if (winnerOdds < 1.40) {
+              return { sel: `${winnerName} 2-0`, odd: parseFloat((winnerOdds * 1.55).toFixed(2)), market: "SCORE EXACT", reason: "Ultra Favori" };
+          } else if (winnerOdds > 2.10) {
+              return { sel: `${winnerName} +1.5 Sets`, odd: parseFloat((winnerOdds / 1.5).toFixed(2)), market: "HANDICAP", reason: "Outsider Sécurisé" };
+          } else {
+              return { sel: winnerName, odd: winnerOdds, market: "VAINQUEUR", reason: "Victoire sèche" };
+          }
+      };
 
-// --- TYPES MOTEURS (Ne pas toucher) ---
-export interface AIModelWeights { surfaceWeight: number; formWeight: number; h2hWeight: number; fatigueFactor: number; mentalWeight: number; variance: number; momentumWeight?: number; serveDominance?: number; }
-export interface LearningExperience { matchId: string; date: string; timestamp?: number; prediction: string; outcome: 'WIN' | 'LOSS' | 'VOID'; circuit: Circuit; adjustments: string; result?: string; weightsUsed?: any; }
-export interface PlayerAttributes { power: number; serve: number; return: number; mental: number; form: number; stamina?: number; speed?: number; }
-export type BookmakerName = 'Winamax' | 'Betclic' | 'Unibet' | 'Pinnacle' | 'Bwin';
-export interface BookmakerOdds { name: BookmakerName; p1: number; p2: number; payout: number; movement: 'UP' | 'DOWN' | 'STABLE' | 'CRASH'; openingOdds?: { p1: number, p2: number }; isTrap: boolean; isValue: boolean; }
-export interface ArbitrageResult { isSurebet: boolean; profit: number; bookmakerP1: string; bookmakerP2: string; msg: string; }
-export interface OddsAnalysis { bestOdds: { p1: number; p2: number; bookieP1: string; bookieP2: string }; marketAverage: { p1: number; p2: number }; recommendedBookie: string; kelly: { percentage: number; advice: string }; arbitrage: ArbitrageResult; bookmakers: BookmakerOdds[]; }
-export interface BankrollSimulationMetric { finalBankroll: number; riskOfRuin: number; volatility: number | string; maxBankroll: number; minBankroll: number; paths?: { x: number; y: number }[][]; }
-export type SimulationResult = BankrollSimulationMetric; 
-export interface BetRecord { id: string; matchId: string; matchTitle: string; selection: string; odds: number; stake: number; status: 'PENDING' | 'WON' | 'LOST' | 'VOID'; profit: number; date: string; confidenceAtTime: number; }
-export interface BankrollState { currentBalance: number; startBalance: number; totalBets: number; wins: number; losses: number; totalInvested: number; totalReturned: number; roi: number; history: BetRecord[]; }
-export interface GodModeAnalysis { social: any; geo: any; trap: any; motivation?: any; injuryAlert?: boolean; injuryDetails?: string; reportV2?: GodModeReportV2; webStats?: any[]; realProb?: { p1Prob: number; p2Prob: number }; globalConfidence?: number; noBetReason?: string; h2hProfile?: any; }
-export interface AIPrediction { winner: string; confidence: number; recommendedBet: string; riskLevel: RiskLevel; marketType: string; circuit: string; totalGamesProjection?: number; winProbA?: number; winProbB?: number; fairOdds?: { p1: number; p2: number }; attributes?: PlayerAttributes[]; monteCarlo?: { setDistribution: { [key: string]: number } }; expectedSets?: string; tieBreakProbability?: number; breaks?: { p1: number; p2: number }; trap?: { isTrap: boolean; verdict?: string; reason?: string }; integrity?: { isSuspicious: boolean; score: number; reason?: string }; qualitativeAnalysis?: string; structuralAnalysis?: string; quantitativeAnalysis?: string; oddsAnalysis?: OddsAnalysis; godModeAnalysis?: GodModeAnalysis; }
-export interface LiveUpdatePayload { matchId: string; score: string; pointByPoint: string[]; momentum: number; }
-export interface ComboSelection { matchId: string; player1: string; player2: string; selection: string; odds: number; confidence: number; reason: string; valueScore?: number; marketType?: string; }
-export interface ComboStrategy { type: 'Safe' | 'Balanced' | 'Value' | 'Oracle Ultra Premium' | 'Lotto'; selections: ComboSelection[]; combinedOdds: number; successProbability: number; riskScore: string; expectedRoi?: number; analysis?: string; }
-export type ComboStrategyResult = ComboStrategy;
-export interface GeoCondition { altitude: number | string; humidity: number | string; windSpeed?: number; wind?: number; courtSpeedIndex?: number; ballType?: string; isIndoor?: boolean; weather: string; }
-export interface PressAnalysis { sentimentScore: number; scandalAlert: boolean; mentalPressureIndex: number; recentQuotes: any[]; rumors: string[]; }
-export interface SocialSentiment { twitterHype: number; redditMood: string; instagramActivity: string; publicBettingTrend: number; }
+      // 1. ULTRA PREMIUM
+      const premiumPicks = candidates.filter((m: any) => {
+          const gm = m.ai?.godModeAnalysis;
+          return gm && !gm.injuryAlert && !gm.trap.isTrap && m.ai.confidence >= 70;
+      });
+
+      if (premiumPicks.length >= 1) {
+          const selections = premiumPicks.slice(0, 3).map((m: any) => {
+              const s = getSmartSelection(m);
+              return { matchId: m.id, player1: m.player1.name, player2: m.player2.name, selection: s.sel, odds: s.odd, confidence: m.ai.confidence, reason: s.reason, marketType: s.market };
+          });
+          const odds = selections.reduce((acc: number, s: any) => acc * s.odds, 1);
+          strategies.push({ type: 'Oracle Ultra Premium', selections, combinedOdds: parseFloat(odds.toFixed(2)), successProbability: 85, riskScore: 'Low', analysis: "Ticket Elite Validé God Mode." });
+      }
+
+      // 2. VALUE
+      const valuePicks = candidates.filter((m: any) => m.ai.confidence > 50 && m.ai.confidence < 75);
+      if (valuePicks.length >= 2) {
+           const selections = valuePicks.slice(0, 3).map((m: any) => {
+             const s = getSmartSelection(m);
+             return { matchId: m.id, player1: m.player1.name, player2: m.player2.name, selection: s.sel, odds: s.odd, confidence: m.ai.confidence, reason: "Value", marketType: s.market };
+          });
+          const odds = selections.reduce((acc: number, s: any) => acc * s.odds, 1);
+          strategies.push({ type: 'Value', selections, combinedOdds: parseFloat(odds.toFixed(2)), successProbability: 45, riskScore: 'Risky', analysis: "Opportunités de marché." });
+      }
+
+      // 3. LOTTO
+      const lottoCandidates = candidates.slice(0, 6);
+      if (lottoCandidates.length >= 4) {
+          const selections = lottoCandidates.map((m: any) => {
+              const s = getSmartSelection(m);
+              return { matchId: m.id, player1: m.player1.name, player2: m.player2.name, selection: s.sel, odds: s.odd, confidence: m.ai.confidence, reason: "Loto", marketType: s.market };
+          });
+          const odds = selections.reduce((acc: number, s: any) => acc * s.odds, 1);
+          strategies.push({ type: 'Lotto', selections, combinedOdds: parseFloat(odds.toFixed(2)), successProbability: 10, riskScore: 'High', analysis: "Ticket Jackpot." });
+      }
+
+      return strategies;
+    }
+  },
+  predictor: {
+    learning: {
+      learnFromMatch: (isWin: boolean, data: { circuit: Circuit, winnerPrediction: string, totalGames: number, riskLevel: string }, id: string) => {
+        return learningInstance.learnFromMatch(isWin, data, id);
+      },
+      getStats: () => learningInstance.getLearningStats(),
+      retrain: (history: any[]) => learningInstance.retrainModelFromHistory(history)
+    },
+    analyzeOdds: (p1: string, p2: string, o1: number, o2: number) => {
+        return OddsEngine.analyze(p1, p2, o1, o2);
+    },
+    runGodModeAnalysis: (match: any) => {
+        const pressSocial = ScandalEngine.analyze(match.player1.name);
+        const integrity = TrapDetector.scan(match.odds);
+        const conditions = GeoEngine.getConditions(match.tournament);
+        return { social: pressSocial.social, press: pressSocial.press, geo: conditions, trap: integrity, injuryAlert: false };
+    },
+
+    // 👇 C'EST ICI LA NOUVELLE FONCTION POUR LE TABLEAU V2
+    refinePrediction: (report: GodModeReportV2) => {
+        // On lit les valeurs que tu as pu modifier manuellement
+        const p1Form = parseInt(report.p1.form) || 5;
+        const p2Form = parseInt(report.p2.form) || 5;
+        
+        // Calcul du score de base (50 = égalité)
+        let score = 50;
+
+        // Impact Forme (Très important)
+        score += (p1Form - p2Form) * 4;
+
+        // Impact Motivation (Si détecté)
+        if (report.p1.motivation.toLowerCase().includes('haute')) score += 5;
+        if (report.p2.motivation.toLowerCase().includes('haute')) score -= 5;
+
+        // Impact Blessure
+        if (report.p1.injury.toLowerCase().includes('oui') || report.p1.injury.toLowerCase().includes('genou')) score -= 15;
+        if (report.p2.injury.toLowerCase().includes('oui') || report.p2.injury.toLowerCase().includes('genou')) score += 15;
+
+        // Résultat
+        const winner = score >= 50 ? report.identity.p1Name : report.identity.p2Name;
+        const confidence = Math.min(99, Math.max(1, Math.abs(score - 50) * 2 + 50));
+        
+        return {
+            winner,
+            confidence: Math.round(confidence),
+            risk: confidence > 80 ? 'LOW' : 'MEDIUM',
+            // On génère le texte pour mettre à jour le bas du tableau
+            recoWinner: `${winner} ${confidence > 75 ? '2-0' : ''}`
+        };
+    }
+  }
+};
