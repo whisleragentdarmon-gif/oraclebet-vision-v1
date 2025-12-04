@@ -1,3 +1,4 @@
+'use client';
 import React, { useState } from 'react';
 import { GodModeReportV2 } from '../engine/types';
 import ScreenshotAnalyzer from './ScreenshotAnalyzer';
