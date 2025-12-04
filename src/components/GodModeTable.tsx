@@ -209,7 +209,7 @@ export const GodModeTable: React.FC<Props> = ({ report, onUpdate }) => {
       <div className="bg-gradient-to-br from-neutral-900 to-black border-b-2 border-orange-500/40 p-4 flex-shrink-0">
           <div className="space-y-2">
               <div className="inline-flex items-center gap-2 text-sm font-bold text-orange-500 uppercase tracking-widest border border-orange-500/40 px-3 py-1 rounded-full bg-orange-500/10">
-                  <Trophy size={14}/> {report.identity.tournament} | {report.identity.tournamentLevel || 'ATP'} | {report.identity.surface}
+                  <Trophy size={14}/> {report.identity.tournament} | {(report.identity as any).level || 'ATP'} | {report.identity.surface}
               </div>
               
               <div className="text-2xl font-black flex items-center gap-2 flex-wrap">
