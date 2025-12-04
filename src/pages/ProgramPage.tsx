@@ -7,7 +7,6 @@ import { ImageEngine } from '../engine/ImageEngine';
 import { CheckCircle, Search, Upload, X } from 'lucide-react';
 
 export const ProgramPage: React.FC = () => {
-  const router = useRouter();
   const [report, setReport] = useState<GodModeReportV2 | null>(null);
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
