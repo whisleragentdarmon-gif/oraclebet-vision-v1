@@ -10,8 +10,8 @@ interface Props {
 
 export const GodModeTable: React.FC<Props> = ({ report, onUpdate }) => {
   
-  const [tabP1, setTabP1] = useState<'PROFIL' | 'STATS' | 'PSYCHO' | 'CALENDRIER' | 'H2H' | 'ENJEUX' | 'MATCHS' | 'TERRAIN' | 'BILAN' | 'TITRES' | 'BLESSURES' | 'TENDANCE'>('PROFIL');
-  const [tabP2, setTabP2] = useState<'PROFIL' | 'STATS' | 'PSYCHO' | 'CALENDRIER' | 'H2H' | 'ENJEUX' | 'MATCHS' | 'TERRAIN' | 'BILAN' | 'TITRES' | 'BLESSURES' | 'TENDANCE'>('PROFIL');
+  const [tabP1, setTabP1] = useState<'PROFIL' | 'STATS' | 'PSYCHO' | 'CALENDRIER' | 'H2H' | 'ENJEUX'>('PROFIL');
+  const [tabP2, setTabP2] = useState<'PROFIL' | 'STATS' | 'PSYCHO' | 'CALENDRIER' | 'H2H' | 'ENJEUX'>('PROFIL');
 
   const handleChange = (path: string[], value: string) => {
     const newReport = { ...report };
@@ -67,7 +67,7 @@ export const GodModeTable: React.FC<Props> = ({ report, onUpdate }) => {
       </div>
 
       <div className="flex border-b border-neutral-800 bg-black/40 overflow-x-auto scrollbar-none flex-shrink-0">
-          {['PROFIL', 'STATS', 'PSYCHO', 'CALENDRIER', 'H2H', 'ENJEUX', 'MATCHS', 'TERRAIN', 'BILAN', 'TITRES', 'BLESSURES', 'TENDANCE'].map((tab) => (
+          {['PROFIL', 'STATS', 'PSYCHO', 'CALENDRIER', 'H2H', 'ENJEUX'].map((tab) => (
               <button 
                 key={tab}
                 onClick={() => setActiveTab(tab as any)}
@@ -369,142 +369,9 @@ export const GodModeTable: React.FC<Props> = ({ report, onUpdate }) => {
               </div>
           )}
 
-          {/* ONGLET MATCHS - 100 derniers */}
-          {activeTab === 'MATCHS' && (
-              <div className="space-y-2">
-                  <div className="text-xs font-bold text-green-500 uppercase">🎾 Derniers 100 Matchs</div>
-                  <div className="border border-neutral-700 rounded-lg overflow-hidden bg-black/40 max-h-96 overflow-y-auto">
-                      <div className="grid grid-cols-[70px_80px_60px_80px_60px] bg-neutral-900 p-2 font-bold text-gray-400 border-b border-neutral-700 gap-1 sticky top-0 text-xs">
-                          <span>Date</span><span>Adversaire</span><span>Score</span><span>Tournoi</span><span>Heure</span>
-                      </div>
-                      {Array.from({length: 100}).map((_, i) => (
-                          <div key={i} className="grid grid-cols-[70px_80px_60px_80px_60px] p-1 border-b border-neutral-800 gap-1 hover:bg-white/5">
-                              <input value={data?.[`match${i+1}_date`] || ''} onChange={(e) => handleChange([playerKey, `match${i+1}_date`], e.target.value)} placeholder="JJ.MM.AA" className="bg-transparent outline-none text-xs font-mono text-gray-300"/>
-                              <input value={data?.[`match${i+1}_opponent`] || ''} onChange={(e) => handleChange([playerKey, `match${i+1}_opponent`], e.target.value)} placeholder="Joueur" className="bg-transparent outline-none text-xs text-gray-300"/>
-                              <input value={data?.[`match${i+1}_score`] || ''} onChange={(e) => handleChange([playerKey, `match${i+1}_score`], e.target.value)} placeholder="2-0" className="bg-transparent outline-none text-xs font-mono text-gray-300"/>
-                              <input value={data?.[`match${i+1}_tournament`] || ''} onChange={(e) => handleChange([playerKey, `match${i+1}_tournament`], e.target.value)} placeholder="Tournoi" className="bg-transparent outline-none text-xs text-gray-300"/>
-                              <input value={data?.[`match${i+1}_time`] || ''} onChange={(e) => handleChange([playerKey, `match${i+1}_time`], e.target.value)} placeholder="14:00" className="bg-transparent outline-none text-xs font-mono text-gray-300"/>
-                          </div>
-                      ))}
-                  </div>
-              </div>
-          )}
-
-          {/* ONGLET TERRAIN */}
-          {activeTab === 'TERRAIN' && (
-              <div className="space-y-2">
-                  {['Dur', 'Argile', 'Herbe'].map((surface) => (
-                      <div key={surface}>
-                          <div className="text-xs font-bold text-orange-500 uppercase mb-1">🏟️ {surface}</div>
-                          <div className="border border-neutral-700 rounded-lg overflow-hidden bg-black/40 max-h-40 overflow-y-auto">
-                              <div className="grid grid-cols-[70px_80px_60px_50px] bg-neutral-900 p-1 font-bold text-gray-400 border-b border-neutral-700 gap-1 sticky top-0 text-xs">
-                                  <span>Date</span><span>Adversaire</span><span>Score</span><span>W/L</span>
-                              </div>
-                              {Array.from({length: 30}).map((_, i) => (
-                                  <div key={i} className="grid grid-cols-[70px_80px_60px_50px] p-1 border-b border-neutral-800 gap-1 hover:bg-white/5">
-                                      <input value={data?.[`${surface.toLowerCase()}Match${i+1}_date`] || ''} onChange={(e) => handleChange([playerKey, `${surface.toLowerCase()}Match${i+1}_date`], e.target.value)} placeholder="JJ.MM" className="bg-transparent outline-none text-xs text-gray-300"/>
-                                      <input value={data?.[`${surface.toLowerCase()}Match${i+1}_opponent`] || ''} onChange={(e) => handleChange([playerKey, `${surface.toLowerCase()}Match${i+1}_opponent`], e.target.value)} placeholder="Opp" className="bg-transparent outline-none text-xs text-gray-300"/>
-                                      <input value={data?.[`${surface.toLowerCase()}Match${i+1}_score`] || ''} onChange={(e) => handleChange([playerKey, `${surface.toLowerCase()}Match${i+1}_score`], e.target.value)} placeholder="6-4" className="bg-transparent outline-none text-xs text-gray-300"/>
-                                      <select value={data?.[`${surface.toLowerCase()}Match${i+1}_result`] || 'W'} onChange={(e) => handleChange([playerKey, `${surface.toLowerCase()}Match${i+1}_result`], e.target.value)} className="bg-black/40 outline-none text-xs text-gray-300 border border-neutral-700 rounded px-1">
-                                          <option>W</option>
-                                          <option>L</option>
-                                      </select>
-                                  </div>
-                              ))}
-                          </div>
-                      </div>
-                  ))}
-              </div>
-          )}
-
-          {/* ONGLET BILAN */}
-          {activeTab === 'BILAN' && (
-              <div className="space-y-2">
-                  <div className="text-xs font-bold text-blue-500 uppercase">📊 Bilan 20 ans</div>
-                  <div className="border border-neutral-700 rounded-lg overflow-hidden bg-black/40 max-h-96 overflow-y-auto">
-                      <div className="grid grid-cols-[60px_60px_60px_60px_60px_60px_60px] bg-neutral-900 p-1 font-bold text-gray-400 border-b border-neutral-700 gap-1 sticky top-0 text-xs">
-                          <span>Année</span><span>Rang</span><span>Titres</span><span>Total</span><span>Dur</span><span>Argile</span><span>Herbe</span>
-                      </div>
-                      {Array.from({length: 20}).map((_, i) => (
-                          <div key={i} className="grid grid-cols-[60px_60px_60px_60px_60px_60px_60px] p-1 border-b border-neutral-800 gap-1 hover:bg-white/5">
-                              <input value={data?.[`season${i+1}_year`] || ''} onChange={(e) => handleChange([playerKey, `season${i+1}_year`], e.target.value)} placeholder="2024" className="bg-transparent outline-none text-xs text-gray-300" disabled/>
-                              <input value={data?.[`season${i+1}_rank`] || ''} onChange={(e) => handleChange([playerKey, `season${i+1}_rank`], e.target.value)} placeholder="1" className="bg-transparent outline-none text-xs text-gray-300"/>
-                              <input value={data?.[`season${i+1}_titles`] || ''} onChange={(e) => handleChange([playerKey, `season${i+1}_titles`], e.target.value)} placeholder="3" className="bg-transparent outline-none text-xs text-gray-300"/>
-                              <input value={data?.[`season${i+1}_allMatches`] || ''} onChange={(e) => handleChange([playerKey, `season${i+1}_allMatches`], e.target.value)} placeholder="75" className="bg-transparent outline-none text-xs text-gray-300"/>
-                              <input value={data?.[`season${i+1}_hardCourt`] || ''} onChange={(e) => handleChange([playerKey, `season${i+1}_hardCourt`], e.target.value)} placeholder="40" className="bg-transparent outline-none text-xs text-gray-300"/>
-                              <input value={data?.[`season${i+1}_clay`] || ''} onChange={(e) => handleChange([playerKey, `season${i+1}_clay`], e.target.value)} placeholder="20" className="bg-transparent outline-none text-xs text-gray-300"/>
-                              <input value={data?.[`season${i+1}_grass`] || ''} onChange={(e) => handleChange([playerKey, `season${i+1}_grass`], e.target.value)} placeholder="15" className="bg-transparent outline-none text-xs text-gray-300"/>
-                          </div>
-                      ))}
-                  </div>
-              </div>
-          )}
-
-          {/* ONGLET TITRES */}
-          {activeTab === 'TITRES' && (
-              <div className="space-y-2">
-                  <div className="text-xs font-bold text-yellow-500 uppercase">🏆 Tournois Gagnés</div>
-                  <div className="border border-neutral-700 rounded-lg overflow-hidden bg-black/40 max-h-96 overflow-y-auto">
-                      <div className="grid grid-cols-[120px_60px_80px_100px] bg-neutral-900 p-1 font-bold text-gray-400 border-b border-neutral-700 gap-1 sticky top-0 text-xs">
-                          <span>Tournoi</span><span>Année</span><span>Surface</span><span>Gains</span>
-                      </div>
-                      {Array.from({length: 20}).map((_, i) => (
-                          <div key={i} className="grid grid-cols-[120px_60px_80px_100px] p-1 border-b border-neutral-800 gap-1 hover:bg-white/5">
-                              <input value={data?.[`title${i+1}_tournament`] || ''} onChange={(e) => handleChange([playerKey, `title${i+1}_tournament`], e.target.value)} placeholder="Tournoi" className="bg-transparent outline-none text-xs text-gray-300"/>
-                              <input value={data?.[`title${i+1}_year`] || ''} onChange={(e) => handleChange([playerKey, `title${i+1}_year`], e.target.value)} placeholder="2024" className="bg-transparent outline-none text-xs text-gray-300"/>
-                              <input value={data?.[`title${i+1}_surface`] || ''} onChange={(e) => handleChange([playerKey, `title${i+1}_surface`], e.target.value)} placeholder="Dur" className="bg-transparent outline-none text-xs text-gray-300"/>
-                              <input value={data?.[`title${i+1}_prize`] || ''} onChange={(e) => handleChange([playerKey, `title${i+1}_prize`], e.target.value)} placeholder="$2M" className="bg-transparent outline-none text-xs text-gray-300"/>
-                          </div>
-                      ))}
-                  </div>
-              </div>
-          )}
-
-          {/* ONGLET BLESSURES */}
-          {activeTab === 'BLESSURES' && (
-              <div className="space-y-2">
-                  <div className="text-xs font-bold text-red-500 uppercase">🏥 Blessures</div>
-                  <div className="border border-neutral-700 rounded-lg overflow-hidden bg-black/40 max-h-96 overflow-y-auto">
-                      <div className="grid grid-cols-[100px_100px_120px] bg-neutral-900 p-1 font-bold text-gray-400 border-b border-neutral-700 gap-1 sticky top-0 text-xs">
-                          <span>Depuis</span><span>Jusqu'à</span><span>Type</span>
-                      </div>
-                      {Array.from({length: 10}).map((_, i) => (
-                          <div key={i} className="grid grid-cols-[100px_100px_120px] p-1 border-b border-neutral-800 gap-1 hover:bg-white/5">
-                              <input value={data?.[`injury${i+1}_since`] || ''} onChange={(e) => handleChange([playerKey, `injury${i+1}_since`], e.target.value)} placeholder="DD.MM.YYYY" className="bg-transparent outline-none text-xs text-gray-300"/>
-                              <input value={data?.[`injury${i+1}_until`] || ''} onChange={(e) => handleChange([playerKey, `injury${i+1}_until`], e.target.value)} placeholder="DD.MM.YYYY" className="bg-transparent outline-none text-xs text-gray-300"/>
-                              <input value={data?.[`injury${i+1}_name`] || ''} onChange={(e) => handleChange([playerKey, `injury${i+1}_name`], e.target.value)} placeholder="Blessure" className="bg-transparent outline-none text-xs text-gray-300"/>
-                          </div>
-                      ))}
-                  </div>
-              </div>
-          )}
-
-          {/* ONGLET TENDANCE - 5 derniers */}
-          {activeTab === 'TENDANCE' && (
-              <div className="space-y-4">
-                  <div className="text-xs font-bold text-purple-500 uppercase">📈 Ratio 5 Derniers</div>
-                  <div className="flex gap-2 justify-center flex-wrap">
-                      {['match1', 'match2', 'match3', 'match4', 'match5'].map((m, i) => (
-                          <select 
-                              key={i}
-                              value={data?.[`last5_${m}`] || 'W'} 
-                              onChange={(e) => handleChange([playerKey, `last5_${m}`], e.target.value)}
-                              className="bg-black/40 border border-neutral-700 rounded px-3 py-2 text-white font-bold outline-none text-sm hover:border-blue-500"
-                          >
-                              <option className="bg-neutral-900">W</option>
-                              <option className="bg-neutral-900">L</option>
-                          </select>
-                      ))}
-                  </div>
-                  <div className="text-center">
-                      <div className="text-xs text-gray-400 mt-2 font-mono">
-                          {data?.last5_match1 || 'W'}-{data?.last5_match2 || 'W'}-{data?.last5_match3 || 'W'}-{data?.last5_match4 || 'W'}-{data?.last5_match5 || 'W'}
-                      </div>
-                  </div>
-              </div>
-          )}
-
       </div>
+    </div>
+  );
 
   return (
     <div className="w-full h-full flex flex-col bg-neutral-950 overflow-hidden">
@@ -513,21 +380,13 @@ export const GodModeTable: React.FC<Props> = ({ report, onUpdate }) => {
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_1fr_140px] gap-4">
             <div className="space-y-2">
                 <div className="inline-flex items-center gap-2 text-sm font-bold text-orange-500 uppercase tracking-widest border border-orange-500/40 px-3 py-1 rounded-full bg-orange-500/10">
-                    <Trophy size={14}/> {report.identity.tournament || 'UNKNOWN'} | {(report.identity as any).level || 'ATP'} | {report.identity.surface || 'DUR'}
+                    <Trophy size={14}/> {report.identity.tournament || 'UNKNOWN'} | {report.identity.surface || 'DUR'}
                 </div>
                 
-                <div className="text-3xl font-black flex items-center gap-3 flex-wrap">
-                    <input 
-                      value={report.identity.p1Name} 
-                      onChange={(e) => handleChange(['identity', 'p1Name'], e.target.value)} 
-                      className="bg-blue-900/20 border border-blue-500/40 text-blue-400 px-3 py-1 rounded font-bold outline-none focus:border-blue-400"
-                    />
+                <div className="text-3xl font-black flex items-center gap-3">
+                    <span className="text-blue-500">{report.identity.p1Name}</span>
                     <span className="text-gray-600 text-lg font-normal">vs</span>
-                    <input 
-                      value={report.identity.p2Name} 
-                      onChange={(e) => handleChange(['identity', 'p2Name'], e.target.value)} 
-                      className="bg-orange-900/20 border border-orange-500/40 text-orange-400 px-3 py-1 rounded font-bold outline-none focus:border-orange-400"
-                    />
+                    <span className="text-orange-500">{report.identity.p2Name}</span>
                 </div>
 
                 <div className="flex flex-wrap gap-2 text-xs">
