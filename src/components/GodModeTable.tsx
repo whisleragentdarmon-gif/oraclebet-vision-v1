@@ -1,10 +1,6 @@
 import React, { useState } from 'react';
-import { GodModeReportV2 } from '../types';
-// TON IMPORT ICI ↓
-import ScreenshotAnalyzer from '@/components/ScreenshotAnalyzer';
-// ← AJOUTE CETTE LIGNE
-import React, { useState } from 'react';
 import { GodModeReportV2 } from '../engine/types';
+import ScreenshotAnalyzer from '@/components/ScreenshotAnalyzer';
 import { Save, Trophy, Calendar, Activity, User, Globe, Clock, MapPin, Star, List, Wind, Thermometer, Droplets, Eye, TrendingUp, Zap, Target, AlertCircle } from 'lucide-react';
 
 interface Props {
@@ -26,6 +22,25 @@ export const GodModeTable: React.FC<Props> = ({ report, onUpdate }) => {
     }
     current[path[path.length - 1]] = value;
     onUpdate(newReport);
+  };
+
+  // HANDLER POUR LE SCREENSHOT
+  const handleDataExtracted = (data: any) => {
+    console.log('Screenshot data extracted:', data);
+    if (data) {
+      if (data.p1Name) handleChange(['identity', 'p1Name'], data.p1Name);
+      if (data.p2Name) handleChange(['identity', 'p2Name'], data.p2Name);
+      if (data.p1Rank) handleChange(['p1', 'rank'], data.p1Rank);
+      if (data.p2Rank) handleChange(['p2', 'rank'], data.p2Rank);
+      if (data.p1Nationality) handleChange(['p1', 'nationality'], data.p1Nationality);
+      if (data.p2Nationality) handleChange(['p2', 'nationality'], data.p2Nationality);
+      if (data.p1Hand) handleChange(['p1', 'hand'], data.p1Hand);
+      if (data.p2Hand) handleChange(['p2', 'hand'], data.p2Hand);
+      if (data.tournament) handleChange(['identity', 'tournament'], data.tournament);
+      if (data.surface) handleChange(['identity', 'surface'], data.surface);
+      if (data.date) handleChange(['identity', 'date'], data.date);
+      if (data.h2h) handleChange(['h2h', 'global'], data.h2h);
+    }
   };
 
   // --- SOUS-COMPOSANT : FICHE JOUEUR ---
@@ -352,6 +367,11 @@ export const GodModeTable: React.FC<Props> = ({ report, onUpdate }) => {
   return (
     <div className="w-full h-full flex flex-col bg-neutral-950 overflow-hidden">
       
+      {/* SCREENSHOT ANALYZER */}
+      <div className="border-b border-neutral-800 p-3 bg-neutral-900/50">
+        <ScreenshotAnalyzer onDataExtracted={handleDataExtracted} />
+      </div>
+
       {/* 1. MATCH HEADER */}
       <div className="bg-gradient-to-br from-neutral-900 to-black border-b-2 border-orange-500/40 p-5 flex-shrink-0">
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_1fr_140px] gap-4">
