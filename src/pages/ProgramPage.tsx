@@ -51,20 +51,10 @@ export const ProgramPage: React.FC = () => {
           <div className="p-3 bg-neutral-800 rounded-full text-orange-500">
             <Search size={24} />
           </div>
-          <div className="flex-1">
+          <div>
             <h2 className="text-2xl font-bold text-white">Recherche Manuelle</h2>
             <p className="text-sm text-gray-400">Importez une capture d'écran pour analyser n'importe quel match.</p>
           </div>
-          
-          {/* ✅ BOUTON SCREENSHOT UNIQUEMENT */}
-          <button 
-            onClick={() => fileInputRef.current?.click()}
-            disabled={loading}
-            className="flex-shrink-0 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-700 text-white font-bold py-2 px-6 rounded-lg flex items-center gap-2 transition-all"
-          >
-            {loading ? <Loader size={18} className="animate-spin" /> : <Upload size={18} />}
-            {loading ? 'TRAITEMENT...' : 'SCREENSHOT'}
-          </button>
         </div>
 
         {/* CONTENU */}
