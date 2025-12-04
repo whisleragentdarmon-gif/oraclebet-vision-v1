@@ -1,12 +1,11 @@
 // Fichier : src/engine/types.ts
-// ⚠️ AUCUN IMPORT ICI ! C'EST LA SOURCE.
 
-// --- 1. Types de base ---
+// --- TYPES DE BASE ---
 export type Circuit = 'ATP' | 'WTA' | 'CHALLENGER' | 'ITF';
 export type RiskLevel = 'SAFE' | 'MODERATE' | 'RISKY' | 'Safe' | 'Moderate' | 'Risky' | 'NO_BET' | 'High' | 'Low';
 export type PlayerStyle = 'Aggressive' | 'Defensive' | 'ServeVolley' | 'Balanced';
 
-// --- 2. GOD MODE V2 ---
+// --- GOD MODE V2 ---
 export interface PlayerProfileV2 {
   rank: string;
   bestRank: string;
@@ -24,7 +23,6 @@ export interface PlayerProfileV2 {
   injury: string;
   motivation: string;
   last5: string;
-  // Optionnels
   age?: string; height?: string; weight?: string; serveStats?: string; returnStats?: string; 
   injuries?: string; instagram?: string; twitter?: string;
 }
@@ -62,40 +60,63 @@ export interface GodModeReportV2 {
   };
 }
 
-// ALIAS
+// ALIAS POUR COMPATIBILITÉ
 export type GodModeReport = GodModeReportV2;
 export type FullMatchDossier = GodModeReportV2;
 export type H2HFullProfile = GodModeReportV2;
 export type WebScrapedData = any;
 
-// --- 3. IA & MOTEURS ---
+// --- BANKROLL ---
+export interface BetRecord {
+    id: string;
+    matchId: string;
+    matchTitle: string;
+    selection: string;
+    odds: number;
+    stake: number;
+    status: 'PENDING' | 'WON' | 'LOST' | 'VOID';
+    profit: number;
+    date: string;
+    confidenceAtTime: number;
+}
+
+export interface BankrollState {
+    currentBalance: number;
+    startBalance: number;
+    totalBets: number;
+    wins: number;
+    losses: number;
+    totalInvested: number;
+    totalReturned: number;
+    roi: number;
+    history: BetRecord[];
+}
+
+export interface BankrollSimulationMetric { finalBankroll: number; riskOfRuin: number; volatility: number | string; maxBankroll: number; minBankroll: number; paths?: { x: number; y: number }[][]; }
+export type SimulationResult = BankrollSimulationMetric;
+
+// --- IA & MOTEURS ---
 export interface AIModelWeights { surfaceWeight: number; formWeight: number; h2hWeight: number; fatigueFactor: number; mentalWeight: number; variance: number; momentumWeight?: number; serveDominance?: number; }
 export interface LearningExperience { matchId: string; date: string; timestamp?: number; prediction: string; outcome: 'WIN' | 'LOSS' | 'VOID'; circuit: Circuit; adjustments: string; result?: string; weightsUsed?: any; }
 export interface PlayerAttributes { power: number; serve: number; return: number; mental: number; form: number; stamina?: number; speed?: number; }
 
-// --- 4. COTES ---
+// --- COTES ---
 export type BookmakerName = 'Winamax' | 'Betclic' | 'Unibet' | 'Pinnacle' | 'Bwin';
 export interface BookmakerOdds { name: BookmakerName; p1: number; p2: number; payout: number; movement: 'UP' | 'DOWN' | 'STABLE' | 'CRASH'; openingOdds?: { p1: number, p2: number }; isTrap: boolean; isValue: boolean; }
 export interface ArbitrageResult { isSurebet: boolean; profit: number; bookmakerP1: string; bookmakerP2: string; msg: string; }
 export interface OddsAnalysis { bestOdds: { p1: number; p2: number; bookieP1: string; bookieP2: string }; marketAverage: { p1: number; p2: number }; recommendedBookie: string; kelly: { percentage: number; advice: string }; arbitrage: ArbitrageResult; bookmakers: BookmakerOdds[]; }
 
-// --- 5. BANKROLL ---
-export interface BankrollSimulationMetric { finalBankroll: number; riskOfRuin: number; volatility: number | string; maxBankroll: number; minBankroll: number; paths?: { x: number; y: number }[][]; }
-export type SimulationResult = BankrollSimulationMetric; 
-export interface BetRecord { id: string; matchId: string; matchTitle: string; selection: string; odds: number; stake: number; status: 'PENDING' | 'WON' | 'LOST' | 'VOID'; profit: number; date: string; confidenceAtTime: number; }
-export interface BankrollState { currentBalance: number; startBalance: number; totalBets: number; wins: number; losses: number; totalInvested: number; totalReturned: number; roi: number; history: BetRecord[]; }
-
-// --- 6. DATA MARKET ---
+// --- DATA MARKET ---
 export interface GodModeAnalysis { social: any; geo: any; trap: any; motivation?: any; injuryAlert?: boolean; injuryDetails?: string; reportV2?: GodModeReportV2; webStats?: any[]; realProb?: { p1Prob: number; p2Prob: number }; globalConfidence?: number; noBetReason?: string; h2hProfile?: any; }
 export interface PressAnalysis { sentimentScore: number; scandalAlert: boolean; mentalPressureIndex: number; recentQuotes: any[]; rumors: string[]; }
 export interface SocialSentiment { twitterHype: number; redditMood: string; instagramActivity: string; publicBettingTrend: number; }
 export interface GeoCondition { altitude: number | string; humidity: number | string; windSpeed?: number; wind?: number; courtSpeedIndex?: number; ballType?: string; isIndoor?: boolean; weather: string; }
 
-// --- 7. PRÉDICTIONS ---
+// --- PRÉDICTIONS ---
 export interface AIPrediction { winner: string; confidence: number; recommendedBet: string; riskLevel: RiskLevel; marketType: string; circuit: string; totalGamesProjection?: number; winProbA?: number; winProbB?: number; fairOdds?: { p1: number; p2: number }; attributes?: PlayerAttributes[]; monteCarlo?: { setDistribution: { [key: string]: number } }; expectedSets?: string; tieBreakProbability?: number; breaks?: { p1: number; p2: number }; trap?: { isTrap: boolean; verdict?: string; reason?: string }; integrity?: { isSuspicious: boolean; score: number; reason?: string }; qualitativeAnalysis?: string; structuralAnalysis?: string; quantitativeAnalysis?: string; oddsAnalysis?: OddsAnalysis; godModeAnalysis?: GodModeAnalysis; }
 export interface LiveUpdatePayload { matchId: string; score: string; pointByPoint: string[]; momentum: number; }
 
-// --- 8. COMBINÉS ---
+// --- COMBINÉS ---
 export interface ComboSelection { matchId: string; player1: string; player2: string; selection: string; odds: number; confidence: number; reason: string; valueScore?: number; marketType?: string; }
 export interface ComboStrategy { type: 'Safe' | 'Balanced' | 'Value' | 'Oracle Ultra Premium' | 'Lotto'; selections: ComboSelection[]; combinedOdds: number; successProbability: number; riskScore: string; expectedRoi?: number; analysis?: string; }
 export type ComboStrategyResult = ComboStrategy;
