@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { GodModeReportV2 } from '../engine/types';
-import ScreenshotAnalyzer from '@/components/ScreenshotAnalyzer';
+import ScreenshotAnalyzer from './ScreenshotAnalyzer';
 import { Save, Trophy, Calendar, Activity, User, Globe, Clock, MapPin, Star, List, Wind, Thermometer, Droplets, Eye, TrendingUp, Zap, Target, AlertCircle } from 'lucide-react';
 
 interface Props {
