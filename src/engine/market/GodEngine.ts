@@ -3,27 +3,28 @@ import { GodModeReportV2 } from '../types';
 export const GodEngine = {
   generateReportV2: async (p1Name: string, p2Name: string, tournament: string): Promise<GodModeReportV2> => {
     
-    console.log(`🚀 God Mode HYBRID lancé - Tennis API + Serper...`);
+    console.log("🚀 GodEngine V2 : Démarrage extraction...");
 
+    // 1. Initialisation (Template Vide)
     const report: GodModeReportV2 = {
       identity: {
-        p1Name, p2Name, tournament, surface: "Dur", date: new Date().toLocaleDateString('fr-FR'),
-        round: "Qualification", city: "Non trouvé", timezone: "UTC", 
-        importanceP1: "Moyenne", importanceP2: "Moyenne", enjeu: "Points"
+        p1Name, p2Name, tournament, surface: "Non trouvé", date: new Date().toLocaleDateString('fr-FR'),
+        round: "Tour principal", city: "-", timezone: "UTC", 
+        importanceP1: "Haute", importanceP2: "Haute", enjeu: "Qualification"
       },
       p1: createEmptyProfile(),
       p2: createEmptyProfile(),
       h2h: { 
-        global: "0 - 0", surface: "0 - 0", advantage: "Neutre", lastMatches: "-", trend: "Neutre", analysis: "-" 
+        global: "0 - 0", surface: "0 - 0", advantage: "Inconnu", lastMatches: "Aucune confrontation récente trouvée.", trend: "Neutre", analysis: "À déterminer" 
       },
       conditions: { 
-        weather: "Non trouvé", temp: "-", wind: "-", humidity: "-", 
+        weather: "-", temp: "-", wind: "-", humidity: "-", 
         courtSpeed: "Moyen", ballType: "Standard", fatigueImpact: "Faible",
         altitude: "-", advantage: "-"
       },
       bookmaker: { 
         oddA: "-", oddB: "-", spread: "-", movement: "Stable", 
-        smartMoney: "Non", valueIndex: "0", trapIndex: "Non",
+        smartMoney: "Non", valueIndex: "5/10", trapIndex: "Non",
         specialOdds: [] 
       },
       factors: [],
@@ -33,142 +34,152 @@ export const GodEngine = {
       prediction: { 
         winner: "-", score: "-", duration: "-", volatility: "-", confidence: "-", 
         bestBet: "-", avoidBet: "-", altBet: "-",
-        probA: "-", probB: "-", probOver: "-", probTieBreak: "-", probUpset: "-", risk: "-", recoWinner: "-", recoOver: "-", recoSet: "-"
+        probA: "50", probB: "50", probOver: "-", probTieBreak: "-", probUpset: "-", risk: "-", recoWinner: "Analyse...", recoOver: "-", recoSet: "-"
       }
     };
 
     try {
-      // ===== PHASE 1: TENNIS API via /api/tennis_search =====
-      console.log("📡 Phase 1: Tennis API via serveur...");
+      // 2. APPEL API TENNIS (Données Officielles)
+      console.log(`📡 Appel Tennis API pour ${p1Name} et ${p2Name}...`);
+      
+      const [apiP1, apiP2] = await Promise.all([
+        fetch('/api/tennis_search', { 
+          method: 'POST', 
+          headers: {'Content-Type':'application/json'}, 
+          body: JSON.stringify({ query: p1Name }) 
+        }).then(r => r.json()).catch(e => { console.error(`❌ P1 Error:`, e); return null; }),
+        fetch('/api/tennis_search', { 
+          method: 'POST', 
+          headers: {'Content-Type':'application/json'}, 
+          body: JSON.stringify({ query: p2Name }) 
+        }).then(r => r.json()).catch(e => { console.error(`❌ P2 Error:`, e); return null; })
+      ]);
 
-      const p1Response = await fetch('/api/tennis_search', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: p1Name })
-      }).then(r => r.json()).catch(e => {
-        console.error(`❌ P1 Error:`, e);
-        return null;
-      });
+      console.log(`🎾 P1 API Response:`, apiP1);
+      console.log(`🎾 P2 API Response:`, apiP2);
 
-      console.log(`🎾 P1 Data:`, p1Response);
-
-      const p2Response = await fetch('/api/tennis_search', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: p2Name })
-      }).then(r => r.json()).catch(e => {
-        console.error(`❌ P2 Error:`, e);
-        return null;
-      });
-
-      console.log(`🎾 P2 Data:`, p2Response);
-
-      // Parse P1
-      if (p1Response?.playerInfo) {
-        const info = p1Response.playerInfo;
+      // --- REMPLISSAGE AVEC DONNÉES OFFICIELLES (API) ---
+      if (apiP1 && apiP1.playerInfo) {
+        const info = apiP1.playerInfo;
         report.p1.rank = extractRankFromString(info.Rank) || "-";
         report.p1.nationality = info.nationality || "-";
         report.p1.hand = info.plays || "-";
-        report.p1.ageHeight = `${extractAgeFromBirthDate(info.birthDate)} / ${info.height || "-"}`;
-        report.p1.winrateSeason = info.singlesWL || "-";
-        report.p1.winrateCareer = info.careerSinglesWL || "-";
-      }
-
-      if (p1Response?.stats && p1Response.stats.length > 0) {
-        const currentYear = new Date().getFullYear();
-        const yearStats = p1Response.stats.find((s: any) => parseInt(s.year) === currentYear);
-        if (yearStats) {
-          report.p1.form = calculateFormFromWL(yearStats.singlesWL);
-          report.p1.motivation = calculateMotivationFromPrize(yearStats.prizeMoney);
+        if (info.birthDate) {
+          const age = calculateAge(info.birthDate);
+          report.p1.ageHeight = `${age} / ${info.height || "-"}`;
         }
+        report.p1.winrateCareer = info.careerSinglesWL || "-";
+        report.p1.winrateSeason = info.singlesWL || "-";
       }
 
-      // Parse P2
-      if (p2Response?.playerInfo) {
-        const info = p2Response.playerInfo;
+      if (apiP2 && apiP2.playerInfo) {
+        const info = apiP2.playerInfo;
         report.p2.rank = extractRankFromString(info.Rank) || "-";
         report.p2.nationality = info.nationality || "-";
         report.p2.hand = info.plays || "-";
-        report.p2.ageHeight = `${extractAgeFromBirthDate(info.birthDate)} / ${info.height || "-"}`;
-        report.p2.winrateSeason = info.singlesWL || "-";
-        report.p2.winrateCareer = info.careerSinglesWL || "-";
-      }
-
-      if (p2Response?.stats && p2Response.stats.length > 0) {
-        const currentYear = new Date().getFullYear();
-        const yearStats = p2Response.stats.find((s: any) => parseInt(s.year) === currentYear);
-        if (yearStats) {
-          report.p2.form = calculateFormFromWL(yearStats.singlesWL);
-          report.p2.motivation = calculateMotivationFromPrize(yearStats.prizeMoney);
+        if (info.birthDate) {
+          const age = calculateAge(info.birthDate);
+          report.p2.ageHeight = `${age} / ${info.height || "-"}`;
         }
+        report.p2.winrateCareer = info.careerSinglesWL || "-";
+        report.p2.winrateSeason = info.singlesWL || "-";
       }
 
-      console.log("✅ Phase 1 Tennis API complétée");
-
-      // ===== PHASE 2: SERPER pour H2H, Météo, Cotes =====
-      console.log("🔍 Phase 2: Serper...");
-
-      const serperQueries = [
-        `${p1Name} vs ${p2Name} h2h head to head record`,
-        `weather ${tournament} temperature humidity wind`,
-        `${p1Name} vs ${p2Name} betting odds cotes`,
+      // 3. APPEL GOOGLE SEARCH (Données Complémentaires & H2H)
+      console.log("🔍 Appel Google Search...");
+      
+      const queries = [
+        `${p1Name} tennis recent results flashscore 2024`,
+        `${p2Name} tennis recent results flashscore 2024`,
+        `${p1Name} vs ${p2Name} h2h tennis head to head record`,
+        `weather ${tournament} tennis conditions`
       ];
 
-      const serperResponses = await Promise.all(
-        serperQueries.map(q =>
-          fetch('/api/search', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ query: q })
-          })
-            .then(r => r.json())
-            .then(data => ({ results: data.results || [] }))
-            .catch(() => ({ results: [] }))
+      const responses = await Promise.all(
+        queries.map(q => 
+          fetch('/api/search', { 
+            method: 'POST', 
+            headers: {'Content-Type':'application/json'}, 
+            body: JSON.stringify({ query: q }) 
+          }).then(r => r.json()).catch(() => ({ results: [] }))
         )
       );
 
-      console.log("✅ Phase 2 Serper complétée");
+      // --- PARSING GOOGLE ---
 
-      // Parse Serper - H2H
-      if (serperResponses[0].results.length > 0) {
-        const h2hText = serperResponses[0].results.map((r: any) => r.snippet).join(' ').toLowerCase();
-        const scoreMatch = h2hText.match(/(\d+)[:\s-]+(\d+)/);
-        if (scoreMatch) {
-          report.h2h.global = `${scoreMatch[1]} - ${scoreMatch[2]}`;
-          report.h2h.advantage = parseInt(scoreMatch[1]) > parseInt(scoreMatch[2]) ? p1Name : p2Name;
+      // Résultats récents P1
+      if (responses[0]?.results?.[0]) {
+        const snippet = responses[0].results[0].snippet;
+        report.p1.last5 = snippet.substring(0, 100);
+        report.p1.form = "Voir détails";
+        console.log(`✅ P1 Recent: ${snippet.substring(0, 80)}`);
+      }
+
+      // Résultats récents P2
+      if (responses[1]?.results?.[0]) {
+        const snippet = responses[1].results[0].snippet;
+        report.p2.last5 = snippet.substring(0, 100);
+        report.p2.form = "Voir détails";
+        console.log(`✅ P2 Recent: ${snippet.substring(0, 80)}`);
+      }
+
+      // H2H
+      const h2hRes = responses[2]?.results || [];
+      if (h2hRes.length > 0) {
+        const title = h2hRes[0].title || "";
+        const snippet = h2hRes[0].snippet || "";
+        const fullText = title + " " + snippet;
+        
+        // Essai d'extraction du score H2H (ex: "2-1")
+        const matchH2H = fullText.match(/(\d+)\s?-\s?(\d+)/);
+        if (matchH2H) {
+          report.h2h.global = `${matchH2H[1]} - ${matchH2H[2]}`;
+          console.log(`✅ H2H Score trouvé: ${matchH2H[1]}-${matchH2H[2]}`);
         }
+        
+        // Mettre le snippet complet pour lecture humaine
+        report.h2h.lastMatches = snippet.substring(0, 150);
+        report.h2h.analysis = fullText.includes("first") || fullText.includes("première") ? "Première rencontre" : "Rencontre connue";
       }
 
-      // Parse Serper - Météo
-      if (serperResponses[1].results.length > 0) {
-        const weatherText = serperResponses[1].results.map((r: any) => r.snippet).join(' ').toLowerCase();
-        report.conditions.weather = extractWeather(weatherText) || "Ensoleillé";
-        report.conditions.temp = extractTemp(weatherText) || "-";
-        report.conditions.wind = extractWind(weatherText) || "-";
-        report.conditions.humidity = extractHumidity(weatherText) || "-";
-      }
-
-      // Parse Serper - Cotes
-      if (serperResponses[2].results.length > 0) {
-        const oddsText = serperResponses[2].results.map((r: any) => r.snippet).join(' ');
-        const oddsMatch = oddsText.match(/(\d\.\d{2})\s*(?:vs|-)\s*(\d\.\d{2})/);
-        if (oddsMatch) {
-          report.bookmaker.oddA = oddsMatch[1];
-          report.bookmaker.oddB = oddsMatch[2];
+      // Météo
+      const weatherRes = responses[3]?.results || [];
+      if (weatherRes.length > 0) {
+        const wText = weatherRes[0].snippet || "";
+        report.conditions.weather = wText.substring(0, 60);
+        
+        // Détection de mots clés
+        if (wText.includes('rain') || wText.includes('pluie')) {
+          report.conditions.weather = "PLUIE POSSIBLE";
+        } else if (wText.includes('sun') || wText.includes('ensoleillé')) {
+          report.conditions.weather = "ENSOLEILLÉ";
         }
+        
+        // Extraire température
+        const tempMatch = wText.match(/(\d+)\s*°?c/i);
+        if (tempMatch) report.conditions.temp = tempMatch[1] + "°C";
       }
 
-      console.log("✅ God Mode HYBRID COMPLET!");
+      // Surface (Déduction si non trouvée)
+      if (tournament.toLowerCase().includes('clay') || tournament.toLowerCase().includes('argile')) {
+        report.identity.surface = "Terre Battue";
+      } else if (tournament.toLowerCase().includes('grass') || tournament.toLowerCase().includes('gazon')) {
+        report.identity.surface = "Gazon";
+      } else {
+        report.identity.surface = "Dur";
+      }
+
+      console.log("✅ GodEngine V2 COMPLET!");
       
     } catch (e) {
-      console.error("❌ Erreur God Mode:", e);
+      console.error("❌ Erreur GodEngine Extraction:", e);
     }
 
     return report;
   }
 };
 
-// ========== FONCTIONS D'EXTRACTION ==========
+// --- OUTILS ---
 
 function extractRankFromString(rankStr: string): string | null {
   if (!rankStr) return null;
@@ -180,73 +191,54 @@ function extractRankFromString(rankStr: string): string | null {
   return null;
 }
 
-function extractAgeFromBirthDate(birthDate: string): number {
+function calculateAge(birthDate: string): number {
   if (!birthDate) return 0;
   try {
+    // Parse "December 27, 1990 (Age: 34)"
+    const ageMatch = birthDate.match(/\(Age:\s*(\d+)\)/);
+    if (ageMatch) return parseInt(ageMatch[1]);
+    
+    // Parse "December 27, 1990"
     const dateMatch = birthDate.match(/(\w+)\s*(\d+),\s*(\d{4})/);
     if (dateMatch) {
       const birth = new Date(`${dateMatch[1]} ${dateMatch[2]}, ${dateMatch[3]}`);
       const today = new Date();
       let age = today.getFullYear() - birth.getFullYear();
-      const monthDiff = today.getMonth() - birth.getMonth();
-      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+      const m = today.getMonth() - birth.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
         age--;
       }
       if (age >= 15 && age <= 75) return age;
     }
   } catch (e) {
-    console.error('Erreur extraction âge:', e);
+    console.error('❌ Erreur extraction âge:', e);
   }
   return 0;
 }
 
-function calculateFormFromWL(wlStr: string): string {
-  if (!wlStr || wlStr === "0-0") return "Faible";
-  const [wins, losses] = wlStr.split('-').map(Number);
-  const total = wins + losses;
-  if (total === 0) return "Faible";
-  const winRate = wins / total;
-  if (winRate >= 0.7) return "Excellente";
-  if (winRate >= 0.5) return "Bonne";
-  return "Faible";
-}
-
-function calculateMotivationFromPrize(prizeStr: string): string {
-  if (!prizeStr) return "6/10";
-  const prize = parseInt(prizeStr.replace(/[^0-9]/g, '')) || 0;
-  if (prize > 1000000) return "9/10";
-  if (prize > 500000) return "8/10";
-  if (prize > 100000) return "7/10";
-  return "6/10";
-}
-
-function extractWeather(text: string): string {
-  if (text.includes("sunny") || text.includes("ensoleillé")) return "Ensoleillé";
-  if (text.includes("rain") || text.includes("pluie")) return "Pluvieux";
-  if (text.includes("cloud") || text.includes("nuageux")) return "Nuageux";
-  return "Ensoleillé";
-}
-
-function extractTemp(text: string): string | null {
-  const m = text.match(/(\d{1,2})\s*°?\s*c/i);
-  return m ? m[1] + "°C" : null;
-}
-
-function extractWind(text: string): string {
-  const m = text.match(/(\d+)\s*(?:km\/h|mph|knots)/i);
-  return m ? m[1] + " km/h" : "Faible";
-}
-
-function extractHumidity(text: string): string | null {
-  const m = text.match(/(\d+)\s*%\s*(?:humidity|humidité)/i);
-  return m ? m[1] + "%" : null;
-}
-
 function createEmptyProfile() {
   return {
-    rank: "-", bestRank: "-", ageHeight: "- / -", nationality: "-", hand: "-", style: "-",
-    winrateCareer: "-", winrateSeason: "-", winrateSurface: "-", aces: "-", doubleFaults: "-",
-    firstServe: "-", form: "-", confidence: "-", injury: "Non", fatigue: "Faible",
-    serveStats: "-", returnStats: "-", motivation: "-", last5: "-"
+    rank: "-", 
+    bestRank: "-", 
+    ageHeight: "- / -", 
+    nationality: "-",
+    hand: "-", 
+    style: "-", 
+    winrateCareer: "-", 
+    winrateSeason: "-", 
+    winrateSurface: "-", 
+    aces: "-", 
+    doubleFaults: "-", 
+    firstServe: "-",
+    form: "-", 
+    confidence: "-", 
+    injury: "R.A.S", 
+    fatigue: "Faible", 
+    lastMatchDate: "-", 
+    serveStats: "-", 
+    returnStats: "-", 
+    motivation: "Normale", 
+    social: "-", 
+    last5: "En attente de données..."
   };
 }
