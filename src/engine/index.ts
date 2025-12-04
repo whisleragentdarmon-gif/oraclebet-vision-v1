@@ -1,4 +1,4 @@
-import { Circuit, SimulationResult, ComboStrategy } from './types';
+import { Circuit, SimulationResult, ComboStrategy, GodModeReportV2 } from './types';
 import { MonteCarlo } from './MonteCarlo'; 
 import { OddsEngine } from './OddsEngine'; 
 import { LearningModule } from './LearningModule';
@@ -8,13 +8,17 @@ import { GeoEngine } from './market/GeoEngine';
 
 const learningInstance = new LearningModule();
 
+const parseScore = (val: string | undefined): number => {
+    if (!val) return 5;
+    const match = val.toString().match(/(\d+)/);
+    return match ? parseInt(match[1]) : 5;
+};
+
 export const OracleAI = {
   bankroll: {
-    // ✅ C'est ici la correction cruciale
     calculateStake: (balance: number, strategyType: string): number => {
       if (balance <= 0) return 0;
-      let percentage = 0.01; 
-
+      let percentage = 0.01;
       switch (strategyType) {
           case 'Oracle Ultra Premium': percentage = 0.05; break;
           case 'Safe': percentage = 0.03; break;
@@ -33,16 +37,8 @@ export const OracleAI = {
   combo: {
     generateStrategies: (matches: any[]): ComboStrategy[] => {
       const strategies: ComboStrategy[] = [];
-      
-      // 👇 LE FILTRE MAGIQUE : On exclut les matchs finis ET les matchs "mock-"
-      const candidates = matches.filter((m: any) => 
-          m.status !== 'FINISHED' && 
-          !m.id.startsWith('mock-') // <--- AJOUT ICI
-      );
+      const candidates = matches.filter((m: any) => m.status !== 'FINISHED');
 
-      // ... (Le reste du code ne change pas)
-
-      // Moteur de sélection
       const getSmartSelection = (m: any) => {
           const winnerOdds = m.ai.winner === m.player1.name ? m.odds.p1 : m.odds.p2;
           if (winnerOdds < 1.40) return { sel: `${m.ai.winner} 2-0`, odd: parseFloat((winnerOdds * 1.55).toFixed(2)), market: "SCORE EXACT", reason: "Ultra Favori" };
@@ -51,7 +47,10 @@ export const OracleAI = {
       };
 
       // 1. ULTRA PREMIUM
-      const premiumPicks = candidates.filter((m: any) => m.ai?.godModeAnalysis && !m.ai.godModeAnalysis.injuryAlert && !m.ai.godModeAnalysis.trap.isTrap && m.ai.confidence >= 70);
+      const premiumPicks = candidates.filter((m: any) => {
+          const gm = m.ai?.godModeAnalysis;
+          return gm && !gm.injuryAlert && !gm.trap.isTrap && m.ai.confidence >= 70;
+      });
       if (premiumPicks.length >= 1) {
           const selections = premiumPicks.slice(0, 3).map((m: any) => {
               const s = getSmartSelection(m);
@@ -69,7 +68,7 @@ export const OracleAI = {
              return { matchId: m.id, player1: m.player1.name, player2: m.player2.name, selection: s.sel, odds: s.odd, confidence: m.ai.confidence, reason: "Value", marketType: s.market };
           });
           const odds = selections.reduce((acc: number, s: any) => acc * s.odds, 1);
-          strategies.push({ type: 'Value', selections, combinedOdds: parseFloat(odds.toFixed(2)), successProbability: 45, riskScore: 'Risky', analysis: "Opportunités de marché." });
+          strategies.push({ type: 'Value', selections, combinedOdds: parseFloat(odds.toFixed(2)), successProbability: 45, riskScore: 'Risky', analysis: "Opportunités." });
       }
 
       // 3. LOTTO
@@ -99,42 +98,43 @@ export const OracleAI = {
         const conditions = GeoEngine.getConditions(match.tournament);
         return { social: pressSocial.social, press: pressSocial.press, geo: conditions, trap: integrity, injuryAlert: false };
     },
-    
-    // ✅ AJOUTER CETTE FONCTION ICI
-    refinePrediction: (report: any) => {
-      if (!report || !report.p1 || !report.p2) return null;
+    // ✅ CORRECTION ICI : On retourne toutes les propriétés nécessaires
+    refinePrediction: (report: GodModeReportV2) => {
+        try {
+            const p1Form = parseScore(report.p1.form);
+            const p2Form = parseScore(report.p2.form);
+            let score = 50;
+            score += (p1Form - p2Form) * 4;
+            
+            const winner = score >= 50 ? report.identity.p1Name : report.identity.p2Name;
+            const confidence = Math.min(99, Math.max(1, Math.abs(score - 50) * 2 + 50));
+            const risk = confidence > 80 ? 'LOW' : 'MEDIUM';
+            const recoWinner = `${winner} ${confidence > 75 ? 'Vainqueur' : ''}`;
 
-      const p1 = report.p1;
-      const p2 = report.p2;
-      const h2h = report.h2h || {};
-
-      const p1Form = parseInt(p1.form?.toString().replace('/10', '') || '5') || 5;
-      const p2Form = parseInt(p2.form?.toString().replace('/10', '') || '5') || 5;
-      const p1Injury = p1.injury || 'R.A.S';
-      const p2Injury = p2.injury || 'R.A.S';
-
-      let p1Score = 50;
-      p1Score += (p1Form - p2Form) * 2;
-      
-      if (p1Injury && !p1Injury.includes('R.A.S')) p1Score -= 15;
-      if (p2Injury && !p2Injury.includes('R.A.S')) p1Score += 15;
-
-      p1Score = Math.max(0, Math.min(100, p1Score));
-      const p2Score = 100 - p1Score;
-      const confidence = Math.round(50 + (Math.abs(p1Score - 50) * 0.8));
-      const winner = p1Score > 50 ? report.identity.p1Name : report.identity.p2Name;
-
-      return {
-        winner,
-        confidence,
-        updatedPredictionSection: {
-          winner,
-          confidence: `${confidence}%`,
-          probA: `${Math.round(p1Score)}%`,
-          probB: `${Math.round(p2Score)}%`,
-          risk: confidence > 80 ? 'FAIBLE' : 'MOYEN'
+            return {
+                winner,
+                confidence: Math.round(confidence),
+                risk,
+                recoWinner,
+                updatedPredictionSection: {
+                    winner,
+                    confidence: `${Math.round(confidence)}%`,
+                    risk,
+                    probA: `${Math.round(score)}%`,
+                    probB: `${Math.round(100 - score)}%`,
+                    bestBet: `${winner}`,
+                    recoWinner
+                }
+            };
+        } catch (e) {
+            return { 
+                winner: report.identity.p1Name, 
+                confidence: 50, 
+                risk: 'HIGH', 
+                recoWinner: "Erreur Analyse", 
+                updatedPredictionSection: { winner: "-", confidence: "-", risk: "-", probA: "-", probB: "-", bestBet: "-", recoWinner: "-" } 
+            };
         }
-      };
     }
   }
 };
