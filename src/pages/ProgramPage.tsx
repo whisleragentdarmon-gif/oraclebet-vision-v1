@@ -3,9 +3,8 @@
 import React, { useState, useRef } from 'react';
 import { GodModeReportV2 } from '../engine/types';
 import { GodModeTable } from '../components/GodModeTable';
-import { GodEngine } from '../engine/market/GodEngine';
 import { ImageEngine } from '../engine/ImageEngine';
-import { CheckCircle, Search, Upload, Cpu, Loader } from 'lucide-react';
+import { CheckCircle, Search, Upload, Loader } from 'lucide-react';
 
 export const ProgramPage: React.FC = () => {
   const [report, setReport] = useState<GodModeReportV2 | null>(null);
@@ -13,19 +12,7 @@ export const ProgramPage: React.FC = () => {
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // ✅ SCAN WEB
-  const handleScanWeb = async () => {
-    setLoading(true);
-    try {
-      const report = await GodEngine.generateReportV2('Player 1', 'Player 2', 'Unknown Tournament');
-      setReport(report);
-    } catch (e) {
-      console.error(e);
-    }
-    setLoading(false);
-  };
-
-  // ✅ SCREENSHOT
+  // ✅ SCREENSHOT UPLOAD
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -66,29 +53,18 @@ export const ProgramPage: React.FC = () => {
           </div>
           <div className="flex-1">
             <h2 className="text-2xl font-bold text-white">Recherche Manuelle</h2>
-            <p className="text-sm text-gray-400">Analysez n'importe quel match, même hors programme.</p>
+            <p className="text-sm text-gray-400">Importez une capture d'écran pour analyser n'importe quel match.</p>
           </div>
           
-          {/* ✅ BOUTONS */}
-          <div className="flex gap-2 flex-shrink-0">
-            <button 
-              onClick={handleScanWeb}
-              disabled={loading}
-              className="bg-purple-600 hover:bg-purple-500 disabled:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition-all"
-            >
-              {loading ? <Loader size={18} className="animate-spin" /> : <Cpu size={18} />}
-              SCAN WEB
-            </button>
-            
-            <button 
-              onClick={() => fileInputRef.current?.click()}
-              disabled={loading}
-              className="bg-blue-600 hover:bg-blue-500 disabled:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition-all"
-            >
-              {loading ? <Loader size={18} className="animate-spin" /> : <Upload size={18} />}
-              SCREENSHOT
-            </button>
-          </div>
+          {/* ✅ BOUTON SCREENSHOT UNIQUEMENT */}
+          <button 
+            onClick={() => fileInputRef.current?.click()}
+            disabled={loading}
+            className="flex-shrink-0 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-700 text-white font-bold py-2 px-6 rounded-lg flex items-center gap-2 transition-all"
+          >
+            {loading ? <Loader size={18} className="animate-spin" /> : <Upload size={18} />}
+            {loading ? 'TRAITEMENT...' : 'SCREENSHOT'}
+          </button>
         </div>
 
         {/* CONTENU */}
@@ -97,9 +73,15 @@ export const ProgramPage: React.FC = () => {
           {/* PAS DE RAPPORT = VIDE */}
           {!report && (
             <div className="flex flex-col items-center justify-center h-full border-2 border-dashed border-neutral-800 rounded-xl bg-black/20">
-              <Search size={64} className="text-gray-600 mb-4" />
+              <Upload size={64} className="text-gray-600 mb-4" />
               <h3 className="text-xl font-bold text-white mb-2">Aucun match en cours d'analyse</h3>
-              <p className="text-gray-400 text-sm mb-6">Cliquez sur SCREENSHOT ou SCAN WEB pour commencer</p>
+              <p className="text-gray-400 text-sm mb-6">Cliquez sur SCREENSHOT pour uploader une capture d'écran</p>
+              <button 
+                onClick={() => fileInputRef.current?.click()}
+                className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold flex items-center gap-2"
+              >
+                <Upload size={18} /> Importer une capture
+              </button>
             </div>
           )}
           
