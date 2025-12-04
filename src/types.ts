@@ -1,3 +1,4 @@
+// On importe tout depuis le fichier moteur unique
 import { 
   OddsAnalysis, 
   AIPrediction, 
@@ -13,7 +14,10 @@ import {
   WebScrapedData,
   BetRecord,
   ComboStrategy,
-  ComboStrategyResult
+  ComboStrategyResult,
+  BankrollState,
+  BankrollSimulationMetric,
+  BookmakerOdds
 } from './engine/types';
 
 export interface PastMatch {
@@ -57,7 +61,10 @@ export type {
   WebScrapedData,
   BetRecord,
   ComboStrategy,
-  ComboStrategyResult
+  ComboStrategyResult,
+  BankrollState,
+  BankrollSimulationMetric,
+  BookmakerOdds
 };
 
 export interface Match {
