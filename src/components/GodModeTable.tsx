@@ -265,14 +265,19 @@ export const GodModeTable: React.FC<Props> = ({ report, onUpdate, onSave }) => {
                  <span className="inline-flex items-center gap-2 bg-green-500/20 text-green-400 px-3 py-1 rounded text-xs font-bold border border-green-500/50">
                     🟢 EN COURS - Set 1
                  </span>
-                 <button 
-                    type="button"
-                    onClick={onSave}
-                    className="ml-4 text-xs bg-blue-600 hover:bg-blue-500 text-white font-bold py-1 px-3 rounded inline-flex items-center gap-1 transition-colors"
-                  >
-                    <Save size={12}/> ENREGISTRER
-                  </button>
               </div>
+          </div>
+
+          {/* 👇 REMPLACE LE BOUTON ICI */}
+          <div className="flex justify-end items-start">
+            <button 
+              type="button"
+              onClick={onSave}
+              className="text-xs bg-black/40 hover:bg-black/60 text-white px-4 py-2 rounded-lg flex items-center gap-2 border border-white/10 transition-all"
+            >
+                <Save size={14}/> Sauvegarder
+            </button>
+          </div>
           </div>
 
           {/* Météo Card */}
@@ -306,6 +311,16 @@ export const GodModeTable: React.FC<Props> = ({ report, onUpdate, onSave }) => {
             colorClass="text-orange-500"
             scrollRef={scrollP2Ref}
           />
+      </div>
+
+      <div className="text-center pb-4">
+         <button 
+            type="button"
+            onClick={onSave}
+            className="bg-neon hover:bg-neonHover text-black font-bold px-8 py-3 rounded-xl shadow-lg shadow-neon/20 transition-all transform hover:scale-105"
+         >
+            <Save size={18} className="inline mr-2"/> SAUVEGARDER FICHE COMPLÈTE
+         </button>
       </div>
 
     </div>
