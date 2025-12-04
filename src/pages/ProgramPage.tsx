@@ -223,10 +223,17 @@ export const ProgramPage: React.FC = () => {
 
               {/* GODMODETABLE */}
               <div className="flex-1 overflow-hidden">
-                <GodModeTable 
-                  report={report} 
-                  onUpdate={(newData) => setReport(newData)} 
-                />
+               const handleSave = () => {
+  console.log('✅ Données sauvegardées:', currentReport);
+  alert('Fiche enregistrée!');
+};
+
+// Puis passe:
+<GodModeTable 
+  report={...}
+  onUpdate={...}
+  onSave={handleSave}
+/>
               </div>
             </div>
           )}
