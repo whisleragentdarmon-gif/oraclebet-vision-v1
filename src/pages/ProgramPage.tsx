@@ -66,6 +66,19 @@ export const ProgramPage: React.FC = () => {
     }
   };
 
+  // ✅ ENREGISTRER LA FICHE GODMODE
+  const handleSaveGodMode = () => {
+    if (report) {
+      console.log('✅ Fiche God Mode sauvegardée:', report);
+      showToast('Fiche God Mode enregistrée!', 'success');
+    }
+  };
+
+  // ✅ METTRE À JOUR LE RAPPORT
+  const handleUpdateReport = (updatedReport: GodModeReportV2) => {
+    setReport(updatedReport);
+  };
+
   return (
     <>
       {/* INPUT CACHÉ - MULTI-UPLOAD */}
@@ -223,17 +236,11 @@ export const ProgramPage: React.FC = () => {
 
               {/* GODMODETABLE */}
               <div className="flex-1 overflow-hidden">
-               const handleSave = () => {
-  console.log('✅ Données sauvegardées:', currentReport);
-  alert('Fiche enregistrée!');
-};
-
-// Puis passe:
-<GodModeTable 
-  report={...}
-  onUpdate={...}
-  onSave={handleSave}
-/>
+                <GodModeTable 
+                  report={report}
+                  onUpdate={handleUpdateReport}
+                  onSave={handleSaveGodMode}
+                />
               </div>
             </div>
           )}
