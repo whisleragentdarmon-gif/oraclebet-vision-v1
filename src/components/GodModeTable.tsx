@@ -1,7 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 import { GodModeReportV2 } from '../engine/types';
-import { Save, Trophy, Calendar, Activity, User, Globe, Clock, MapPin, Star, List, Wind, Thermometer, Droplets, Eye, TrendingUp, Zap, Target, AlertCircle } from 'lucide-react';
+import { Save, Trophy, Calendar, Activity, User, Globe, Clock, MapPin, Star, List, Wind, Thermometer, Droplets, Eye, TrendingUp, Zap, Target, AlertCircle, Edit2 } from 'lucide-react';
 
 interface Props {
   report: GodModeReportV2;
@@ -12,6 +12,8 @@ export const GodModeTable: React.FC<Props> = ({ report, onUpdate }) => {
   
   const [tabP1, setTabP1] = useState<'PROFIL' | 'STATS' | 'PSYCHO' | 'CALENDRIER' | 'H2H' | 'ENJEUX'>('PROFIL');
   const [tabP2, setTabP2] = useState<'PROFIL' | 'STATS' | 'PSYCHO' | 'CALENDRIER' | 'H2H' | 'ENJEUX'>('PROFIL');
+  const [editingP1, setEditingP1] = useState(false);
+  const [editingP2, setEditingP2] = useState(false);
 
   const handleChange = (path: string[], value: string) => {
     const newReport = { ...report };
@@ -46,20 +48,12 @@ export const GodModeTable: React.FC<Props> = ({ report, onUpdate }) => {
                       className="bg-transparent w-12 text-white outline-none font-bold text-center"
                   />
               </span>
-              <span className="inline-flex items-center gap-1 bg-black/50 px-3 py-2 rounded border border-neutral-700 text-gray-300 font-mono">
-                  🏆 Tournoi: 
-                  <input 
-                      value={data?.tournamentRank || '1/2'} 
-                      onChange={(e) => handleChange([playerKey, 'tournamentRank'], e.target.value)}
-                      className="bg-transparent w-14 text-white outline-none font-bold text-center"
-                  />
-              </span>
               <span className="inline-flex items-center gap-1 bg-blue-900/30 px-3 py-2 rounded border border-blue-500/40 text-blue-300 font-mono font-bold">
                   💰 Cote: 
                   <input 
                       value={data?.oddsPlayer || '1.95'} 
                       onChange={(e) => handleChange([playerKey, 'oddsPlayer'], e.target.value)}
-                      className="bg-transparent w-16 text-white outline-none font-bold text-center"
+                      className="bg-transparent w-16 text-white outline-none font-bold text-center text-sm"
                   />
               </span>
             </div>
@@ -107,6 +101,23 @@ export const GodModeTable: React.FC<Props> = ({ report, onUpdate }) => {
                         {l: 'Blessures', k: 'injury'},
                         {l: 'Match Veille', k: 'previousMatch'},
                         {l: 'Fatigue', k: 'fatigue'}
+                    ].map((row, i) => (
+                        <div key={i} className="grid grid-cols-[40%_60%] border-b border-neutral-800 last:border-0 text-xs">
+                            <div className="bg-neutral-900/50 p-2 text-gray-400 font-semibold border-r border-neutral-800">{row.l}</div>
+                            <input value={data?.[row.k] || ''} onChange={(e) => handleChange([playerKey, row.k], e.target.value)} className="bg-transparent text-white p-2 outline-none w-full font-mono text-xs"/>
+                        </div>
+                    ))}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="text-xs font-bold text-green-400 uppercase flex items-center gap-1">🏟️ Terrain Favori</div>
+                <div className="border border-neutral-700 rounded-lg overflow-hidden bg-black/40">
+                    {[
+                        {l: 'Surface Préférée', k: 'favoriteSurface'},
+                        {l: 'Conditions Idéales', k: 'favoriteConditions'},
+                        {l: 'Pire Surface', k: 'worstSurface'},
+                        {l: 'Pires Conditions', k: 'worstConditions'}
                     ].map((row, i) => (
                         <div key={i} className="grid grid-cols-[40%_60%] border-b border-neutral-800 last:border-0 text-xs">
                             <div className="bg-neutral-900/50 p-2 text-gray-400 font-semibold border-r border-neutral-800">{row.l}</div>
@@ -197,7 +208,7 @@ export const GodModeTable: React.FC<Props> = ({ report, onUpdate }) => {
                  </div>
 
                  <div className="space-y-2">
-                    <div className="text-xs font-bold text-yellow-500 uppercase">💰 Paris</div>
+                    <div className="text-xs font-bold text-yellow-500 uppercase">💰 Paris Spéciaux</div>
                     <div className="border border-neutral-700 rounded-lg overflow-hidden text-xs bg-black/40 grid grid-cols-2">
                         {[
                             {l: 'Over 21.5', k: 'over21_5'},
@@ -302,7 +313,7 @@ export const GodModeTable: React.FC<Props> = ({ report, onUpdate }) => {
 
           {activeTab === 'H2H' && (
               <div className="space-y-2">
-                  <div className="text-xs font-bold text-orange-500 uppercase flex gap-1"><MapPin size={13}/> H2H</div>
+                  <div className="text-xs font-bold text-orange-500 uppercase flex gap-1"><MapPin size={13}/> H2H Global</div>
                   <div className="border border-neutral-700 rounded-lg overflow-hidden text-xs bg-black/40">
                       {[
                           {l: 'Affrontés', k: 'h2hMeetings'},
@@ -322,14 +333,20 @@ export const GodModeTable: React.FC<Props> = ({ report, onUpdate }) => {
                   </div>
 
                   <div className="space-y-2 mt-4">
-                    <div className="text-xs font-bold text-green-500 uppercase">🎾 Derniers Matchs</div>
-                    <div className="border border-neutral-700 rounded-lg overflow-hidden text-xs bg-black/40">
-                        {[1, 2].map((i) => (
-                            <div key={i} className="grid grid-cols-[60px_100px_70px_80px] p-2 border-b border-neutral-800 last:border-0 gap-1 hover:bg-white/5">
-                                <input value={data?.[`lastMatch${i}_date`] || ''} onChange={(e) => handleChange([playerKey, `lastMatch${i}_date`], e.target.value)} placeholder="JJ.MM" className="bg-transparent outline-none text-xs font-mono text-gray-300"/>
-                                <input value={data?.[`lastMatch${i}_opponent`] || ''} onChange={(e) => handleChange([playerKey, `lastMatch${i}_opponent`], e.target.value)} placeholder="Adversaire" className="bg-transparent outline-none text-xs text-gray-300"/>
-                                <input value={data?.[`lastMatch${i}_score`] || ''} onChange={(e) => handleChange([playerKey, `lastMatch${i}_score`], e.target.value)} placeholder="6-4 V" className="bg-transparent outline-none text-xs font-mono text-gray-300"/>
-                                <input value={data?.[`lastMatch${i}_tournament`] || ''} onChange={(e) => handleChange([playerKey, `lastMatch${i}_tournament`], e.target.value)} placeholder="Tournoi" className="bg-transparent outline-none text-xs text-gray-300"/>
+                    <div className="text-xs font-bold text-green-500 uppercase">🎾 Derniers 10 H2H</div>
+                    <div className="border border-neutral-700 rounded-lg overflow-hidden text-xs bg-black/40 max-h-64 overflow-y-auto">
+                        <div className="grid grid-cols-[60px_100px_80px_80px] bg-neutral-900 p-2 font-bold text-gray-400 border-b border-neutral-700 gap-1 sticky top-0">
+                            <span>Date</span>
+                            <span>Score</span>
+                            <span>Tournoi</span>
+                            <span>Surface</span>
+                        </div>
+                        {Array.from({length: 10}).map((_, i) => (
+                            <div key={i} className="grid grid-cols-[60px_100px_80px_80px] p-2 border-b border-neutral-800 gap-1 hover:bg-white/5">
+                                <input value={data?.[`h2hMatch${i+1}_date`] || ''} onChange={(e) => handleChange([playerKey, `h2hMatch${i+1}_date`], e.target.value)} placeholder="JJ.MM.AA" className="bg-transparent outline-none text-xs font-mono text-gray-300"/>
+                                <input value={data?.[`h2hMatch${i+1}_score`] || ''} onChange={(e) => handleChange([playerKey, `h2hMatch${i+1}_score`], e.target.value)} placeholder="7-6 6-3" className="bg-transparent outline-none text-xs font-mono text-gray-300"/>
+                                <input value={data?.[`h2hMatch${i+1}_tournament`] || ''} onChange={(e) => handleChange([playerKey, `h2hMatch${i+1}_tournament`], e.target.value)} placeholder="Tournoi" className="bg-transparent outline-none text-xs text-gray-300"/>
+                                <input value={data?.[`h2hMatch${i+1}_surface`] || ''} onChange={(e) => handleChange([playerKey, `h2hMatch${i+1}_surface`], e.target.value)} placeholder="Dur" className="bg-transparent outline-none text-xs text-gray-300"/>
                             </div>
                         ))}
                     </div>
@@ -383,10 +400,18 @@ export const GodModeTable: React.FC<Props> = ({ report, onUpdate }) => {
                     <Trophy size={14}/> {report.identity.tournament || 'UNKNOWN'} | {report.identity.surface || 'DUR'}
                 </div>
                 
-                <div className="text-3xl font-black flex items-center gap-3">
-                    <span className="text-blue-500">{report.identity.p1Name}</span>
+                <div className="text-2xl font-black flex items-center gap-2 flex-wrap">
+                    <input 
+                      value={report.identity.p1Name} 
+                      onChange={(e) => handleChange(['identity', 'p1Name'], e.target.value)} 
+                      className="bg-blue-900/20 border border-blue-500/40 text-blue-400 px-3 py-1 rounded font-bold outline-none focus:border-blue-400"
+                    />
                     <span className="text-gray-600 text-lg font-normal">vs</span>
-                    <span className="text-orange-500">{report.identity.p2Name}</span>
+                    <input 
+                      value={report.identity.p2Name} 
+                      onChange={(e) => handleChange(['identity', 'p2Name'], e.target.value)} 
+                      className="bg-orange-900/20 border border-orange-500/40 text-orange-400 px-3 py-1 rounded font-bold outline-none focus:border-orange-400"
+                    />
                 </div>
 
                 <div className="flex flex-wrap gap-2 text-xs">
