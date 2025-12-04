@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from 'react';
+'use client';
+
+import React, { useState, useEffect, useRef } from 'react';
 import { useData } from '../context/DataContext';
 import { useAnalysis } from '../context/AnalysisContext';
 import { MatchCard } from '../components/MatchCard';
@@ -8,9 +10,10 @@ import { OracleReactor } from '../components/OracleReactor';
 // ✅ IMPORTS DU NOUVEAU SYSTÈME GOD MODE
 import { GodEngine } from '../engine/market/GodEngine';
 import { GodModeTable } from '../components/GodModeTable';
+import { ImageEngine } from '../engine/ImageEngine';
 import { GodModeReport } from '../engine/types';
 
-import { Globe, Cpu, Zap, CheckCircle2, Lock } from 'lucide-react';
+import { Globe, Cpu, Zap, CheckCircle2, Lock, Upload } from 'lucide-react';
 
 export const AnalysisPage: React.FC = () => {
   const { matches } = useData();
@@ -24,6 +27,9 @@ export const AnalysisPage: React.FC = () => {
   
   // ✅ On stocke le Rapport Complet ici
   const [currentReport, setCurrentReport] = useState<GodModeReport | null>(null);
+
+  // ✅ Référence pour le fichier upload
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Auto-sélection
   useEffect(() => {
@@ -43,7 +49,7 @@ export const AnalysisPage: React.FC = () => {
     }
   }, [selectedMatch]);
 
-  // --- FONCTION GOD MODE ---
+  // --- FONCTION GOD MODE WEB ---
   const runGodMode = async () => {
     setIsComputing(true);
     if (selectedMatch) {
@@ -51,7 +57,7 @@ export const AnalysisPage: React.FC = () => {
         const p2 = selectedMatch.player2.name;
         
         try {
-           // ✅ CORRECTION : Appel à generateReportV2
+           // ✅ Appel à generateReportV2
            const report = await GodEngine.generateReportV2(p1, p2, selectedMatch.tournament);
            
            // Sauvegarde
@@ -61,6 +67,25 @@ export const AnalysisPage: React.FC = () => {
            console.error("Erreur God Mode:", e);
         }
     }
+    setIsComputing(false);
+  };
+
+  // ✅ FONCTION SCREENSHOT UPLOAD
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !selectedMatch) return;
+
+    setIsComputing(true);
+    
+    try {
+        const reportFromImage = await ImageEngine.analyzeScreenshot(file, selectedMatch);
+        saveAnalysis(selectedMatch.id, reportFromImage);
+        setCurrentReport(reportFromImage);
+    } catch (e) {
+        console.error("Erreur lecture image", e);
+        alert("Impossible de lire l'image.");
+    }
+    
     setIsComputing(false);
   };
 
@@ -82,6 +107,15 @@ export const AnalysisPage: React.FC = () => {
   return (
     <>
       <OracleReactor isVisible={isComputing} onComplete={() => setIsComputing(false)} />
+
+      {/* ✅ INPUT CACHÉ POUR L'UPLOAD */}
+      <input 
+        type="file" 
+        ref={fileInputRef} 
+        style={{ display: 'none' }} 
+        accept="image/*"
+        onChange={handleFileUpload}
+      />
 
       <div className="flex flex-col lg:flex-row gap-6 w-full h-full overflow-hidden">
         
@@ -116,18 +150,29 @@ export const AnalysisPage: React.FC = () => {
                         <span className="text-gray-400 text-xs">| {selectedMatch.tournament}</span>
                     </div>
                     <h2 className="text-3xl font-bold text-white flex items-center gap-3">
-                      {selectedMatch.player1.name} <span className="text-neon">vs</span> {selectedMatch.player2.name}
+                      {selectedMatch.player1.name} <span className="text-orange-500">vs</span> {selectedMatch.player2.name}
                     </h2>
                  </div>
                  
-                 <div className="flex-shrink-0 ml-4">
-                   {!currentReport ? (
-                     <button onClick={runGodMode} className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-bold py-3 px-6 rounded-xl flex items-center gap-2 shadow-lg shadow-purple-500/20 transition-all transform hover:scale-105 animate-pulse">
-                        <Cpu size={20} /> LANCER GOD MODE
+                 <div className="flex-shrink-0 ml-4 flex gap-2">
+                   {/* ✅ BOUTON SCREENSHOT */}
+                   <button 
+                     onClick={() => fileInputRef.current?.click()}
+                     className="bg-blue-900/50 hover:bg-blue-600 border border-blue-500/50 text-white font-bold py-3 px-6 rounded-xl flex items-center gap-2 transition-all"
+                   >
+                     <Upload size={20} /> SCREENSHOT
+                   </button>
+
+                   {/* BOUTON SCAN WEB (si pas de rapport) */}
+                   {!currentReport && (
+                     <button onClick={runGodMode} className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-bold py-3 px-6 rounded-xl flex items-center gap-2 shadow-lg shadow-purple-500/20 transition-all transform hover:scale-105">
+                        <Cpu size={20} /> SCAN WEB
                      </button>
-                   ) : (
+                   )}
+                   
+                   {currentReport && (
                        <div className="px-4 py-2 bg-green-900/30 border border-green-500/30 rounded-lg text-green-400 text-xs font-bold flex items-center gap-2">
-                           <CheckCircle2 size={14} /> FICHE GÉNÉRÉE
+                           <CheckCircle2 size={14} /> GÉNÉRÉ
                        </div>
                    )}
                  </div>
@@ -137,17 +182,32 @@ export const AnalysisPage: React.FC = () => {
               {!currentReport && (
                   <div className="flex flex-col items-center justify-center flex-1 border border-dashed border-neutral-800 rounded-xl bg-black/20 m-2">
                       <div className="relative">
-                          <div className="absolute inset-0 bg-neon/20 blur-xl rounded-full"></div>
-                          <Lock size={64} className="text-neon relative z-10" />
+                          <div className="absolute inset-0 bg-blue-500/20 blur-xl rounded-full"></div>
+                          <Lock size={64} className="text-blue-400 relative z-10" />
                       </div>
                       <h3 className="text-xl font-bold text-white mt-6">FICHE MATCH VERROUILLÉE</h3>
                       <p className="text-gray-400 text-sm mt-2 text-center max-w-md">
-                          Lancez le God Mode pour que l'IA scanne le web et remplisse automatiquement la fiche complète (H2H, Météo, Stats).
+                          Importez une capture d'écran ou lancez Scan Web pour remplir la fiche.
                       </p>
+                      <div className="flex gap-3 mt-6">
+                        <button 
+                          onClick={() => fileInputRef.current?.click()}
+                          className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold flex items-center gap-2"
+                        >
+                          <Upload size={18}/> Importer Image
+                        </button>
+                        <span className="text-gray-500 py-3">ou</span>
+                        <button 
+                          onClick={runGodMode}
+                          className="px-6 py-3 bg-purple-600 hover:bg-purple-500 text-white rounded-lg font-bold flex items-center gap-2"
+                        >
+                          <Cpu size={18}/> Scan Web
+                        </button>
+                      </div>
                   </div>
               )}
 
-              {/* 🔓 TABLEAU ULTIME (GodModeTable) */}
+              {/* 🔓 TABLEAU VISIBLE */}
               {currentReport && (
                   <div className="animate-fade-in flex-1 overflow-hidden">
                       <GodModeTable 
