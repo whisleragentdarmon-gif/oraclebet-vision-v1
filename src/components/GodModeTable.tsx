@@ -278,7 +278,6 @@ export const GodModeTable: React.FC<Props> = ({ report, onUpdate, onSave }) => {
                 <Save size={14}/> Sauvegarder
             </button>
           </div>
-          </div>
 
           {/* Météo Card */}
           <div className="bg-black/40 border border-neutral-700 rounded-lg p-4 grid grid-cols-2 gap-4 text-xs">
