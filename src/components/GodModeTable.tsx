@@ -10,8 +10,8 @@ interface Props {
 
 export const GodModeTable: React.FC<Props> = ({ report, onUpdate }) => {
   
-  const [tabP1, setTabP1] = useState<'PROFIL' | 'STATS' | 'PSYCHO' | 'CALENDRIER' | 'H2H' | 'ENJEUX'>('PROFIL');
-  const [tabP2, setTabP2] = useState<'PROFIL' | 'STATS' | 'PSYCHO' | 'CALENDRIER' | 'H2H' | 'ENJEUX'>('PROFIL');
+  const [tabP1, setTabP1] = useState<'PROFIL' | 'STATS' | 'PSYCHO' | 'CALENDRIER' | 'H2H' | 'ENJEUX' | 'MATCHS' | 'TERRAIN' | 'BILAN' | 'TITRES' | 'BLESSURES' | 'TENDANCE'>('PROFIL');
+  const [tabP2, setTabP2] = useState<'PROFIL' | 'STATS' | 'PSYCHO' | 'CALENDRIER' | 'H2H' | 'ENJEUX' | 'MATCHS' | 'TERRAIN' | 'BILAN' | 'TITRES' | 'BLESSURES' | 'TENDANCE'>('PROFIL');
 
   const handleChange = (path: string[], value: string) => {
     const newReport = { ...report };
@@ -67,7 +67,7 @@ export const GodModeTable: React.FC<Props> = ({ report, onUpdate }) => {
       </div>
 
       <div className="flex border-b border-neutral-800 bg-black/40 overflow-x-auto scrollbar-none flex-shrink-0">
-          {['PROFIL', 'STATS', 'PSYCHO', 'CALENDRIER', 'H2H', 'ENJEUX'].map((tab) => (
+          {['PROFIL', 'STATS', 'PSYCHO', 'CALENDRIER', 'H2H', 'ENJEUX', 'MATCHS', 'TERRAIN', 'BILAN', 'TITRES', 'BLESSURES', 'TENDANCE'].map((tab) => (
               <button 
                 key={tab}
                 onClick={() => setActiveTab(tab as any)}
