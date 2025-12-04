@@ -53,7 +53,7 @@ export const ImageEngine = {
         p1Name: 'Jannik Sinner',
         p2Name: 'Carlos Alcaraz',
         tournament: 'Australian Open',
-        tournamentLevel: 'Grand Slam',
+        level: 'Grand Slam',
         surface: 'Dur',
         date: new Date().toLocaleDateString('fr-FR'),
         round: 'Finale',
