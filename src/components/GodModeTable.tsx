@@ -368,11 +368,6 @@ export const GodModeTable: React.FC<Props> = ({ report, onUpdate }) => {
   return (
     <div className="w-full h-full flex flex-col bg-neutral-950 overflow-hidden">
       
-      {/* SCREENSHOT ANALYZER */}
-      <div className="border-b border-neutral-800 p-3 bg-neutral-900/50">
-        <ScreenshotAnalyzer onDataExtracted={handleDataExtracted} />
-      </div>
-
       {/* 1. MATCH HEADER */}
       <div className="bg-gradient-to-br from-neutral-900 to-black border-b-2 border-orange-500/40 p-5 flex-shrink-0">
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_1fr_140px] gap-4">
