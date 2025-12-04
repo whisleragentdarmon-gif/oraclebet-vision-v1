@@ -6,9 +6,10 @@ import { Save, Trophy, Calendar, Activity, User, Globe, Clock, MapPin, Star, Lis
 interface Props {
   report: GodModeReportV2;
   onUpdate: (newReport: GodModeReportV2) => void;
+  onSave?: () => void;
 }
 
-export const GodModeTable: React.FC<Props> = ({ report, onUpdate }) => {
+export const GodModeTable: React.FC<Props> = ({ report, onUpdate, onSave }) => {
   
   const [tabP1, setTabP1] = useState<'PROFIL' | 'STATS' | 'PSYCHO' | 'CALENDRIER' | 'H2H' | 'ENJEUX' | 'MATCHS' | 'TERRAIN' | 'BILAN' | 'TITRES' | 'BLESSURES' | 'TENDANCE'>('PROFIL');
   const [tabP2, setTabP2] = useState<'PROFIL' | 'STATS' | 'PSYCHO' | 'CALENDRIER' | 'H2H' | 'ENJEUX' | 'MATCHS' | 'TERRAIN' | 'BILAN' | 'TITRES' | 'BLESSURES' | 'TENDANCE'>('PROFIL');
@@ -582,14 +583,15 @@ export const GodModeTable: React.FC<Props> = ({ report, onUpdate }) => {
                 </div>
             </div>
 
-            <div className="bg-green-900/20 border border-green-500/40 rounded-lg p-3 flex flex-col items-center justify-center h-full">
-              <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse mb-1"></div>
-              <span className="text-xs font-bold text-green-400 mb-1">EN COURS</span>
-              <input 
-                value={(report.identity as any).matchStatus || 'Set 1'} 
-                onChange={(e) => handleChange(['identity', 'matchStatus'], e.target.value)} 
-                className="bg-transparent text-green-300 outline-none text-xs font-mono text-center w-full font-bold"
-              />
+            <div className="bg-green-900/20 border border-green-500/40 rounded-lg p-3 flex flex-col items-center justify-center h-full gap-2">
+              <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+              <span className="text-xs font-bold text-green-400">EN COURS</span>
+              <button 
+                onClick={onSave}
+                className="text-xs bg-blue-600 hover:bg-blue-500 text-white font-bold py-1 px-3 rounded flex items-center gap-1 transition-colors"
+              >
+                <Save size={12}/> ENREGISTRER
+              </button>
             </div>
           </div>
       </div>
