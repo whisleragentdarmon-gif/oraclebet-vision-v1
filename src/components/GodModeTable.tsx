@@ -6,9 +6,8 @@ import { Save, Trophy, Calendar, Activity, User, Globe, Clock, MapPin, Star, Lis
 interface Props {
   report: GodModeReportV2;
   onUpdate: (newReport: GodModeReportV2) => void;
-  onSave?: () => void;
+  onSave: () => void;
 }
-
 export const GodModeTable: React.FC<Props> = ({ report, onUpdate, onSave }) => {
   
   const [tabP1, setTabP1] = useState<'PROFIL' | 'STATS' | 'PSYCHO' | 'CALENDRIER' | 'H2H' | 'ENJEUX' | 'MATCHS' | 'TERRAIN' | 'BILAN' | 'TITRES' | 'BLESSURES' | 'TENDANCE'>('PROFIL');
