@@ -1,17 +1,20 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useData } from '../context/DataContext';
 import { useAnalysis } from '../context/AnalysisContext';
 import { MatchCard } from '../components/MatchCard';
 import { Match } from '../types';
 import { OracleReactor } from '../components/OracleReactor';
+
+// IMPORTS MOTEURS
 import { GodEngine } from '../engine/market/GodEngine';
 import { GodModeTable } from '../components/GodModeTable';
+import { ImageEngine } from '../engine/ImageEngine';
 import { GodModeReportV2 } from '../engine/types';
 import { OracleAI } from '../engine';
 
-import { Globe, Cpu, Zap, Save, X } from 'lucide-react';
+import { Globe, Cpu, CheckCircle2, Lock, Upload, Image as ImageIcon, RotateCcw, Zap, Save, X } from 'lucide-react';
 
 export const AnalysisPage: React.FC = () => {
   const { matches } = useData();
@@ -21,15 +24,18 @@ export const AnalysisPage: React.FC = () => {
   
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
   const [isComputing, setIsComputing] = useState(false);
+  
   const [currentReport, setCurrentReport] = useState<GodModeReportV2 | null>(null);
   const [saveStatus, setSaveStatus] = useState("");
+  
+  // ✅ AJOUT : État pour le modal prédictions
   const [showPredictionsModal, setShowPredictionsModal] = useState(false);
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
-    if (activeMatches.length > 0 && !selectedMatch) {
-      setSelectedMatch(activeMatches[0]);
-    }
-  }, [matches.length]);
+    if (activeMatches.length > 0 && !selectedMatch) setSelectedMatch(activeMatches[0]);
+  }, [matches]);
 
   useEffect(() => {
     if (selectedMatch) {
@@ -39,37 +45,35 @@ export const AnalysisPage: React.FC = () => {
         } else {
             setCurrentReport(null);
         }
-        setShowPredictionsModal(false);
         setSaveStatus("");
+        setShowPredictionsModal(false); // ✅ Fermer modal si on change de match
     }
-  }, [selectedMatch?.id]);
+  }, [selectedMatch]);
 
+  // --- 1. SCAN WEB ---
   const runGodMode = async () => {
     if (!selectedMatch) return;
     
-    setIsComputing(true);
+    setIsComputing(true); 
     
     try {
-       const report = await GodEngine.generateReportV2(
-         selectedMatch.player1.name,
-         selectedMatch.player2.name,
-         selectedMatch.tournament
-       );
+       const report = await GodEngine.generateReportV2(selectedMatch.player1.name, selectedMatch.player2.name, selectedMatch.tournament);
        
-       let refined: any = {
-        confidence: 50,
-        winner: "En attente",
-        risk: "MOYEN",
-        recoWinner: "À définir",
-        updatedPredictionSection: {
-          probA: "50%",
-          probB: "50%",
-          risk: "MOYEN",
-          recoWinner: "À définir"
-        }
+       let refined: any = { 
+        confidence: 50, 
+        winner: "Analyse...", 
+        risk: "HIGH", 
+        recoWinner: "-", 
+        updatedPredictionSection: { 
+          probA: "50%", 
+          probB: "50%", 
+          risk: "MEDIUM", 
+          recoWinner: "-" 
+        } 
        };
        
        if (OracleAI.predictor && typeof OracleAI.predictor.refinePrediction === 'function') {
+           // @ts-ignore
            refined = OracleAI.predictor.refinePrediction(report);
        }
 
@@ -79,22 +83,40 @@ export const AnalysisPage: React.FC = () => {
                ...report.prediction,
                probA: refined.updatedPredictionSection?.probA || "50%",
                probB: refined.updatedPredictionSection?.probB || "50%",
-               risk: (refined.updatedPredictionSection?.risk || "MOYEN") as string,
+               risk: (refined.updatedPredictionSection?.risk || "MEDIUM") as string,
                recoWinner: refined.recoWinner || "En attente"
            }
        };
-       
+
+       saveAnalysis(selectedMatch.id, finalReport);
        setCurrentReport(finalReport);
        
+       // ✅ AJOUT : Ouvrir le modal après 1 seconde
        setTimeout(() => {
            setShowPredictionsModal(true);
-       }, 500);
+       }, 1000);
 
     } catch (e) {
-       console.error('❌ Erreur GOD MODE:', e);
-       alert('Erreur lors de l\'analyse: ' + (e instanceof Error ? e.message : String(e)));
+       console.error("Erreur God Mode:", e);
+       alert("Erreur lors de la génération du rapport.");
     }
     
+    setIsComputing(false);
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !selectedMatch) return;
+
+    setIsComputing(true);
+    try {
+        const reportFromImage = await ImageEngine.analyzeScreenshot(file, selectedMatch);
+        saveAnalysis(selectedMatch.id, reportFromImage);
+        setCurrentReport(reportFromImage);
+    } catch (e) {
+        console.error("Erreur lecture image", e);
+        alert("Impossible de lire l'image.");
+    }
     setIsComputing(false);
   };
 
@@ -102,39 +124,24 @@ export const AnalysisPage: React.FC = () => {
       setCurrentReport(newReport);
   };
 
-  const handleSaveAnalysis = () => {
-    if (!currentReport || !selectedMatch) return;
-    
-    try {
-      saveAnalysis(selectedMatch.id, currentReport);
-      setSaveStatus("✅ Analyse enregistrée !");
-      setTimeout(() => {
-        setSaveStatus("");
-        setShowPredictionsModal(false);
-      }, 2000);
-    } catch (error) {
-      console.error('Erreur sauvegarde:', error);
-      setSaveStatus("❌ Erreur");
-    }
-  };
-
   const handleManualSave = () => {
     if (!currentReport || !selectedMatch) return;
     try {
-      let refined: any = {
-        confidence: 50,
-        winner: "",
-        risk: "MEDIUM",
-        recoWinner: "",
-        updatedPredictionSection: {
-          probA: "50%",
-          probB: "50%",
-          risk: "MEDIUM",
-          recoWinner: "-"
-        }
+      let refined: any = { 
+        confidence: 50, 
+        winner: "", 
+        risk: "MEDIUM", 
+        recoWinner: "", 
+        updatedPredictionSection: { 
+          probA: "50%", 
+          probB: "50%", 
+          risk: "MEDIUM", 
+          recoWinner: "-" 
+        } 
       };
       
       if (OracleAI.predictor && typeof OracleAI.predictor.refinePrediction === 'function') {
+          // @ts-ignore
           refined = OracleAI.predictor.refinePrediction(currentReport);
       }
 
@@ -153,10 +160,33 @@ export const AnalysisPage: React.FC = () => {
       setCurrentReport(finalReport);
       setSaveStatus("✅ IA mise à jour !");
       setTimeout(() => setSaveStatus(""), 3000);
-    } catch (error) {
-      console.error('Erreur handleManualSave:', error);
+    } catch (error) { 
+      console.error("Erreur handleManualSave:", error); 
       setSaveStatus("❌ Erreur");
     }
+  };
+
+  // ✅ MODIFICATION : Enregistrement depuis le modal
+  const handleSaveFromModal = () => {
+    if (!currentReport || !selectedMatch) return;
+    try {
+      saveAnalysis(selectedMatch.id, currentReport);
+      setSaveStatus("✅ Analyse enregistrée !");
+      setTimeout(() => {
+        setSaveStatus("");
+        setShowPredictionsModal(false);
+      }, 2000);
+    } catch (error) {
+      console.error('Erreur sauvegarde:', error);
+      setSaveStatus("❌ Erreur");
+    }
+  };
+
+  const handleReset = () => {
+      if (window.confirm("Effacer les données et relancer une analyse ?")) {
+          setCurrentReport(null);
+          setShowPredictionsModal(false);
+      }
   };
 
   const getCircuitColor = (c: string) => {
@@ -170,20 +200,22 @@ export const AnalysisPage: React.FC = () => {
   return (
     <>
       <OracleReactor isVisible={isComputing} onComplete={() => setIsComputing(false)} />
+      
+      <input type="file" ref={fileInputRef} style={{ display: 'none' }} accept="image/*" onChange={handleFileUpload} />
 
-      <div className="flex flex-col lg:flex-row gap-6 h-full w-full overflow-hidden p-4">
+      <div className="flex flex-col lg:flex-row gap-6 h-full w-full overflow-hidden">
         
         {/* LISTE GAUCHE */}
-        <div className="lg:w-1/4 xl:w-1/5 flex flex-col gap-4 flex-shrink-0">
-          <h2 className="text-2xl font-bold">Matchs Actifs</h2>
-          <div className="overflow-y-auto pr-2 space-y-3 scrollbar-thin scrollbar-thumb-neutral-800" style={{ maxHeight: 'calc(100vh - 200px)' }}>
+        <div className="lg:w-1/4 xl:w-1/5 flex flex-col gap-4 flex-shrink-0 h-full overflow-hidden">
+          <h2 className="text-2xl font-bold mb-2 flex-shrink-0">Matchs Actifs</h2>
+          <div className="overflow-y-auto pr-2 space-y-3 flex-1 scrollbar-thin scrollbar-thumb-neutral-800">
             {activeMatches.map((match) => (
               <MatchCard 
-                key={match.id}
-                match={match}
-                selected={selectedMatch?.id === match.id}
-                onClick={() => setSelectedMatch(match)}
-                compact
+                key={match.id} 
+                match={match} 
+                selected={selectedMatch?.id === match.id} 
+                onClick={() => setSelectedMatch(match)} 
+                compact 
               />
             ))}
             {activeMatches.length === 0 && (
@@ -194,76 +226,86 @@ export const AnalysisPage: React.FC = () => {
           </div>
         </div>
 
-        {/* ZONE PRINCIPALE */}
-        <div className="flex-1 flex flex-col overflow-hidden">
+        {/* TABLEAU DROITE */}
+        <div className="flex-1 h-full overflow-hidden flex flex-col">
           {selectedMatch ? (
-            <div className="w-full h-full flex flex-col bg-surface border border-neutral-800 rounded-2xl shadow-2xl">
+            <div className="w-full h-full flex flex-col overflow-hidden bg-surface border border-neutral-800 rounded-2xl shadow-2xl relative">
               
               {/* HEADER */}
-              <div className="flex justify-between items-center p-6 border-b border-neutral-800 bg-black/20 flex-shrink-0">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Globe size={14} className={getCircuitColor(selectedMatch.ai?.circuit || 'ATP')} />
-                    <span className="text-xs font-bold text-gray-400">| {selectedMatch.tournament}</span>
-                  </div>
-                  <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-                    <span className="truncate max-w-[200px]">{selectedMatch.player1.name}</span>
-                    <span className="text-orange-500 text-sm">vs</span>
-                    <span className="truncate max-w-[200px]">{selectedMatch.player2.name}</span>
-                  </h2>
-                </div>
+              <div className="flex justify-between items-start p-6 border-b border-neutral-800 flex-shrink-0 bg-black/20">
+                 <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                        <Globe size={14} className={getCircuitColor(selectedMatch.ai?.circuit || 'ATP')} />
+                        <span className="text-xs font-bold text-gray-400">| {selectedMatch.tournament}</span>
+                    </div>
+                    <h2 className="text-2xl font-bold text-white flex items-center gap-2 truncate">
+                      <span className="truncate max-w-[200px]">{selectedMatch.player1.name}</span> 
+                      <span className="text-orange-500 text-sm">vs</span> 
+                      <span className="truncate max-w-[200px]">{selectedMatch.player2.name}</span>
+                    </h2>
+                 </div>
+                 
+                 <div className="flex gap-2 items-center flex-shrink-0">
+                   {!currentReport ? (
+                     <button 
+                       onClick={runGodMode} 
+                       disabled={isComputing}
+                       className="bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white font-bold py-2 px-6 rounded-xl flex items-center gap-2 text-sm transition-all shadow-lg shadow-purple-500/20 animate-pulse"
+                     >
+                       <Cpu size={18} /> LANCER GOD MODE
+                     </button>
+                   ) : (
+                       <div className="flex flex-col items-end gap-1">
+                           <div className="flex gap-2">
+                               <div className="px-3 py-1 bg-green-900/30 border border-green-500/30 rounded-lg text-green-400 text-xs font-bold flex items-center gap-2">
+                                   <CheckCircle2 size={14} /> ANALYSE TERMINÉE
+                               </div>
+                               <button onClick={handleReset} className="p-2 bg-neutral-800 hover:bg-neutral-700 rounded text-gray-400 transition-colors" title="Réinitialiser">
+                                   <RotateCcw size={14}/>
+                               </button>
+                           </div>
+                           {saveStatus && <span className="text-[10px] text-neon animate-pulse mt-1">{saveStatus}</span>}
+                       </div>
+                   )}
+                 </div>
               </div>
 
-              {/* CONTENU */}
-              <div className="flex-1 overflow-y-auto bg-neutral-950 p-6">
-                
-                {/* MESSAGE + BOUTON */}
-                <div className="mb-6 bg-gradient-to-r from-purple-900/20 to-blue-900/20 border border-purple-500/30 rounded-xl p-6 flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <Zap className="text-purple-400" size={36} />
-                    <div>
-                      <h3 className="text-xl font-bold text-white">Prêt pour l'analyse</h3>
-                      <p className="text-gray-400 text-sm">Lancez GOD MODE pour analyser et obtenir les prédictions</p>
-                    </div>
-                  </div>
+              {/* ✅ MODIFICATION : CONTENU - TOUJOURS AFFICHER LE TABLEAU */}
+              <div className="flex-1 overflow-y-auto bg-neutral-950 p-4">
                   
-                  <button 
-                    onClick={runGodMode}
-                    disabled={isComputing}
-                    className="bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white font-bold py-3 px-8 rounded-xl flex items-center gap-2 text-base transition-all shadow-lg shadow-purple-500/20"
-                  >
-                    {isComputing ? (
-                      <>
-                        <Cpu size={20} className="animate-spin" /> ANALYSE...
-                      </>
-                    ) : (
-                      <>
-                        <Cpu size={20} /> LANCER GOD MODE
-                      </>
-                    )}
-                  </button>
-                </div>
+                  {/* ✅ AJOUT : Bandeau "Prêt pour l'analyse" au-dessus du tableau */}
+                  {!currentReport && (
+                      <div className="mb-6 bg-gradient-to-r from-purple-900/20 to-blue-900/20 border border-purple-500/30 rounded-xl p-6 flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                              <Zap className="text-purple-400" size={36} />
+                              <div>
+                                  <h3 className="text-xl font-bold text-white">Prêt pour l'analyse</h3>
+                                  <p className="text-gray-400 text-sm">Lancez GOD MODE pour analyser et obtenir les prédictions</p>
+                              </div>
+                          </div>
+                      </div>
+                  )}
 
-                {/* TABLEAU */}
-                <div className="w-full">
+                  {/* ✅ TABLEAU TOUJOURS VISIBLE */}
                   <GodModeTable 
-                    report={currentReport}
-                    onUpdate={handleReportUpdate}
-                    onSave={handleManualSave}
+                      report={currentReport} 
+                      onUpdate={handleReportUpdate}
+                      onSave={handleManualSave}
                   />
-                </div>
+                  
+                  <div className="h-10"></div>
               </div>
 
             </div>
           ) : (
-            <div className="flex items-center justify-center h-full text-gray-500 border border-dashed border-neutral-800 rounded-xl">
-              Sélectionnez un match pour commencer.
+            <div className="flex items-center justify-center h-full text-gray-500 border border-dashed border-neutral-800 rounded-xl m-4">
+                Sélectionnez un match pour commencer.
             </div>
           )}
         </div>
       </div>
 
-      {/* MODAL PRÉDICTIONS */}
+      {/* ✅ AJOUT : MODAL PRÉDICTIONS */}
       {showPredictionsModal && currentReport && selectedMatch && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-neutral-900 border-2 border-purple-500/50 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
@@ -321,7 +363,7 @@ export const AnalysisPage: React.FC = () => {
 
               <div className="flex flex-col items-center gap-4">
                 <button 
-                  onClick={handleSaveAnalysis}
+                  onClick={handleSaveFromModal}
                   className="bg-green-600 hover:bg-green-500 text-white font-bold py-4 px-12 rounded-xl flex items-center gap-3 text-lg transition-all shadow-lg shadow-green-500/20 w-full max-w-md justify-center"
                 >
                   <Save size={24}/> ENREGISTRER L'ANALYSE
