@@ -11,10 +11,10 @@ import { OracleReactor } from '../components/OracleReactor';
 import { GodEngine } from '../engine/market/GodEngine';
 import { GodModeTable } from '../components/GodModeTable';
 import { ImageEngine } from '../engine/ImageEngine';
-import { GodModeReportV2 } from '../engine/types'; // ✅ Correction import type
+import { GodModeReportV2 } from '../engine/types';
 import { OracleAI } from '../engine';
 
-import { Globe, Cpu, CheckCircle2, Lock, Upload, Image as ImageIcon, RotateCcw, Zap } from 'lucide-react'; // ✅ Ajout des icônes manquantes
+import { Globe, Cpu, CheckCircle2, Lock, Upload, Image as ImageIcon, RotateCcw } from 'lucide-react';
 
 export const AnalysisPage: React.FC = () => {
   const { matches } = useData();
@@ -49,32 +49,40 @@ export const AnalysisPage: React.FC = () => {
     }
   }, [selectedMatch]);
 
-  // --- 1. SCAN WEB ---
+  // --- LE CŒUR DU SYSTÈME : SCAN WEB + CALCUL PRÉDICTION ---
   const runGodMode = async () => {
     if (!selectedMatch) return;
-    setIsComputing(true); 
+    
+    setIsComputing(true); // Lance l'animation
     
     try {
+       // 1. Récupération des données brutes (Web, Météo, H2H)
        const report = await GodEngine.generateReportV2(selectedMatch.player1.name, selectedMatch.player2.name, selectedMatch.tournament);
        
-       // ✅ CALCUL PRÉDICTION IMMÉDIAT
-       let refined = { confidence: 50, winner: "Analyse...", risk: "HIGH", recoWinner: "-" };
+       // 2. CALCUL IMMÉDIAT DE LA PRÉDICTION
+       // ✅ CORRECTION ICI : On force le type 'any' pour éviter l'erreur TS2339
+       let predictionResult: any = { confidence: 50, winner: "Analyse...", risk: "HIGH", recoWinner: "-" };
+       
        if (OracleAI.predictor && typeof OracleAI.predictor.refinePrediction === 'function') {
            // @ts-ignore
-           refined = OracleAI.predictor.refinePrediction(report);
+           const refined = OracleAI.predictor.refinePrediction(report);
+           predictionResult = refined;
        }
 
-       const finalReport = {
+       // 3. Fusion des données + Prédiction
+       const finalReport: GodModeReportV2 = {
            ...report,
            prediction: {
                ...report.prediction,
-               probA: refined.updatedPredictionSection?.probA || "50%",
-               probB: refined.updatedPredictionSection?.probB || "50%",
-               risk: (refined.risk || "MEDIUM") as string,
-               recoWinner: refined.recoWinner || "En attente"
+               // Maintenant TS accepte updatedPredictionSection car predictionResult est 'any'
+               probA: predictionResult.updatedPredictionSection?.probA || "50%",
+               probB: predictionResult.updatedPredictionSection?.probB || "50%",
+               risk: (predictionResult.risk || "MEDIUM") as string,
+               recoWinner: predictionResult.recoWinner || "En attente"
            }
        };
 
+       // 4. Sauvegarde et Affichage
        saveAnalysis(selectedMatch.id, finalReport);
        setCurrentReport(finalReport);
 
@@ -83,51 +91,32 @@ export const AnalysisPage: React.FC = () => {
        alert("Erreur lors de la génération du rapport.");
     }
     
-    setIsComputing(false);
+    setIsComputing(false); // Arrête l'animation
   };
 
-  // --- 2. SCAN SCREENSHOT ---
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file || !selectedMatch) return;
-
-    setIsComputing(true);
-    try {
-        const reportFromImage = await ImageEngine.analyzeScreenshot(file, selectedMatch);
-        saveAnalysis(selectedMatch.id, reportFromImage);
-        setCurrentReport(reportFromImage);
-    } catch (e) {
-        console.error("Erreur lecture image", e);
-        alert("Impossible de lire l'image.");
-    }
-    setIsComputing(false);
-  };
-
-  // Mise à jour locale
+  // Mise à jour manuelle (Quand tu tapes dans le tableau)
   const handleReportUpdate = (newReport: GodModeReportV2) => {
       setCurrentReport(newReport);
   };
 
-  // --- 3. SAUVEGARDE MANUELLE ---
+  // Sauvegarde manuelle (Bouton Enregistrer)
   const handleManualSave = () => {
     if (!currentReport || !selectedMatch) return;
     try {
-      let refined = { confidence: 50, winner: "", risk: "", recoWinner: "", updatedPredictionSection: { probA: "50%", probB: "50%", risk: "MEDIUM", recoWinner: "-" } };
+      // On recalcule au cas où tu as modifié des stats manuellement
+      // ✅ CORRECTION ICI AUSSI : Type 'any'
+      let refined: any = { confidence: 50, winner: "", risk: "", recoWinner: "" };
       
       // @ts-ignore
-      if (OracleAI.predictor && typeof OracleAI.predictor.refinePrediction === 'function') {
-          // @ts-ignore
-          refined = OracleAI.predictor.refinePrediction(currentReport);
-      }
+      if (OracleAI.predictor) refined = OracleAI.predictor.refinePrediction(currentReport);
 
       const finalReport = {
         ...currentReport,
         prediction: {
           ...currentReport.prediction,
-          probA: refined.updatedPredictionSection?.probA || "50%",
-          probB: refined.updatedPredictionSection?.probB || "50%",
-          risk: refined.updatedPredictionSection?.risk || "MEDIUM",
-          recoWinner: refined.recoWinner || "N/A"
+          probA: refined.updatedPredictionSection?.probA || currentReport.prediction?.probA,
+          probB: refined.updatedPredictionSection?.probB || currentReport.prediction?.probB,
+          recoWinner: refined.recoWinner
         }
       };
 
@@ -138,10 +127,10 @@ export const AnalysisPage: React.FC = () => {
     } catch (error) { console.error(error); }
   };
 
-  // Reset
+  // Reset (Pour forcer le cadenas et refaire une analyse)
   const handleReset = () => {
       if (window.confirm("Effacer les données et relancer une analyse ?")) {
-          setCurrentReport(null);
+          setCurrentReport(null); // Retour au cadenas
       }
   };
 
@@ -149,6 +138,7 @@ export const AnalysisPage: React.FC = () => {
     if (!c) return 'text-blue-500';
     if (c.includes('WTA')) return 'text-pink-500';
     if (c.includes('CHALLENGER')) return 'text-yellow-500';
+    if (c.includes('ITF')) return 'text-purple-500';
     return 'text-blue-500';
   };
 
@@ -201,6 +191,7 @@ export const AnalysisPage: React.FC = () => {
                  
                  <div className="flex gap-2 items-center flex-shrink-0">
                    {!currentReport ? (
+                     // BOUTON SCAN (Si pas de rapport)
                      <button 
                        onClick={runGodMode} 
                        disabled={isComputing}
@@ -209,6 +200,7 @@ export const AnalysisPage: React.FC = () => {
                        <Cpu size={18} /> LANCER GOD MODE
                      </button>
                    ) : (
+                       // INDICATEUR PRÊT + RESET
                        <div className="flex flex-col items-end gap-1">
                            <div className="flex gap-2">
                                <div className="px-3 py-1 bg-green-900/30 border border-green-500/30 rounded-lg text-green-400 text-xs font-bold flex items-center gap-2">
@@ -227,6 +219,7 @@ export const AnalysisPage: React.FC = () => {
               {/* CONTENU */}
               <div className="flex-1 overflow-hidden bg-neutral-950 relative">
                   {currentReport ? (
+                      // TABLEAU DE BORD (Si analyse faite)
                       <div className="h-full overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-neutral-700">
                           <GodModeTable 
                               report={currentReport} 
@@ -236,6 +229,7 @@ export const AnalysisPage: React.FC = () => {
                           <div className="h-10"></div>
                       </div>
                   ) : (
+                      // CADENAS (Si pas d'analyse)
                       <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500 p-6">
                           <div className="border-2 border-dashed border-neutral-800 rounded-xl bg-black/10 p-12 flex flex-col items-center max-w-lg w-full">
                               <div className="relative mb-6">
