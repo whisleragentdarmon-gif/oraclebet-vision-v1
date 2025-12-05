@@ -14,6 +14,7 @@ import { ImageEngine } from '../engine/ImageEngine';
 import { GodModeReportV2 } from '../engine/types';
 import { OracleAI } from '../engine';
 
+// Ajout de Save et X pour le modal
 import { Globe, Cpu, CheckCircle2, Lock, Upload, Image as ImageIcon, RotateCcw, Zap, Save, X } from 'lucide-react';
 
 export const AnalysisPage: React.FC = () => {
@@ -28,8 +29,8 @@ export const AnalysisPage: React.FC = () => {
   const [currentReport, setCurrentReport] = useState<GodModeReportV2 | null>(null);
   const [saveStatus, setSaveStatus] = useState("");
   
-  // ✅ AJOUT : État pour le modal prédictions
-  const [showPredictionsModal, setShowPredictionsModal] = useState(false);
+  // AJOUT: state pour le modal
+  const [showModal, setShowModal] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -46,7 +47,6 @@ export const AnalysisPage: React.FC = () => {
             setCurrentReport(null);
         }
         setSaveStatus("");
-        setShowPredictionsModal(false); // ✅ Fermer modal si on change de match
     }
   }, [selectedMatch]);
 
@@ -59,6 +59,7 @@ export const AnalysisPage: React.FC = () => {
     try {
        const report = await GodEngine.generateReportV2(selectedMatch.player1.name, selectedMatch.player2.name, selectedMatch.tournament);
        
+       // Calcul Prédiction
        let refined: any = { 
         confidence: 50, 
         winner: "Analyse...", 
@@ -91,10 +92,8 @@ export const AnalysisPage: React.FC = () => {
        saveAnalysis(selectedMatch.id, finalReport);
        setCurrentReport(finalReport);
        
-       // ✅ AJOUT : Ouvrir le modal après 1 seconde
-       setTimeout(() => {
-           setShowPredictionsModal(true);
-       }, 1000);
+       // AJOUT: ouvrir le modal après 1 seconde
+       setTimeout(() => setShowModal(true), 1000);
 
     } catch (e) {
        console.error("Erreur God Mode:", e);
@@ -104,6 +103,7 @@ export const AnalysisPage: React.FC = () => {
     setIsComputing(false);
   };
 
+  // --- 2. SCAN SCREENSHOT ---
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file || !selectedMatch) return;
@@ -124,6 +124,7 @@ export const AnalysisPage: React.FC = () => {
       setCurrentReport(newReport);
   };
 
+  // --- 3. SAUVEGARDE ---
   const handleManualSave = () => {
     if (!currentReport || !selectedMatch) return;
     try {
@@ -140,6 +141,7 @@ export const AnalysisPage: React.FC = () => {
         } 
       };
       
+      // @ts-ignore
       if (OracleAI.predictor && typeof OracleAI.predictor.refinePrediction === 'function') {
           // @ts-ignore
           refined = OracleAI.predictor.refinePrediction(currentReport);
@@ -166,26 +168,9 @@ export const AnalysisPage: React.FC = () => {
     }
   };
 
-  // ✅ MODIFICATION : Enregistrement depuis le modal
-  const handleSaveFromModal = () => {
-    if (!currentReport || !selectedMatch) return;
-    try {
-      saveAnalysis(selectedMatch.id, currentReport);
-      setSaveStatus("✅ Analyse enregistrée !");
-      setTimeout(() => {
-        setSaveStatus("");
-        setShowPredictionsModal(false);
-      }, 2000);
-    } catch (error) {
-      console.error('Erreur sauvegarde:', error);
-      setSaveStatus("❌ Erreur");
-    }
-  };
-
   const handleReset = () => {
       if (window.confirm("Effacer les données et relancer une analyse ?")) {
           setCurrentReport(null);
-          setShowPredictionsModal(false);
       }
   };
 
@@ -270,30 +255,37 @@ export const AnalysisPage: React.FC = () => {
                  </div>
               </div>
 
-              {/* ✅ MODIFICATION : CONTENU - TOUJOURS AFFICHER LE TABLEAU */}
-              <div className="flex-1 overflow-y-auto bg-neutral-950 p-4">
-                  
-                  {/* ✅ AJOUT : Bandeau "Prêt pour l'analyse" au-dessus du tableau */}
-                  {!currentReport && (
-                      <div className="mb-6 bg-gradient-to-r from-purple-900/20 to-blue-900/20 border border-purple-500/30 rounded-xl p-6 flex items-center justify-between">
-                          <div className="flex items-center gap-4">
-                              <Zap className="text-purple-400" size={36} />
-                              <div>
-                                  <h3 className="text-xl font-bold text-white">Prêt pour l'analyse</h3>
-                                  <p className="text-gray-400 text-sm">Lancez GOD MODE pour analyser et obtenir les prédictions</p>
+              {/* CONTENU */}
+              <div className="flex-1 overflow-hidden bg-neutral-950 relative">
+                  {currentReport ? (
+                      <div className="h-full overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-neutral-700">
+                          <GodModeTable 
+                              report={currentReport} 
+                              onUpdate={handleReportUpdate}
+                              onSave={handleManualSave}
+                          />
+                          <div className="h-10"></div>
+                      </div>
+                  ) : (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500 p-6">
+                          <div className="border-2 border-dashed border-neutral-800 rounded-xl bg-black/10 p-12 flex flex-col items-center max-w-lg w-full">
+                              <div className="relative mb-6">
+                                  <div className="absolute inset-0 bg-purple-500/20 blur-xl rounded-full"></div>
+                                  <Lock size={64} className="text-purple-400 relative z-10" />
                               </div>
+                              <h3 className="text-xl font-bold text-white mb-2">ANALYSE REQUISE</h3>
+                              <p className="text-sm text-gray-400 text-center mb-6">
+                                  Lancez le God Mode pour scanner le web, récupérer le H2H, la météo et les alertes blessure.
+                              </p>
+                              <button 
+                                onClick={runGodMode}
+                                className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white py-3 rounded-lg font-bold text-sm flex justify-center items-center gap-2 hover:scale-105 transition-transform"
+                              >
+                                <Zap size={18}/> DÉVERROUILLER
+                              </button>
                           </div>
                       </div>
                   )}
-
-                  {/* ✅ TABLEAU TOUJOURS VISIBLE */}
-                  <GodModeTable 
-                      report={currentReport} 
-                      onUpdate={handleReportUpdate}
-                      onSave={handleManualSave}
-                  />
-                  
-                  <div className="h-10"></div>
               </div>
 
             </div>
@@ -305,76 +297,55 @@ export const AnalysisPage: React.FC = () => {
         </div>
       </div>
 
-      {/* ✅ AJOUT : MODAL PRÉDICTIONS */}
-      {showPredictionsModal && currentReport && selectedMatch && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-neutral-900 border-2 border-purple-500/50 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+      {/* AJOUT: MODAL PRÉDICTIONS */}
+      {showModal && currentReport && selectedMatch && (
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={() => setShowModal(false)}>
+          <div className="bg-neutral-900 border-2 border-purple-500/50 rounded-2xl max-w-4xl w-full" onClick={(e) => e.stopPropagation()}>
             
-            <div className="flex justify-between items-center p-6 border-b border-neutral-800 sticky top-0 bg-neutral-900 z-10">
+            <div className="flex justify-between items-center p-6 border-b border-neutral-800">
               <h3 className="text-3xl font-bold text-white flex items-center gap-3">
                 <Zap className="text-yellow-400" size={32} />
                 PRÉDICTIONS IA
               </h3>
-              <button 
-                onClick={() => setShowPredictionsModal(false)}
-                className="p-2 hover:bg-neutral-800 rounded-lg transition-colors"
-              >
+              <button onClick={() => setShowModal(false)} className="p-2 hover:bg-neutral-800 rounded-lg">
                 <X className="text-gray-400" size={24} />
               </button>
             </div>
 
             <div className="p-8">
-              
               <div className="grid grid-cols-2 gap-6 mb-8">
                 <div className="bg-black/50 rounded-2xl p-8 border-2 border-blue-500/40">
-                  <div className="text-sm text-gray-400 mb-3 uppercase tracking-wider">Probabilité de victoire</div>
-                  <div className="text-6xl font-bold text-blue-400 mb-4">
-                    {currentReport.prediction.probA}
-                  </div>
+                  <div className="text-sm text-gray-400 mb-3">PROBABILITÉ DE VICTOIRE</div>
+                  <div className="text-6xl font-bold text-blue-400 mb-4">{currentReport.prediction.probA}</div>
                   <div className="text-xl text-white font-semibold">{selectedMatch.player1.name}</div>
                 </div>
                 
                 <div className="bg-black/50 rounded-2xl p-8 border-2 border-orange-500/40">
-                  <div className="text-sm text-gray-400 mb-3 uppercase tracking-wider">Probabilité de victoire</div>
-                  <div className="text-6xl font-bold text-orange-400 mb-4">
-                    {currentReport.prediction.probB}
-                  </div>
+                  <div className="text-sm text-gray-400 mb-3">PROBABILITÉ DE VICTOIRE</div>
+                  <div className="text-6xl font-bold text-orange-400 mb-4">{currentReport.prediction.probB}</div>
                   <div className="text-xl text-white font-semibold">{selectedMatch.player2.name}</div>
                 </div>
               </div>
               
               <div className="bg-black/50 rounded-2xl p-8 border-2 border-green-500/40 mb-6">
-                <div className="text-sm text-gray-400 mb-3 uppercase tracking-wider">Recommandation</div>
-                <div className="text-3xl font-bold text-green-400">
-                  {currentReport.prediction.recoWinner}
-                </div>
+                <div className="text-sm text-gray-400 mb-3">RECOMMANDATION</div>
+                <div className="text-3xl font-bold text-green-400">{currentReport.prediction.recoWinner}</div>
               </div>
               
               <div className="bg-black/50 rounded-2xl p-8 border-2 border-yellow-500/40 mb-8">
-                <div className="text-sm text-gray-400 mb-3 uppercase tracking-wider">Niveau de risque</div>
-                <div className={`text-2xl font-bold ${
-                    currentReport.prediction.risk === 'FAIBLE' ? 'text-green-400' :
-                    currentReport.prediction.risk === 'MOYEN' ? 'text-yellow-400' :
-                    'text-red-400'
-                }`}>
-                  {currentReport.prediction.risk}
-                </div>
+                <div className="text-sm text-gray-400 mb-3">NIVEAU DE RISQUE</div>
+                <div className="text-2xl font-bold text-yellow-400">{currentReport.prediction.risk}</div>
               </div>
 
-              <div className="flex flex-col items-center gap-4">
-                <button 
-                  onClick={handleSaveFromModal}
-                  className="bg-green-600 hover:bg-green-500 text-white font-bold py-4 px-12 rounded-xl flex items-center gap-3 text-lg transition-all shadow-lg shadow-green-500/20 w-full max-w-md justify-center"
-                >
-                  <Save size={24}/> ENREGISTRER L'ANALYSE
-                </button>
-                
-                {saveStatus && (
-                  <div className="text-lg font-semibold animate-pulse">
-                    {saveStatus}
-                  </div>
-                )}
-              </div>
+              <button 
+                onClick={() => {
+                  saveAnalysis(selectedMatch.id, currentReport);
+                  setShowModal(false);
+                }}
+                className="bg-green-600 hover:bg-green-500 text-white font-bold py-4 px-12 rounded-xl flex items-center gap-3 text-lg mx-auto"
+              >
+                <Save size={24}/> ENREGISTRER L'ANALYSE
+              </button>
             </div>
 
           </div>
