@@ -1,5 +1,19 @@
 // Fichier : src/engine/types.ts
+// AJOUTE EN HAUT DE src/engine/types.ts
+export interface PredictionSection {
+  probA: string;
+  probB: string;
+  risk: string;
+  recoWinner: string;
+}
 
+export interface RefinedPrediction {
+  confidence: number;
+  winner: string;
+  risk: string;
+  recoWinner: string;
+  updatedPredictionSection: PredictionSection;
+}
 // --- TYPES DE BASE ---
 export type Circuit = 'ATP' | 'WTA' | 'CHALLENGER' | 'ITF';
 export type RiskLevel = 'SAFE' | 'MODERATE' | 'RISKY' | 'Safe' | 'Moderate' | 'Risky' | 'NO_BET' | 'High' | 'Low';
