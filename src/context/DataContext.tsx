@@ -7,7 +7,7 @@ interface DataContextType {
   matches: Match[];
   addManualMatch: (match: Match) => void;
   removeMatch: (id: string) => void;
-  markAsFinished: (id: string) => void;
+  markAsFinished: (id: string, score?: string) => void;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -51,11 +51,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setMatches((prev) => prev.filter((m) => m.id !== id));
   };
 
-  // ✅ MARQUER COMME TERMINÉ
-  const markAsFinished = (id: string) => {
+  // ✅ MARQUER COMME TERMINÉ (avec score optionnel)
+  const markAsFinished = (id: string, score?: string) => {
     setMatches((prev) =>
       prev.map((m) =>
-        m.id === id ? { ...m, status: 'FINISHED' as const } : m
+        m.id === id 
+          ? { ...m, status: 'FINISHED' as const, score: score || m.score } 
+          : m
       )
     );
   };
