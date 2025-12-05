@@ -74,23 +74,21 @@ export const ProgramPage: React.FC = () => {
         tournament: report.identity.tournament || 'Unknown',
         date: report.identity.date || new Date().toISOString(),
         time: (report.identity as any).time || '14:00',
-        heure: (report.identity as any).time || '14:00',
         surface: report.identity.surface || 'DUR',
         odds: {
           p1: parseFloat((report.identity as any).oddA || '1.95'),
           p2: parseFloat((report.identity as any).oddB || '1.95')
         },
-        cotes: {
-          p1: parseFloat((report.identity as any).oddA || '1.95'),
-          p2: parseFloat((report.identity as any).oddB || '1.95')
-        },
         status: 'LIVE' as const,
+        validationResult: 'PENDING' as const,
         ai: {
           circuit: 'WTA' as const,
-          predictedWinner: report.prediction.winner || report.identity.p1Name,
-          confidence: parseInt(report.prediction.confidence) || 50
+          winner: report.prediction.winner || report.identity.p1Name,
+          confidence: parseInt(report.prediction.confidence) || 50,
+          riskLevel: 'MEDIUM',
+          recommendedBet: 'À déterminer'
         }
-      } as Match;
+      } as any;
 
       // 2️⃣ Ajouter au DataContext
       addManualMatch(newMatch);
