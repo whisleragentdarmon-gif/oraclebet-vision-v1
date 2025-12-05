@@ -51,10 +51,21 @@ export const AnalysisPage: React.FC = () => {
   const runGodMode = async () => {
     if (!selectedMatch) return;
     
+    console.log("🚀 DÉBUT runGodMode pour:", selectedMatch.player1.name, "vs", selectedMatch.player2.name);
     setIsComputing(true); 
     
     try {
+       console.log("📡 Appel GodEngine.generateReportV2...");
        const report = await GodEngine.generateReportV2(selectedMatch.player1.name, selectedMatch.player2.name, selectedMatch.tournament);
+       
+       console.log("📊 RAPPORT BRUT REÇU:", report);
+       console.log("📊 Structure du rapport:", {
+         hasIdentity: !!report?.identity,
+         hasP1: !!report?.p1,
+         hasP2: !!report?.p2,
+         hasH2H: !!report?.h2h,
+         hasPrediction: !!report?.prediction
+       });
        
        // Calcul Prédiction - ✅ TYPAGE CORRECT
        let refined: any = { 
@@ -70,9 +81,14 @@ export const AnalysisPage: React.FC = () => {
         } 
        };
        
+       console.log("🤖 Vérification OracleAI.predictor...");
        if (OracleAI.predictor && typeof OracleAI.predictor.refinePrediction === 'function') {
+           console.log("✅ predictor disponible, calcul de la prédiction...");
            // @ts-ignore
            refined = OracleAI.predictor.refinePrediction(report);
+           console.log("🎯 REFINED PREDICTION:", refined);
+       } else {
+           console.warn("⚠️ OracleAI.predictor NON DISPONIBLE");
        }
 
        const finalReport: GodModeReportV2 = {
@@ -86,15 +102,24 @@ export const AnalysisPage: React.FC = () => {
            }
        };
 
+       console.log("💾 FINAL REPORT AVANT SAVE:", finalReport);
+       console.log("💾 Match ID:", selectedMatch.id);
+       
        saveAnalysis(selectedMatch.id, finalReport);
+       console.log("✅ saveAnalysis() appelé");
+       
        setCurrentReport(finalReport);
+       console.log("✅ setCurrentReport() appelé");
+       console.log("✅ GOD MODE TERMINÉ AVEC SUCCÈS!");
 
     } catch (e) {
-       console.error("Erreur God Mode:", e);
-       alert("Erreur lors de la génération du rapport.");
+       console.error("❌ ERREUR CRITIQUE dans runGodMode:", e);
+       console.error("❌ Stack trace:", e instanceof Error ? e.stack : 'Pas de stack');
+       alert("Erreur lors de la génération du rapport: " + (e instanceof Error ? e.message : String(e)));
     }
     
     setIsComputing(false);
+    console.log("🏁 runGodMode terminé, isComputing=false");
   };
 
   // --- 2. SCAN SCREENSHOT (Nécessaire pour éviter l'erreur TS) ---
