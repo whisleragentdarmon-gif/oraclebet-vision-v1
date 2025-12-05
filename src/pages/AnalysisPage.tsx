@@ -308,7 +308,6 @@ export const AnalysisPage: React.FC = () => {
       {/* AJOUT: MODAL PRÉDICTIONS */}
       {showModal && currentReport && selectedMatch && (
         <div className="fixed inset-0 bg-black/90 z-[99999] flex items-center justify-center p-4" onClick={() => setShowModal(false)}>
-          {console.log("🎯 MODAL RENDU !")}
           <div className="bg-neutral-900 border-2 border-purple-500/50 rounded-2xl max-w-4xl w-full" onClick={(e) => e.stopPropagation()}>
             
             <div className="flex justify-between items-center p-6 border-b border-neutral-800">
