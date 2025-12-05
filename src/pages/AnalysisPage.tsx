@@ -40,63 +40,81 @@ export const AnalysisPage: React.FC = () => {
         p1Name: selectedMatch.player1.name,
         p2Name: selectedMatch.player2.name,
         tournament: selectedMatch.tournament,
-        surface: selectedMatch.surface || "Dur",
+        surface: selectedMatch.surface || "Hard",
         date: new Date().toISOString()
       },
       p1: {
-        ranking: "-",
-        age: "-",
+        rank: "-",
+        bestRank: "-",
+        ageHeight: "-",
+        nationality: "-",
         hand: "-",
-        height: "-",
-        weight: "-",
-        titles: "-",
+        winrateCareer: "-",
+        winrateSeason: "-",
+        winrateSurface: "-",
+        aces: "-",
+        doubleFaults: "-",
+        firstServe: "-",
+        style: "-",
         form: "-",
-        hardWins: "-",
-        hardLosses: "-",
-        clayWins: "-",
-        clayLosses: "-",
-        grassWins: "-",
-        grassLosses: "-",
-        injuries: "-",
-        lastMatches: "-"
+        injury: "-",
+        motivation: "-",
+        last5: "-"
       },
       p2: {
-        ranking: "-",
-        age: "-",
+        rank: "-",
+        bestRank: "-",
+        ageHeight: "-",
+        nationality: "-",
         hand: "-",
-        height: "-",
-        weight: "-",
-        titles: "-",
+        winrateCareer: "-",
+        winrateSeason: "-",
+        winrateSurface: "-",
+        aces: "-",
+        doubleFaults: "-",
+        firstServe: "-",
+        style: "-",
         form: "-",
-        hardWins: "-",
-        hardLosses: "-",
-        clayWins: "-",
-        clayLosses: "-",
-        grassWins: "-",
-        grassLosses: "-",
-        injuries: "-",
-        lastMatches: "-"
+        injury: "-",
+        motivation: "-",
+        last5: "-"
       },
       h2h: {
-        winsP1: "-",
-        winsP2: "-",
-        lastMeetings: "-"
+        global: "-",
+        surface: "-",
+        advantage: "-",
+        lastMatches: "-"
       },
       conditions: {
         weather: "-",
-        temperature: "-",
+        temp: "-",
         wind: "-",
-        surface: selectedMatch.surface || "Dur"
+        altitude: "-"
       },
-      odds: {
-        bookmakers: [],
-        recommendedBookie: "-"
+      bookmaker: {
+        oddA: "-",
+        oddB: "-",
+        movement: "STABLE"
+      },
+      synthesis: {
+        tech: "-",
+        mental: "-",
+        physical: "-",
+        surface: "-",
+        momentum: "-",
+        xFactor: "-",
+        risk: "-"
       },
       prediction: {
         probA: "-",
         probB: "-",
-        risk: "MEDIUM",
-        recoWinner: "-"
+        probOver: "-",
+        probTieBreak: "-",
+        probUpset: "-",
+        risk: "MODERATE",
+        recoWinner: "-",
+        recoOver: "-",
+        recoSet: "-"
       }
     };
   };
@@ -332,7 +350,7 @@ export const AnalysisPage: React.FC = () => {
               <div className="flex-1 overflow-hidden bg-neutral-950 relative">
                   <div className="h-full overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-neutral-700">
                       {!currentReport && (
-                          <div className="mb-6 bg-gradient-to-r from-purple-900/20 to-blue-900/20 border border-purple-500/30 rounded-xl p-6 flex items-center justify-between">
+                          <div className="mb-6 bg-gradient-to-r from-purple-900/20 to-blue-900/20 border border-purple-500/30 rounded-xl p-6">
                               <div className="flex items-center gap-4">
                                   <Zap className="text-purple-400" size={36} />
                                   <div>
