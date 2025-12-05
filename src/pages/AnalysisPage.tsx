@@ -259,10 +259,8 @@ export const AnalysisPage: React.FC = () => {
   };
 
   const handleReset = () => {
-      if (window.confirm("Effacer les données et relancer une analyse ?")) {
-          setCurrentReport(null);
-          setShowModal(false);
-      }
+      setCurrentReport(null);
+      setShowModal(false);
   };
 
   const getCircuitColor = (c: string) => {
@@ -322,23 +320,20 @@ export const AnalysisPage: React.FC = () => {
                  </div>
                  
                  <div className="flex gap-2 items-center flex-shrink-0">
-                   {!currentReport ? (
-                     <button 
-                       onClick={runGodMode} 
-                       disabled={isComputing}
-                       className="bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white font-bold py-2 px-6 rounded-xl flex items-center gap-2 text-sm transition-all shadow-lg shadow-purple-500/20 animate-pulse"
-                     >
-                       <Cpu size={18} /> LANCER GOD MODE
-                     </button>
-                   ) : (
+                   {/* BOUTON GOD MODE - TOUJOURS VISIBLE */}
+                   <button 
+                     onClick={runGodMode} 
+                     disabled={isComputing}
+                     className="bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white font-bold py-2 px-6 rounded-xl flex items-center gap-2 text-sm transition-all shadow-lg shadow-purple-500/20"
+                   >
+                     <Cpu size={18} /> {currentReport ? 'RELANCER' : 'LANCER'} GOD MODE
+                   </button>
+                   
+                   {/* STATUT */}
+                   {currentReport && (
                        <div className="flex flex-col items-end gap-1">
-                           <div className="flex gap-2">
-                               <div className="px-3 py-1 bg-green-900/30 border border-green-500/30 rounded-lg text-green-400 text-xs font-bold flex items-center gap-2">
-                                   <CheckCircle2 size={14} /> ANALYSE TERMINÉE
-                               </div>
-                               <button onClick={handleReset} className="p-2 bg-neutral-800 hover:bg-neutral-700 rounded text-gray-400 transition-colors" title="Réinitialiser">
-                                   <RotateCcw size={14}/>
-                               </button>
+                           <div className="px-3 py-1 bg-green-900/30 border border-green-500/30 rounded-lg text-green-400 text-xs font-bold flex items-center gap-2">
+                               <CheckCircle2 size={14} /> ANALYSE OK
                            </div>
                            {saveStatus && <span className="text-[10px] text-neon animate-pulse mt-1">{saveStatus}</span>}
                        </div>
