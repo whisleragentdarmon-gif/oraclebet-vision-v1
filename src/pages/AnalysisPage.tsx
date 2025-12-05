@@ -56,8 +56,8 @@ export const AnalysisPage: React.FC = () => {
     try {
        const report = await GodEngine.generateReportV2(selectedMatch.player1.name, selectedMatch.player2.name, selectedMatch.tournament);
        
-       // Calcul Prédiction
-       let refined = { confidence: 50, winner: "Analyse...", risk: "HIGH", recoWinner: "-" };
+       // Calcul Prédiction - ✅ AJOUT DE updatedPredictionSection ICI
+       let refined = { confidence: 50, winner: "Analyse...", risk: "HIGH", recoWinner: "-", updatedPredictionSection: { probA: "50%", probB: "50%", risk: "MEDIUM", recoWinner: "-" } };
        if (OracleAI.predictor && typeof OracleAI.predictor.refinePrediction === 'function') {
            // @ts-ignore
            refined = OracleAI.predictor.refinePrediction(report);
@@ -69,7 +69,7 @@ export const AnalysisPage: React.FC = () => {
                ...report.prediction,
                probA: refined.updatedPredictionSection?.probA || "50%",
                probB: refined.updatedPredictionSection?.probB || "50%",
-               risk: (refined.risk || "MEDIUM") as string,
+               risk: (refined.updatedPredictionSection?.risk || "MEDIUM") as string,
                recoWinner: refined.recoWinner || "En attente"
            }
        };
