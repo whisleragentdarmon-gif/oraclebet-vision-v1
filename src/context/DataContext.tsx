@@ -1,25 +1,13 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-
-export interface Match {
-  id: string;
-  player1: { name: string };
-  player2: { name: string };
-  tournament: string;
-  date: string;
-  status: 'UPCOMING' | 'LIVE' | 'FINISHED';
-  ai?: {
-    circuit: 'ATP' | 'WTA' | 'CHALLENGER' | 'ITF';
-    predictedWinner: string;
-    confidence: number;
-  };
-}
+import { Match } from '../types';
 
 interface DataContextType {
   matches: Match[];
   addManualMatch: (match: Match) => void;
   removeMatch: (id: string) => void;
+  markAsFinished: (id: string) => void;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -63,8 +51,17 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setMatches((prev) => prev.filter((m) => m.id !== id));
   };
 
+  // ✅ MARQUER COMME TERMINÉ
+  const markAsFinished = (id: string) => {
+    setMatches((prev) =>
+      prev.map((m) =>
+        m.id === id ? { ...m, status: 'FINISHED' as const } : m
+      )
+    );
+  };
+
   return (
-    <DataContext.Provider value={{ matches, addManualMatch, removeMatch }}>
+    <DataContext.Provider value={{ matches, addManualMatch, removeMatch, markAsFinished }}>
       {children}
     </DataContext.Provider>
   );
