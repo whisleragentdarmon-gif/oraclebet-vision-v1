@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useData } from '../context/DataContext';
 import { useAnalysis } from '../context/AnalysisContext';
 import { MatchCard } from '../components/MatchCard';
@@ -10,17 +10,16 @@ import { OracleReactor } from '../components/OracleReactor';
 // IMPORTS
 import { GodEngine } from '../engine/market/GodEngine';
 import { GodModeTable } from '../components/GodModeTable';
-import { ImageEngine } from '../engine/ImageEngine';
 import { GodModeReportV2 } from '../engine/types';
 import { OracleAI } from '../engine';
 
-import { Globe, Cpu, CheckCircle2, Lock, Upload, Image as ImageIcon, RotateCcw } from 'lucide-react';
+import { Globe, Cpu, CheckCircle2, Lock, RotateCcw, Zap } from 'lucide-react';
 
 export const AnalysisPage: React.FC = () => {
   const { matches } = useData();
   const { saveAnalysis, getAnalysis } = useAnalysis();
   
-  // Filtre : on ne veut pas les matchs finis pour l'analyse prédictive
+  // Filtre les matchs jouables
   const activeMatches = matches.filter(m => m.status !== 'FINISHED');
   
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
@@ -29,113 +28,103 @@ export const AnalysisPage: React.FC = () => {
   const [currentReport, setCurrentReport] = useState<GodModeReportV2 | null>(null);
   const [saveStatus, setSaveStatus] = useState("");
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Sélection automatique du premier match
+  // Auto-sélection
   useEffect(() => {
     if (activeMatches.length > 0 && !selectedMatch) setSelectedMatch(activeMatches[0]);
   }, [matches]);
 
-  // Quand on change de match, on regarde si on a déjà une analyse en mémoire
+  // Chargement de la mémoire
   useEffect(() => {
     if (selectedMatch) {
         const saved = getAnalysis(selectedMatch.id);
         if (saved && saved.identity) {
-            setCurrentReport(saved); // Si oui, on affiche le tableau direct
+            setCurrentReport(saved);
         } else {
-            setCurrentReport(null); // Sinon, on remet à zéro (Cadenas)
+            setCurrentReport(null); // C'est ici que le Cadenas s'active si pas de données
         }
         setSaveStatus("");
     }
   }, [selectedMatch]);
 
-  // --- FONCTION 1 : LANCER LE SCAN WEB (GOD MODE) ---
+  // --- LE CŒUR DU SYSTÈME : SCAN WEB + CALCUL PRÉDICTION ---
   const runGodMode = async () => {
     if (!selectedMatch) return;
-    setIsComputing(true); // Déclenche l'animation
+    
+    setIsComputing(true); // Lance l'animation
+    
     try {
-       // Le moteur va chercher sur Internet
+       // 1. Récupération des données brutes (Web, Météo, H2H)
        const report = await GodEngine.generateReportV2(selectedMatch.player1.name, selectedMatch.player2.name, selectedMatch.tournament);
        
-       // On sauvegarde le résultat
-       saveAnalysis(selectedMatch.id, report);
-       setCurrentReport(report);
+       // 2. CALCUL IMMÉDIAT DE LA PRÉDICTION (C'est ce qu'il manquait)
+       // L'IA analyse les données qu'elle vient de trouver pour remplir la section "Prédiction"
+       let predictionResult = { confidence: 50, winner: "Analyse...", risk: "HIGH", recoWinner: "-" };
+       
+       if (OracleAI.predictor && typeof OracleAI.predictor.refinePrediction === 'function') {
+           // @ts-ignore
+           const refined = OracleAI.predictor.refinePrediction(report);
+           predictionResult = refined;
+       }
+
+       // 3. Fusion des données + Prédiction
+       const finalReport: GodModeReportV2 = {
+           ...report,
+           prediction: {
+               ...report.prediction,
+               probA: predictionResult.updatedPredictionSection?.probA || "50%",
+               probB: predictionResult.updatedPredictionSection?.probB || "50%",
+               risk: (predictionResult.risk || "MEDIUM") as string,
+               recoWinner: predictionResult.recoWinner || "En attente"
+           }
+       };
+
+       // 4. Sauvegarde et Affichage
+       saveAnalysis(selectedMatch.id, finalReport);
+       setCurrentReport(finalReport);
+
     } catch (e) {
        console.error("Erreur God Mode:", e);
-       alert("Erreur lors de la génération du rapport Web");
+       alert("Erreur lors de la génération du rapport.");
     }
+    
     setIsComputing(false); // Arrête l'animation
   };
 
-  // --- FONCTION 2 : UPLOAD IMAGE ---
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file || !selectedMatch) return;
-
-    setIsComputing(true);
-    try {
-        const reportFromImage = await ImageEngine.analyzeScreenshot(file, selectedMatch);
-        saveAnalysis(selectedMatch.id, reportFromImage);
-        setCurrentReport(reportFromImage);
-    } catch (e) {
-        console.error("Erreur lecture image", e);
-        alert("Impossible de lire l'image.");
-    }
-    setIsComputing(false);
-  };
-
-  // Fonction pour mettre à jour le tableau quand tu tapes dedans
+  // Mise à jour manuelle (Quand tu tapes dans le tableau)
   const handleReportUpdate = (newReport: GodModeReportV2) => {
       setCurrentReport(newReport);
   };
 
-  // --- FONCTION 3 : SAUVEGARDER ET CALCULER ---
+  // Sauvegarde manuelle (Bouton Enregistrer)
   const handleManualSave = () => {
     if (!currentReport || !selectedMatch) return;
-
     try {
-      let refinedPrediction = { 
-          confidence: 50, 
-          winner: currentReport.identity.p1Name, 
-          risk: 'MEDIUM',
-          recoWinner: 'Analyse en cours...'
-      };
+      // On recalcule au cas où tu as modifié des stats manuellement
+      let refined = { confidence: 50, winner: "", risk: "", recoWinner: "" };
+      // @ts-ignore
+      if (OracleAI.predictor) refined = OracleAI.predictor.refinePrediction(currentReport);
 
-      // L'IA relit tes modifications pour ajuster sa prédiction
-      if (OracleAI.predictor && typeof OracleAI.predictor.refinePrediction === 'function') {
-          // @ts-ignore
-          refinedPrediction = OracleAI.predictor.refinePrediction(currentReport);
-      }
-
-      // Mise à jour finale
-      const finalReport: GodModeReportV2 = {
+      const finalReport = {
         ...currentReport,
         prediction: {
           ...currentReport.prediction,
-          confidence: refinedPrediction.confidence.toString() + "%",
-          risk: (refinedPrediction.risk || "MEDIUM") as string,
-          recoWinner: refinedPrediction.recoWinner || "N/A"
+          probA: refined.updatedPredictionSection?.probA || currentReport.prediction?.probA,
+          probB: refined.updatedPredictionSection?.probB || currentReport.prediction?.probB,
+          recoWinner: refined.recoWinner
         }
       };
 
-      // Sauvegarde en mémoire
       saveAnalysis(selectedMatch.id, finalReport);
       setCurrentReport(finalReport);
-
-      setSaveStatus("✅ IA mise à jour!");
+      setSaveStatus("✅ IA mise à jour !");
       setTimeout(() => setSaveStatus(""), 3000);
-
-    } catch (error) {
-      console.error('Erreur sauvegarde:', error);
-      setSaveStatus("❌ Erreur");
-    }
+    } catch (error) { console.error(error); }
   };
 
-  // Reset pour forcer une nouvelle recherche
+  // Reset (Pour forcer le cadenas et refaire une analyse)
   const handleReset = () => {
-      if (window.confirm("Voulez-vous vraiment effacer l'analyse actuelle et recommencer ?")) {
-          setCurrentReport(null);
-          setSaveStatus("");
+      if (window.confirm("Effacer les données et relancer une analyse ?")) {
+          setCurrentReport(null); // Retour au cadenas
       }
   };
 
@@ -143,22 +132,18 @@ export const AnalysisPage: React.FC = () => {
     if (!c) return 'text-blue-500';
     if (c.includes('WTA')) return 'text-pink-500';
     if (c.includes('CHALLENGER')) return 'text-yellow-500';
-    if (c.includes('ITF')) return 'text-purple-500';
     return 'text-blue-500';
   };
 
   return (
     <>
-      {/* Animation du Cerveau */}
       <OracleReactor isVisible={isComputing} onComplete={() => setIsComputing(false)} />
-      
-      <input type="file" ref={fileInputRef} style={{ display: 'none' }} accept="image/*" onChange={handleFileUpload} />
 
       <div className="flex flex-col lg:flex-row gap-6 h-full w-full overflow-hidden">
         
-        {/* COLONNE GAUCHE : LISTE DES MATCHS */}
+        {/* LISTE GAUCHE */}
         <div className="lg:w-1/4 xl:w-1/5 flex flex-col gap-4 flex-shrink-0 h-full overflow-hidden">
-          <h2 className="text-2xl font-bold mb-2 flex-shrink-0">Matchs à Venir</h2>
+          <h2 className="text-2xl font-bold mb-2 flex-shrink-0">Matchs Actifs</h2>
           <div className="overflow-y-auto pr-2 space-y-3 flex-1 scrollbar-thin scrollbar-thumb-neutral-800">
             {activeMatches.map((match) => (
               <MatchCard 
@@ -171,18 +156,18 @@ export const AnalysisPage: React.FC = () => {
             ))}
             {activeMatches.length === 0 && (
               <div className="text-gray-500 border border-dashed border-neutral-800 p-4 rounded text-sm text-center">
-                Aucun match actif récupéré.
+                Aucun match actif.
               </div>
             )}
           </div>
         </div>
 
-        {/* COLONNE DROITE : ZONE DE TRAVAIL */}
+        {/* ZONE DROITE */}
         <div className="flex-1 h-full overflow-hidden flex flex-col">
           {selectedMatch ? (
             <div className="w-full h-full flex flex-col overflow-hidden bg-surface border border-neutral-800 rounded-2xl shadow-2xl relative">
               
-              {/* HEADER DE LA ZONE */}
+              {/* HEADER */}
               <div className="flex justify-between items-start p-6 border-b border-neutral-800 flex-shrink-0 bg-black/20">
                  <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
@@ -196,33 +181,24 @@ export const AnalysisPage: React.FC = () => {
                     </h2>
                  </div>
                  
-                 {/* BOUTONS D'ACTION */}
                  <div className="flex gap-2 items-center flex-shrink-0">
                    {!currentReport ? (
-                     // CAS 1 : Pas d'analyse -> Boutons pour lancer
-                     <>
-                       <button 
-                         onClick={() => fileInputRef.current?.click()} 
-                         className="bg-blue-900/50 hover:bg-blue-600 border border-blue-500/50 text-white font-bold py-2 px-4 rounded-xl flex items-center gap-2 text-xs transition-all"
-                       >
-                         <Upload size={16} /> IMAGE
-                       </button>
-                       <button 
-                         onClick={runGodMode} 
-                         disabled={isComputing}
-                         className="bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white font-bold py-2 px-4 rounded-xl flex items-center gap-2 text-xs transition-all shadow-lg shadow-purple-500/20 animate-pulse"
-                       >
-                         <Cpu size={16} /> SCAN MARCHÉ
-                       </button>
-                     </>
+                     // BOUTON SCAN (Si pas de rapport)
+                     <button 
+                       onClick={runGodMode} 
+                       disabled={isComputing}
+                       className="bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white font-bold py-2 px-6 rounded-xl flex items-center gap-2 text-sm transition-all shadow-lg shadow-purple-500/20 animate-pulse"
+                     >
+                       <Cpu size={18} /> LANCER GOD MODE
+                     </button>
                    ) : (
-                       // CAS 2 : Analyse faite -> Indicateur + Reset
+                       // INDICATEUR PRÊT + RESET
                        <div className="flex flex-col items-end gap-1">
                            <div className="flex gap-2">
                                <div className="px-3 py-1 bg-green-900/30 border border-green-500/30 rounded-lg text-green-400 text-xs font-bold flex items-center gap-2">
-                                   <CheckCircle2 size={14} /> PRÊT
+                                   <CheckCircle2 size={14} /> ANALYSE TERMINÉE
                                </div>
-                               <button onClick={handleReset} className="p-1 bg-neutral-800 hover:bg-neutral-700 rounded text-gray-400 transition-colors" title="Recommencer l'analyse">
+                               <button onClick={handleReset} className="p-2 bg-neutral-800 hover:bg-neutral-700 rounded text-gray-400 transition-colors" title="Réinitialiser">
                                    <RotateCcw size={14}/>
                                </button>
                            </div>
@@ -232,10 +208,10 @@ export const AnalysisPage: React.FC = () => {
                  </div>
               </div>
 
-              {/* CONTENU PRINCIPAL */}
+              {/* CONTENU */}
               <div className="flex-1 overflow-hidden bg-neutral-950 relative">
                   {currentReport ? (
-                      // Si analyse faite : On affiche le grand tableau V2
+                      // TABLEAU DE BORD (Si analyse faite)
                       <div className="h-full overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-neutral-700">
                           <GodModeTable 
                               report={currentReport} 
@@ -245,7 +221,7 @@ export const AnalysisPage: React.FC = () => {
                           <div className="h-10"></div>
                       </div>
                   ) : (
-                      // Si pas d'analyse : On affiche le cadenas et les instructions
+                      // CADENAS (Si pas d'analyse)
                       <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500 p-6">
                           <div className="border-2 border-dashed border-neutral-800 rounded-xl bg-black/10 p-12 flex flex-col items-center max-w-lg w-full">
                               <div className="relative mb-6">
@@ -254,16 +230,14 @@ export const AnalysisPage: React.FC = () => {
                               </div>
                               <h3 className="text-xl font-bold text-white mb-2">ANALYSE REQUISE</h3>
                               <p className="text-sm text-gray-400 text-center mb-6">
-                                  Pour débloquer les prédictions, l'Oracle doit scanner le marché, la météo et l'historique des joueurs.
+                                  Lancez le God Mode pour scanner le web, récupérer le H2H, la météo et les alertes blessure.
                               </p>
-                              <div className="flex gap-3 w-full">
-                                <button 
-                                    onClick={runGodMode}
-                                    className="flex-1 bg-gradient-to-r from-purple-600 to-blue-600 text-white py-3 rounded-lg font-bold text-sm flex justify-center items-center gap-2 hover:scale-105 transition-transform"
-                                >
-                                    <Cpu size={18}/> LANCER SCAN
-                                </button>
-                              </div>
+                              <button 
+                                onClick={runGodMode}
+                                className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white py-3 rounded-lg font-bold text-sm flex justify-center items-center gap-2 hover:scale-105 transition-transform"
+                              >
+                                <Zap size={18}/> DÉVERROUILLER
+                              </button>
                           </div>
                       </div>
                   )}
@@ -272,7 +246,7 @@ export const AnalysisPage: React.FC = () => {
             </div>
           ) : (
             <div className="flex items-center justify-center h-full text-gray-500 border border-dashed border-neutral-800 rounded-xl m-4">
-                Sélectionnez un match dans la liste de gauche.
+                Sélectionnez un match pour commencer.
             </div>
           )}
         </div>
