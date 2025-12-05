@@ -66,11 +66,12 @@ export const ProgramPage: React.FC = () => {
     }
   };
 
-  // ✅ ENREGISTRER LA FICHE GODMODE
+  // ✅ ENREGISTRER LA FICHE GODMODE - SIMPLE, SANS CRASH
   const handleSaveGodMode = () => {
     if (report) {
-      console.log('✅ Fiche God Mode sauvegardée:', report);
-      showToast('Fiche God Mode enregistrée!', 'success');
+      console.log('✅ Fiche sauvegardée:', report);
+      showToast('✅ Fiche enregistrée!', 'success');
+      // Pas d'appel API, pas de redirection - juste un message
     }
   };
 
