@@ -31,12 +31,12 @@ export const AnalysisPage: React.FC = () => {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Auto-sélection
+  // Auto-sélection du premier match si aucun sélectionné
   useEffect(() => {
     if (activeMatches.length > 0 && !selectedMatch) setSelectedMatch(activeMatches[0]);
-  }, [matches]);
+  }, [matches]); // On garde la dépendance sur 'matches'
 
-  // Chargement de la mémoire
+  // Chargement de la mémoire (Persistance)
   useEffect(() => {
     if (selectedMatch) {
         const saved = getAnalysis(selectedMatch.id);
@@ -47,20 +47,19 @@ export const AnalysisPage: React.FC = () => {
         }
         setSaveStatus("");
     }
-  }, [selectedMatch]);
+  }, [selectedMatch]); // On ne déclenche que si le match change
 
   // --- 1. SCAN WEB ---
   const runGodMode = async () => {
+    if (!selectedMatch) return;
     setIsComputing(true);
-    if (selectedMatch) {
-        try {
-           const report = await GodEngine.generateReportV2(selectedMatch.player1.name, selectedMatch.player2.name, selectedMatch.tournament);
-           saveAnalysis(selectedMatch.id, report);
-           setCurrentReport(report);
-        } catch (e) {
-           console.error("Erreur God Mode:", e);
-           alert("Erreur lors de la génération du rapport Web");
-        }
+    try {
+       const report = await GodEngine.generateReportV2(selectedMatch.player1.name, selectedMatch.player2.name, selectedMatch.tournament);
+       saveAnalysis(selectedMatch.id, report);
+       setCurrentReport(report);
+    } catch (e) {
+       console.error("Erreur God Mode:", e);
+       alert("Erreur lors de la génération du rapport Web");
     }
     setIsComputing(false);
   };
@@ -99,8 +98,9 @@ export const AnalysisPage: React.FC = () => {
           recoWinner: 'Analyse en cours...'
       };
 
-      // On essaie d'utiliser le moteur de raffinement s'il existe
+      // Protection contre l'absence du moteur
       if (OracleAI.predictor && typeof OracleAI.predictor.refinePrediction === 'function') {
+          // @ts-ignore : On ignore l'erreur de type potentielle si les types ne sont pas encore sync
           refinedPrediction = OracleAI.predictor.refinePrediction(currentReport);
       } else {
           console.warn("⚠️ Fonction refinePrediction introuvable, sauvegarde simple.");
@@ -111,9 +111,9 @@ export const AnalysisPage: React.FC = () => {
         ...currentReport,
         prediction: {
           ...currentReport.prediction,
-          confidence: refinedPrediction.confidence.toString(),
-          risk: refinedPrediction.risk,
-          recoWinner: refinedPrediction.recoWinner
+          confidence: refinedPrediction.confidence?.toString() || "50%",
+          risk: (refinedPrediction.risk || "MEDIUM") as string,
+          recoWinner: refinedPrediction.recoWinner || "N/A"
         }
       };
 
@@ -133,9 +133,10 @@ export const AnalysisPage: React.FC = () => {
   };
 
   const getCircuitColor = (c: string) => {
-    if (c?.includes('WTA')) return 'text-pink-500';
-    if (c?.includes('CHALLENGER')) return 'text-yellow-500';
-    if (c?.includes('ITF')) return 'text-purple-500';
+    if (!c) return 'text-blue-500';
+    if (c.includes('WTA')) return 'text-pink-500';
+    if (c.includes('CHALLENGER')) return 'text-yellow-500';
+    if (c.includes('ITF')) return 'text-purple-500';
     return 'text-blue-500';
   };
 
@@ -144,12 +145,12 @@ export const AnalysisPage: React.FC = () => {
       <OracleReactor isVisible={isComputing} onComplete={() => setIsComputing(false)} />
       <input type="file" ref={fileInputRef} style={{ display: 'none' }} accept="image/*" onChange={handleFileUpload} />
 
-      <div className="flex flex-col lg:flex-row gap-6 h-full overflow-hidden w-full">
+      <div className="flex flex-col lg:flex-row gap-6 h-full w-full overflow-hidden">
         
         {/* LISTE GAUCHE */}
-        <div className="lg:w-1/4 xl:w-1/5 flex flex-col gap-4 flex-shrink-0 overflow-hidden">
+        <div className="lg:w-1/4 xl:w-1/5 flex flex-col gap-4 flex-shrink-0 h-full overflow-hidden">
           <h2 className="text-2xl font-bold mb-2 flex-shrink-0">Matchs Actifs</h2>
-          <div className="overflow-y-auto pr-2 space-y-3 flex-1">
+          <div className="overflow-y-auto pr-2 space-y-3 flex-1 scrollbar-thin scrollbar-thumb-neutral-800">
             {activeMatches.map((match) => (
               <MatchCard 
                 key={match.id} 
@@ -160,7 +161,7 @@ export const AnalysisPage: React.FC = () => {
               />
             ))}
             {activeMatches.length === 0 && (
-              <div className="text-gray-500 border border-dashed border-neutral-800 p-4 rounded text-sm">
+              <div className="text-gray-500 border border-dashed border-neutral-800 p-4 rounded text-sm text-center">
                 Aucun match actif.
               </div>
             )}
@@ -168,23 +169,25 @@ export const AnalysisPage: React.FC = () => {
         </div>
 
         {/* TABLEAU DROITE */}
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 h-full overflow-hidden flex flex-col">
           {selectedMatch ? (
             <div className="w-full h-full flex flex-col overflow-hidden bg-surface border border-neutral-800 rounded-2xl shadow-2xl">
               
               {/* HEADER */}
               <div className="flex justify-between items-start p-6 border-b border-neutral-800 flex-shrink-0 bg-black/20">
-                 <div>
+                 <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
                         <Globe size={14} className={getCircuitColor(selectedMatch.ai?.circuit || 'ATP')} />
                         <span className="text-xs font-bold text-gray-400">| {selectedMatch.tournament}</span>
                     </div>
-                    <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-                      {selectedMatch.player1.name} <span className="text-orange-500">vs</span> {selectedMatch.player2.name}
+                    <h2 className="text-2xl font-bold text-white flex items-center gap-2 truncate">
+                      <span className="truncate max-w-[200px]">{selectedMatch.player1.name}</span> 
+                      <span className="text-orange-500 text-sm">vs</span> 
+                      <span className="truncate max-w-[200px]">{selectedMatch.player2.name}</span>
                     </h2>
                  </div>
                  
-                 <div className="flex gap-2 items-end flex-col">
+                 <div className="flex gap-2 items-center flex-shrink-0">
                    {!currentReport ? (
                      <div className="flex gap-2">
                        <button 
@@ -212,18 +215,24 @@ export const AnalysisPage: React.FC = () => {
                  </div>
               </div>
 
-              {/* CONTENU - GODMODETABLE AVEC HAUTEUR CORRECTE */}
-              <div className="flex-1 overflow-y-auto overflow-x-hidden">
+              {/* CONTENU - GODMODETABLE */}
+              <div className="flex-1 overflow-hidden bg-neutral-950 relative">
                   {currentReport ? (
-                      <GodModeTable 
-                          report={currentReport} 
-                          onUpdate={handleReportUpdate}
-                          onSave={handleManualSave}
-                      />
+                      <div className="h-full overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-neutral-700">
+                          <GodModeTable 
+                              report={currentReport} 
+                              onUpdate={handleReportUpdate}
+                              onSave={handleManualSave}
+                          />
+                          <div className="h-10"></div> {/* Espace vide en bas pour le scroll */}
+                      </div>
                   ) : (
-                      <div className="w-full h-full flex flex-col items-center justify-center text-gray-500 border-2 border-dashed border-neutral-800 rounded-xl bg-black/10 m-6">
-                          <ImageIcon size={48} className="mb-4 opacity-30"/>
-                          <p className="text-sm">En attente d'analyse (Web ou Image)...</p>
+                      <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500">
+                          <div className="border-2 border-dashed border-neutral-800 rounded-xl bg-black/10 p-8 flex flex-col items-center">
+                              <ImageIcon size={48} className="mb-4 opacity-30"/>
+                              <p className="text-sm font-bold">En attente d'analyse</p>
+                              <p className="text-xs mt-1 opacity-70">Importez une image ou lancez le scan Web.</p>
+                          </div>
                       </div>
                   )}
               </div>
