@@ -271,26 +271,24 @@ export const AnalysisPage: React.FC = () => {
                           <div className="h-10"></div>
                       </div>
                   ) : (
-                      <>
-                          {/* Message Prêt pour l'analyse + Tableau vide */}
-                          <div className="h-full overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-neutral-700">
-                              <div className="mb-6 bg-gradient-to-r from-purple-900/20 to-blue-900/20 border border-purple-500/30 rounded-xl p-6 flex items-center justify-between">
-                                  <div className="flex items-center gap-4">
-                                      <Zap className="text-purple-400" size={36} />
-                                      <div>
-                                          <h3 className="text-xl font-bold text-white">Prêt pour l'analyse</h3>
-                                          <p className="text-gray-400 text-sm">Lancez GOD MODE pour analyser et obtenir les prédictions</p>
-                                      </div>
+                      <div className="h-full overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-neutral-700">
+                          {/* Message Prêt pour l'analyse */}
+                          <div className="mb-6 bg-gradient-to-r from-purple-900/20 to-blue-900/20 border border-purple-500/30 rounded-xl p-6 flex items-center justify-between">
+                              <div className="flex items-center gap-4">
+                                  <Zap className="text-purple-400" size={36} />
+                                  <div>
+                                      <h3 className="text-xl font-bold text-white">Prêt pour l'analyse</h3>
+                                      <p className="text-gray-400 text-sm">Lancez GOD MODE pour analyser et obtenir les prédictions</p>
                                   </div>
                               </div>
-                              
-                              <GodModeTable 
-                                  report={null} 
-                                  onUpdate={handleReportUpdate}
-                                  onSave={handleManualSave}
-                              />
                           </div>
-                      </>
+                          
+                          {/* Placeholder tableau vide */}
+                          <div className="bg-neutral-800 rounded-xl p-6">
+                              <h3 className="text-xl font-bold text-white mb-4">📊 Tableau d'analyse</h3>
+                              <p className="text-gray-500 text-sm">Le tableau se remplira automatiquement après l'analyse GOD MODE...</p>
+                          </div>
+                      </div>
                   )}
               </div>
 
