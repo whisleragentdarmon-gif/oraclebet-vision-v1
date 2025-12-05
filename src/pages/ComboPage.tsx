@@ -32,11 +32,20 @@ export const ComboPage: React.FC = () => {
   }, [matches]);
 
   const generate = (matchList: any[]) => {
+      console.log('🎯 Generate appelé avec', matchList.length, 'matchs');
+      
       const enriched = matchList.map((m: any) => {
           const mem = getAnalysis(m.id);
+          console.log('📊 Match', m.id, '- Analyse:', mem ? 'OUI' : 'NON');
           return mem ? { ...m, ai: { ...m.ai, godModeAnalysis: mem } } : m;
       });
-      setStrategies(OracleAI.combo.generateStrategies(enriched));
+      
+      console.log('🔄 Matchs enrichis:', enriched.filter(m => m.ai?.godModeAnalysis).length);
+      
+      const generatedStrategies = OracleAI.combo.generateStrategies(enriched);
+      console.log('✅ Stratégies générées:', generatedStrategies);
+      
+      setStrategies(generatedStrategies);
   };
 
   const runBatchScan = async () => {
@@ -230,9 +239,38 @@ export const ComboPage: React.FC = () => {
                     </div>
                 </div>
             ) : (
-                <div className="flex flex-col items-center justify-center h-48 text-gray-500">
-                    <p>Pas assez de matchs analysés pour générer un ticket {activeTab}.</p>
-                    <p className="text-xs text-gray-600 mt-2">Analysez au moins 2-3 matchs dans "Analyse IA"</p>
+                <div className="flex flex-col items-center justify-center space-y-4">
+                    <div className="text-center">
+                        <p className="text-gray-400 text-lg mb-2">Pas assez de matchs analysés pour générer un ticket {activeTab}.</p>
+                        <p className="text-xs text-gray-600">Analysez au moins 2-3 matchs dans "Analyse IA"</p>
+                    </div>
+                    
+                    {/* DEBUG : Liste des matchs analysés */}
+                    <div className="w-full max-w-2xl bg-neutral-900 border border-neutral-800 rounded-xl p-4">
+                        <h3 className="text-sm font-bold text-gray-400 mb-3">📊 Matchs analysés disponibles :</h3>
+                        {getActiveMatches().map(m => {
+                            const hasAnalysis = !!getAnalysis(m.id);
+                            return (
+                                <div key={m.id} className="flex justify-between items-center py-2 border-b border-neutral-800 last:border-0">
+                                    <span className="text-sm text-white">{m.player1.name} vs {m.player2.name}</span>
+                                    <span className={`text-xs font-bold ${hasAnalysis ? 'text-green-400' : 'text-red-400'}`}>
+                                        {hasAnalysis ? '✅ Analysé' : '❌ Non analysé'}
+                                    </span>
+                                </div>
+                            );
+                        })}
+                    </div>
+                    
+                    <button 
+                        onClick={() => {
+                            console.log('🔍 DEBUG - Matchs actifs:', getActiveMatches());
+                            console.log('🔍 DEBUG - Analyses:', getActiveMatches().map(m => ({ id: m.id, analysis: getAnalysis(m.id) })));
+                            console.log('🔍 DEBUG - Stratégies:', strategies);
+                        }}
+                        className="px-4 py-2 bg-blue-900/30 text-blue-400 rounded-lg text-sm"
+                    >
+                        🔍 Afficher infos debug dans console
+                    </button>
                 </div>
             )}
         </>
