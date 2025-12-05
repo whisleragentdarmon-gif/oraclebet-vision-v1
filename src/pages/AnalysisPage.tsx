@@ -32,6 +32,75 @@ export const AnalysisPage: React.FC = () => {
   // AJOUT: state pour le modal
   const [showModal, setShowModal] = useState(false);
 
+  // Créer un rapport vide pour afficher le tableau avant l'analyse
+  const getEmptyReport = (): GodModeReportV2 | null => {
+    if (!selectedMatch) return null;
+    return {
+      identity: {
+        p1Name: selectedMatch.player1.name,
+        p2Name: selectedMatch.player2.name,
+        tournament: selectedMatch.tournament,
+        surface: selectedMatch.surface || "Dur",
+        date: new Date().toISOString()
+      },
+      p1: {
+        ranking: "-",
+        age: "-",
+        hand: "-",
+        height: "-",
+        weight: "-",
+        titles: "-",
+        form: "-",
+        hardWins: "-",
+        hardLosses: "-",
+        clayWins: "-",
+        clayLosses: "-",
+        grassWins: "-",
+        grassLosses: "-",
+        injuries: "-",
+        lastMatches: "-"
+      },
+      p2: {
+        ranking: "-",
+        age: "-",
+        hand: "-",
+        height: "-",
+        weight: "-",
+        titles: "-",
+        form: "-",
+        hardWins: "-",
+        hardLosses: "-",
+        clayWins: "-",
+        clayLosses: "-",
+        grassWins: "-",
+        grassLosses: "-",
+        injuries: "-",
+        lastMatches: "-"
+      },
+      h2h: {
+        winsP1: "-",
+        winsP2: "-",
+        lastMeetings: "-"
+      },
+      conditions: {
+        weather: "-",
+        temperature: "-",
+        wind: "-",
+        surface: selectedMatch.surface || "Dur"
+      },
+      odds: {
+        bookmakers: [],
+        recommendedBookie: "-"
+      },
+      prediction: {
+        probA: "-",
+        probB: "-",
+        risk: "MEDIUM",
+        recoWinner: "-"
+      }
+    };
+  };
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -261,18 +330,8 @@ export const AnalysisPage: React.FC = () => {
 
               {/* CONTENU */}
               <div className="flex-1 overflow-hidden bg-neutral-950 relative">
-                  {currentReport ? (
-                      <div className="h-full overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-neutral-700">
-                          <GodModeTable 
-                              report={currentReport} 
-                              onUpdate={handleReportUpdate}
-                              onSave={handleManualSave}
-                          />
-                          <div className="h-10"></div>
-                      </div>
-                  ) : (
-                      <div className="h-full overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-neutral-700">
-                          {/* Message Prêt pour l'analyse */}
+                  <div className="h-full overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-neutral-700">
+                      {!currentReport && (
                           <div className="mb-6 bg-gradient-to-r from-purple-900/20 to-blue-900/20 border border-purple-500/30 rounded-xl p-6 flex items-center justify-between">
                               <div className="flex items-center gap-4">
                                   <Zap className="text-purple-400" size={36} />
@@ -282,14 +341,15 @@ export const AnalysisPage: React.FC = () => {
                                   </div>
                               </div>
                           </div>
-                          
-                          {/* Placeholder tableau vide */}
-                          <div className="bg-neutral-800 rounded-xl p-6">
-                              <h3 className="text-xl font-bold text-white mb-4">📊 Tableau d'analyse</h3>
-                              <p className="text-gray-500 text-sm">Le tableau se remplira automatiquement après l'analyse GOD MODE...</p>
-                          </div>
-                      </div>
-                  )}
+                      )}
+                      
+                      <GodModeTable 
+                          report={currentReport || getEmptyReport()} 
+                          onUpdate={handleReportUpdate}
+                          onSave={handleManualSave}
+                      />
+                      <div className="h-10"></div>
+                  </div>
               </div>
 
             </div>
