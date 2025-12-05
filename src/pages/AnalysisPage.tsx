@@ -35,10 +35,6 @@ export const AnalysisPage: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    console.log("🎯 showModal changé:", showModal);
-  }, [showModal]);
-
-  useEffect(() => {
     if (activeMatches.length > 0 && !selectedMatch) setSelectedMatch(activeMatches[0]);
   }, [matches]);
 
@@ -51,16 +47,13 @@ export const AnalysisPage: React.FC = () => {
             setCurrentReport(null);
         }
         setSaveStatus("");
+        setShowModal(false); // Fermer le modal
     }
   }, [selectedMatch]);
 
   // --- 1. SCAN WEB ---
   const runGodMode = async () => {
     if (!selectedMatch) return;
-    
-    // TEST : ouvrir le modal immédiatement
-    console.log("🧪 TEST: Ouverture modal immédiate");
-    setShowModal(true);
     
     setIsComputing(true); 
     
@@ -100,10 +93,8 @@ export const AnalysisPage: React.FC = () => {
        saveAnalysis(selectedMatch.id, finalReport);
        setCurrentReport(finalReport);
        
-       // AJOUT: ouvrir le modal après 1 seconde
-       console.log("🎯 Analyse terminée, ouverture du modal dans 1s...");
+       // Ouvrir le modal après 1 seconde
        setTimeout(() => {
-         console.log("🎯 setShowModal(true) appelé !");
          setShowModal(true);
        }, 1000);
 
@@ -183,6 +174,7 @@ export const AnalysisPage: React.FC = () => {
   const handleReset = () => {
       if (window.confirm("Effacer les données et relancer une analyse ?")) {
           setCurrentReport(null);
+          setShowModal(false);
       }
   };
 
@@ -279,24 +271,26 @@ export const AnalysisPage: React.FC = () => {
                           <div className="h-10"></div>
                       </div>
                   ) : (
-                      <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500 p-6">
-                          <div className="border-2 border-dashed border-neutral-800 rounded-xl bg-black/10 p-12 flex flex-col items-center max-w-lg w-full">
-                              <div className="relative mb-6">
-                                  <div className="absolute inset-0 bg-purple-500/20 blur-xl rounded-full"></div>
-                                  <Lock size={64} className="text-purple-400 relative z-10" />
+                      <>
+                          {/* Message Prêt pour l'analyse + Tableau vide */}
+                          <div className="h-full overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-neutral-700">
+                              <div className="mb-6 bg-gradient-to-r from-purple-900/20 to-blue-900/20 border border-purple-500/30 rounded-xl p-6 flex items-center justify-between">
+                                  <div className="flex items-center gap-4">
+                                      <Zap className="text-purple-400" size={36} />
+                                      <div>
+                                          <h3 className="text-xl font-bold text-white">Prêt pour l'analyse</h3>
+                                          <p className="text-gray-400 text-sm">Lancez GOD MODE pour analyser et obtenir les prédictions</p>
+                                      </div>
+                                  </div>
                               </div>
-                              <h3 className="text-xl font-bold text-white mb-2">ANALYSE REQUISE</h3>
-                              <p className="text-sm text-gray-400 text-center mb-6">
-                                  Lancez le God Mode pour scanner le web, récupérer le H2H, la météo et les alertes blessure.
-                              </p>
-                              <button 
-                                onClick={runGodMode}
-                                className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white py-3 rounded-lg font-bold text-sm flex justify-center items-center gap-2 hover:scale-105 transition-transform"
-                              >
-                                <Zap size={18}/> DÉVERROUILLER
-                              </button>
+                              
+                              <GodModeTable 
+                                  report={null} 
+                                  onUpdate={handleReportUpdate}
+                                  onSave={handleManualSave}
+                              />
                           </div>
-                      </div>
+                      </>
                   )}
               </div>
 
