@@ -14,8 +14,7 @@ import { ImageEngine } from '../engine/ImageEngine';
 import { GodModeReportV2 } from '../engine/types';
 import { OracleAI } from '../engine';
 
-// ✅ AJOUT DE 'Zap' DANS LES IMPORTS
-import { Globe, Cpu, CheckCircle2, Lock, Upload, Image as ImageIcon, RotateCcw, Zap } from 'lucide-react';
+import { Globe, Cpu, CheckCircle2, RotateCcw, Zap } from 'lucide-react';
 
 export const AnalysisPage: React.FC = () => {
   const { matches } = useData();
@@ -67,7 +66,7 @@ export const AnalysisPage: React.FC = () => {
          hasPrediction: !!report?.prediction
        });
        
-       // Calcul Prédiction - ✅ TYPAGE CORRECT
+       // Calcul Prédiction
        let refined: any = { 
         confidence: 50, 
         winner: "Analyse...", 
@@ -84,7 +83,6 @@ export const AnalysisPage: React.FC = () => {
        console.log("🤖 Vérification OracleAI.predictor...");
        if (OracleAI.predictor && typeof OracleAI.predictor.refinePrediction === 'function') {
            console.log("✅ predictor disponible, calcul de la prédiction...");
-           // @ts-ignore
            refined = OracleAI.predictor.refinePrediction(report);
            console.log("🎯 REFINED PREDICTION:", refined);
        } else {
@@ -102,27 +100,21 @@ export const AnalysisPage: React.FC = () => {
            }
        };
 
-       console.log("💾 FINAL REPORT AVANT SAVE:", finalReport);
-       console.log("💾 Match ID:", selectedMatch.id);
+       console.log("💾 FINAL REPORT:", finalReport);
        
        saveAnalysis(selectedMatch.id, finalReport);
-       console.log("✅ saveAnalysis() appelé");
-       
        setCurrentReport(finalReport);
-       console.log("✅ setCurrentReport() appelé");
        console.log("✅ GOD MODE TERMINÉ AVEC SUCCÈS!");
 
     } catch (e) {
-       console.error("❌ ERREUR CRITIQUE dans runGodMode:", e);
-       console.error("❌ Stack trace:", e instanceof Error ? e.stack : 'Pas de stack');
+       console.error("❌ ERREUR dans runGodMode:", e);
        alert("Erreur lors de la génération du rapport: " + (e instanceof Error ? e.message : String(e)));
     }
     
     setIsComputing(false);
-    console.log("🏁 runGodMode terminé, isComputing=false");
   };
 
-  // --- 2. SCAN SCREENSHOT (Nécessaire pour éviter l'erreur TS) ---
+  // --- 2. SCAN SCREENSHOT ---
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file || !selectedMatch) return;
@@ -147,7 +139,6 @@ export const AnalysisPage: React.FC = () => {
   const handleManualSave = () => {
     if (!currentReport || !selectedMatch) return;
     try {
-      // ✅ TYPAGE CORRECT: refined est un RefinedPrediction
       let refined: any = { 
         confidence: 50, 
         winner: "", 
@@ -161,13 +152,10 @@ export const AnalysisPage: React.FC = () => {
         } 
       };
       
-      // @ts-ignore - OracleAI peut retourner un type plus flexible
       if (OracleAI.predictor && typeof OracleAI.predictor.refinePrediction === 'function') {
-          // @ts-ignore
           refined = OracleAI.predictor.refinePrediction(currentReport);
       }
 
-      // ✅ ACCÈS SÉCURISÉ AVEC ?.
       const finalReport = {
         ...currentReport,
         prediction: {
@@ -190,9 +178,9 @@ export const AnalysisPage: React.FC = () => {
   };
 
   const handleReset = () => {
-      if (window.confirm("Effacer les données et relancer une analyse ?")) {
-          setCurrentReport(null);
-      }
+      // ❌ SUPPRESSION DU POPUP CONFIRM - RESET DIRECT
+      setCurrentReport(null);
+      setSaveStatus("");
   };
 
   const getCircuitColor = (c: string) => {
@@ -207,15 +195,15 @@ export const AnalysisPage: React.FC = () => {
     <>
       <OracleReactor isVisible={isComputing} onComplete={() => setIsComputing(false)} />
       
-      {/* Input caché nécessaire */}
       <input type="file" ref={fileInputRef} style={{ display: 'none' }} accept="image/*" onChange={handleFileUpload} />
 
-      <div className="flex flex-col lg:flex-row gap-6 h-full w-full overflow-hidden">
+      {/* ✅ LAYOUT CORRIGÉ - STRUCTURE PROPRE */}
+      <div className="flex flex-col lg:flex-row gap-6 h-full w-full overflow-hidden p-4">
         
         {/* LISTE GAUCHE */}
-        <div className="lg:w-1/4 xl:w-1/5 flex flex-col gap-4 flex-shrink-0 h-full overflow-hidden">
-          <h2 className="text-2xl font-bold mb-2 flex-shrink-0">Matchs Actifs</h2>
-          <div className="overflow-y-auto pr-2 space-y-3 flex-1 scrollbar-thin scrollbar-thumb-neutral-800">
+        <div className="lg:w-1/4 xl:w-1/5 flex flex-col gap-4 flex-shrink-0">
+          <h2 className="text-2xl font-bold">Matchs Actifs</h2>
+          <div className="overflow-y-auto pr-2 space-y-3 scrollbar-thin scrollbar-thumb-neutral-800" style={{ maxHeight: 'calc(100vh - 200px)' }}>
             {activeMatches.map((match) => (
               <MatchCard 
                 key={match.id} 
@@ -233,79 +221,82 @@ export const AnalysisPage: React.FC = () => {
           </div>
         </div>
 
-        {/* TABLEAU DROITE */}
-        <div className="flex-1 h-full overflow-hidden flex flex-col">
+        {/* ZONE PRINCIPALE DROITE */}
+        <div className="flex-1 flex flex-col overflow-hidden">
           {selectedMatch ? (
-            <div className="w-full h-full flex flex-col overflow-hidden bg-surface border border-neutral-800 rounded-2xl shadow-2xl relative">
+            <div className="w-full h-full flex flex-col bg-surface border border-neutral-800 rounded-2xl shadow-2xl">
               
-              {/* HEADER */}
-              <div className="flex justify-between items-start p-6 border-b border-neutral-800 flex-shrink-0 bg-black/20">
+              {/* ✅ HEADER FIXE AVEC BOUTON GOD MODE TOUJOURS VISIBLE */}
+              <div className="flex justify-between items-center p-6 border-b border-neutral-800 bg-black/20 flex-shrink-0">
                  <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
                         <Globe size={14} className={getCircuitColor(selectedMatch.ai?.circuit || 'ATP')} />
                         <span className="text-xs font-bold text-gray-400">| {selectedMatch.tournament}</span>
                     </div>
-                    <h2 className="text-2xl font-bold text-white flex items-center gap-2 truncate">
+                    <h2 className="text-2xl font-bold text-white flex items-center gap-2">
                       <span className="truncate max-w-[200px]">{selectedMatch.player1.name}</span> 
                       <span className="text-orange-500 text-sm">vs</span> 
                       <span className="truncate max-w-[200px]">{selectedMatch.player2.name}</span>
                     </h2>
                  </div>
                  
+                 {/* ✅ BOUTONS TOUJOURS VISIBLES */}
                  <div className="flex gap-2 items-center flex-shrink-0">
-                   {!currentReport ? (
-                     <button 
-                       onClick={runGodMode} 
-                       disabled={isComputing}
-                       className="bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white font-bold py-2 px-6 rounded-xl flex items-center gap-2 text-sm transition-all shadow-lg shadow-purple-500/20 animate-pulse"
-                     >
-                       <Cpu size={18} /> LANCER GOD MODE
-                     </button>
-                   ) : (
-                       <div className="flex flex-col items-end gap-1">
-                           <div className="flex gap-2">
-                               <div className="px-3 py-1 bg-green-900/30 border border-green-500/30 rounded-lg text-green-400 text-xs font-bold flex items-center gap-2">
-                                   <CheckCircle2 size={14} /> ANALYSE TERMINÉE
-                               </div>
-                               <button onClick={handleReset} className="p-2 bg-neutral-800 hover:bg-neutral-700 rounded text-gray-400 transition-colors" title="Réinitialiser">
-                                   <RotateCcw size={14}/>
-                               </button>
-                           </div>
-                           {saveStatus && <span className="text-[10px] text-neon animate-pulse mt-1">{saveStatus}</span>}
-                       </div>
+                   {currentReport && (
+                       <button 
+                         onClick={handleReset} 
+                         className="p-2 bg-neutral-800 hover:bg-neutral-700 rounded text-gray-400 transition-colors" 
+                         title="Réinitialiser"
+                       >
+                           <RotateCcw size={16}/>
+                       </button>
+                   )}
+                   
+                   <button 
+                     onClick={runGodMode} 
+                     disabled={isComputing}
+                     className={`${currentReport ? 'bg-blue-600 hover:bg-blue-500' : 'bg-purple-600 hover:bg-purple-500 animate-pulse'} disabled:opacity-50 text-white font-bold py-2 px-6 rounded-xl flex items-center gap-2 text-sm transition-all shadow-lg`}
+                   >
+                     {isComputing ? (
+                       <>
+                         <Cpu size={18} className="animate-spin" /> ANALYSE...
+                       </>
+                     ) : (
+                       <>
+                         {currentReport ? <Zap size={18} /> : <Cpu size={18} />}
+                         {currentReport ? 'RE-ANALYSER' : 'LANCER GOD MODE'}
+                       </>
+                     )}
+                   </button>
+                   
+                   {saveStatus && (
+                     <span className="text-xs text-green-400 animate-pulse ml-2">
+                       {saveStatus}
+                     </span>
                    )}
                  </div>
               </div>
 
-              {/* CONTENU */}
-              <div className="flex-1 overflow-hidden bg-neutral-950 relative">
+              {/* ✅ ZONE DE CONTENU - SANS SUPERPOSITION */}
+              <div className="flex-1 overflow-y-auto bg-neutral-950 p-6">
                   {currentReport ? (
-                      <div className="h-full overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-neutral-700">
+                      <div className="w-full">
                           <GodModeTable 
                               report={currentReport} 
                               onUpdate={handleReportUpdate}
                               onSave={handleManualSave}
                           />
-                          <div className="h-10"></div>
                       </div>
                   ) : (
-                      <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500 p-6">
-                          <div className="border-2 border-dashed border-neutral-800 rounded-xl bg-black/10 p-12 flex flex-col items-center max-w-lg w-full">
-                              <div className="relative mb-6">
-                                  <div className="absolute inset-0 bg-purple-500/20 blur-xl rounded-full"></div>
-                                  <Lock size={64} className="text-purple-400 relative z-10" />
+                      <div className="flex flex-col items-center justify-center h-full text-gray-500">
+                          <div className="border-2 border-dashed border-neutral-800 rounded-xl bg-black/10 p-12 flex flex-col items-center max-w-lg">
+                              <div className="mb-6">
+                                  <Zap size={64} className="text-purple-400" />
                               </div>
-                              <h3 className="text-xl font-bold text-white mb-2">ANALYSE REQUISE</h3>
-                              <p className="text-sm text-gray-400 text-center mb-6">
-                                  Lancez le God Mode pour scanner le web, récupérer le H2H, la météo et les alertes blessure.
+                              <h3 className="text-xl font-bold text-white mb-2">Prêt pour l'analyse</h3>
+                              <p className="text-sm text-gray-400 text-center">
+                                  Cliquez sur "LANCER GOD MODE" pour récupérer les données et générer les prédictions.
                               </p>
-                              <button 
-                                onClick={runGodMode}
-                                className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white py-3 rounded-lg font-bold text-sm flex justify-center items-center gap-2 hover:scale-105 transition-transform"
-                              >
-                                {/* ✅ UTILISATION CORRECTE DE ZAP */}
-                                <Zap size={18}/> DÉVERROUILLER
-                              </button>
                           </div>
                       </div>
                   )}
@@ -313,7 +304,7 @@ export const AnalysisPage: React.FC = () => {
 
             </div>
           ) : (
-            <div className="flex items-center justify-center h-full text-gray-500 border border-dashed border-neutral-800 rounded-xl m-4">
+            <div className="flex items-center justify-center h-full text-gray-500 border border-dashed border-neutral-800 rounded-xl">
                 Sélectionnez un match pour commencer.
             </div>
           )}
