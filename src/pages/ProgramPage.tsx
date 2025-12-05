@@ -2,6 +2,7 @@
 
 import React, { useState, useRef } from 'react';
 import { GodModeReportV2 } from '../engine/types';
+import { Match } from '../types';
 import { GodModeTable } from '../components/GodModeTable';
 import { ImageEngine } from '../engine/ImageEngine';
 import { useData } from '../context/DataContext';
@@ -18,7 +19,7 @@ export const ProgramPage: React.FC = () => {
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  // ✅ Accès au contextes
+  // ✅ Accès aux contextes
   const { addManualMatch } = useData();
   const { saveAnalysis } = useAnalysis();
 
@@ -26,49 +27,6 @@ export const ProgramPage: React.FC = () => {
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ show: true, message, type });
     setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000);
-  };
-
-  // ✅ SAUVEGARDER VERS ANALYSE IA
-  const handleSaveToAnalysis = () => {
-    if (!report) {
-      showToast('Aucun rapport à sauvegarder', 'error');
-      return;
-    }
-
-    try {
-      // 1️⃣ Créer un Match à partir du rapport
-      const matchId = `manual_${Date.now()}`;
-      const newMatch = {
-        id: matchId,
-        player1: { name: report.identity.p1Name },
-        player2: { name: report.identity.p2Name },
-        tournament: report.identity.tournament || 'Unknown',
-        date: report.identity.date || new Date().toISOString(),
-        status: 'LIVE' as const,
-        ai: {
-          circuit: 'WTA' as const,
-          predictedWinner: report.prediction.winner || report.identity.p1Name,
-          confidence: parseInt(report.prediction.confidence) || 50
-        }
-      };
-
-      // 2️⃣ Ajouter au DataContext
-      addManualMatch(newMatch);
-
-      // 3️⃣ Sauvegarder dans AnalysisContext
-      saveAnalysis(matchId, report);
-
-      // 4️⃣ Feedback utilisateur
-      showToast(`✅ Match ${report.identity.p1Name} vs ${report.identity.p2Name} envoyé à l'Analyse IA!`, 'success');
-
-      // 5️⃣ Réinitialiser après 2s
-      setTimeout(() => {
-        setReport(null);
-      }, 2000);
-    } catch (error) {
-      console.error('Erreur sauvegarde:', error);
-      showToast('Erreur lors de la sauvegarde', 'error');
-    }
   };
 
   // ✅ MULTI-UPLOAD
@@ -98,26 +56,64 @@ export const ProgramPage: React.FC = () => {
     setLoading(false);
   };
 
-  // ✅ ENREGISTRER MATCH
-  const handleSaveMatch = () => {
-    if (report) {
-      // Mettre à jour les noms dans le report
-      report.identity.p1Name = p1Name;
-      report.identity.p2Name = p2Name;
+  // ✅ SAUVEGARDER VERS ANALYSE IA
+  const handleSaveToAnalysis = () => {
+    if (!report) {
+      showToast('Aucun rapport à sauvegarder', 'error');
+      return;
+    }
+
+    try {
+      // 1️⃣ Créer un Match à partir du rapport
+      const matchId = `manual_${Date.now()}`;
       
-      setShowModal(false);
-      showToast(`Match ${p1Name} vs ${p2Name} enregistré avec succès! 🎉`);
-      
-      // Redirection après 1s
+      const newMatch = {
+        id: matchId,
+        player1: { name: report.identity.p1Name },
+        player2: { name: report.identity.p2Name },
+        tournament: report.identity.tournament || 'Unknown',
+        date: report.identity.date || new Date().toISOString(),
+        time: (report.identity as any).time || '14:00',
+        heure: (report.identity as any).time || '14:00',
+        surface: report.identity.surface || 'DUR',
+        odds: {
+          p1: parseFloat((report.identity as any).oddA || '1.95'),
+          p2: parseFloat((report.identity as any).oddB || '1.95')
+        },
+        cotes: {
+          p1: parseFloat((report.identity as any).oddA || '1.95'),
+          p2: parseFloat((report.identity as any).oddB || '1.95')
+        },
+        status: 'LIVE' as const,
+        ai: {
+          circuit: 'WTA' as const,
+          predictedWinner: report.prediction.winner || report.identity.p1Name,
+          confidence: parseInt(report.prediction.confidence) || 50
+        }
+      } as Match;
+
+      // 2️⃣ Ajouter au DataContext
+      addManualMatch(newMatch);
+
+      // 3️⃣ Sauvegarder dans AnalysisContext
+      saveAnalysis(matchId, report);
+
+      // 4️⃣ Feedback utilisateur
+      showToast(`✅ Match ${report.identity.p1Name} vs ${report.identity.p2Name} envoyé à l'Analyse IA!`, 'success');
+
+      // 5️⃣ Réinitialiser après 2s
       setTimeout(() => {
-        window.location.href = '/analysis';
-      }, 1500);
+        setReport(null);
+      }, 2000);
+    } catch (error) {
+      console.error('Erreur sauvegarde:', error);
+      showToast('Erreur lors de la sauvegarde', 'error');
     }
   };
 
-  // ✅ ENREGISTRER LA FICHE GODMODE - SIMPLE, SANS CRASH
+  // ✅ ENREGISTRER LA FICHE GODMODE
   const handleSaveGodMode = () => {
-    // Cette fonction sera remplacée par handleSaveToAnalysis
+    // Appelle handleSaveToAnalysis
     handleSaveToAnalysis();
   };
 
@@ -147,57 +143,6 @@ export const ProgramPage: React.FC = () => {
         }`}>
           <CheckCircle size={18} />
           {toast.message}
-        </div>
-      )}
-
-      {/* ✅ MODAL POUR MODIFIER LES NOMS */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-neutral-900 border border-neutral-700 rounded-xl p-6 w-96 shadow-2xl">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold text-white">Vérifier les noms</h3>
-              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-white">
-                <X size={20} />
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm text-gray-400 block mb-2">Joueur 1</label>
-                <input 
-                  type="text" 
-                  value={p1Name}
-                  onChange={(e) => setP1Name(e.target.value)}
-                  className="w-full bg-black/40 border border-neutral-700 rounded p-3 text-white outline-none focus:border-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="text-sm text-gray-400 block mb-2">Joueur 2</label>
-                <input 
-                  type="text" 
-                  value={p2Name}
-                  onChange={(e) => setP2Name(e.target.value)}
-                  className="w-full bg-black/40 border border-neutral-700 rounded p-3 text-white outline-none focus:border-blue-500"
-                />
-              </div>
-
-              <div className="flex gap-3 mt-6">
-                <button 
-                  onClick={() => setShowModal(false)}
-                  className="flex-1 px-4 py-2 bg-neutral-700 hover:bg-neutral-600 text-white rounded-lg font-bold transition-all"
-                >
-                  Annuler
-                </button>
-                <button 
-                  onClick={handleSaveMatch}
-                  className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-500 text-white rounded-lg font-bold transition-all"
-                >
-                  Enregistrer
-                </button>
-              </div>
-            </div>
-          </div>
         </div>
       )}
 
@@ -254,7 +199,7 @@ export const ProgramPage: React.FC = () => {
           {report && !loading && (
             <div className="animate-fade-in w-full h-full flex flex-col">
               
-              {/* NOTIFICATION SUCCESS + BOUTON ENREGISTRER */}
+              {/* NOTIFICATION SUCCESS */}
               <div className="bg-green-900/20 border border-green-500/50 p-4 rounded-xl flex items-center gap-3 mb-4 flex-shrink-0">
                 <CheckCircle className="text-green-500 flex-shrink-0" size={24} />
                 <div className="flex-1">
