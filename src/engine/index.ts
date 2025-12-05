@@ -37,19 +37,32 @@ export const OracleAI = {
   combo: {
     generateStrategies: (matches: any[]): ComboStrategy[] => {
       const strategies: ComboStrategy[] = [];
-      const candidates = matches.filter((m: any) => m.status !== 'FINISHED');
+      
+      // 🛡️ SÉCURITÉ ANTI-CRASH : On vérifie que le match a bien des cotes et une IA
+      const candidates = matches.filter((m: any) => 
+          m.status !== 'FINISHED' && 
+          m.odds && 
+          m.odds.p1 && 
+          m.ai && 
+          m.ai.winner
+      );
 
       const getSmartSelection = (m: any) => {
+          const winnerName = m.ai.winner;
+          // Sécurité supplémentaire
+          if (!m.odds) return { sel: winnerName, odd: 1.50, market: "VAINQUEUR", reason: "Donnée manquante" };
+
           const winnerOdds = m.ai.winner === m.player1.name ? m.odds.p1 : m.odds.p2;
-          if (winnerOdds < 1.40) return { sel: `${m.ai.winner} 2-0`, odd: parseFloat((winnerOdds * 1.55).toFixed(2)), market: "SCORE EXACT", reason: "Ultra Favori" };
-          if (winnerOdds > 2.10) return { sel: `${m.ai.winner} +1.5 Sets`, odd: parseFloat((winnerOdds / 1.5).toFixed(2)), market: "HANDICAP", reason: "Sécurité Outsider" };
-          return { sel: m.ai.winner, odd: winnerOdds, market: "VAINQUEUR", reason: "Victoire sèche" };
+          
+          if (winnerOdds < 1.40) return { sel: `${winnerName} 2-0`, odd: parseFloat((winnerOdds * 1.55).toFixed(2)), market: "SCORE EXACT", reason: "Ultra Favori" };
+          if (winnerOdds > 2.10) return { sel: `${winnerName} +1.5 Sets`, odd: parseFloat((winnerOdds / 1.5).toFixed(2)), market: "HANDICAP", reason: "Outsider Sécurisé" };
+          return { sel: winnerName, odd: winnerOdds, market: "VAINQUEUR", reason: "Victoire sèche" };
       };
 
       // 1. ULTRA PREMIUM
       const premiumPicks = candidates.filter((m: any) => {
           const gm = m.ai?.godModeAnalysis;
-          return gm && !gm.injuryAlert && !gm.trap.isTrap && m.ai.confidence >= 70;
+          return gm && !gm.injuryAlert && !gm.trap?.isTrap && m.ai.confidence >= 70;
       });
       if (premiumPicks.length >= 1) {
           const selections = premiumPicks.slice(0, 3).map((m: any) => {
@@ -94,11 +107,10 @@ export const OracleAI = {
     analyzeOdds: (p1: string, p2: string, o1: number, o2: number) => OddsEngine.analyze(p1, p2, o1, o2),
     runGodModeAnalysis: (match: any) => {
         const pressSocial = ScandalEngine.analyze(match.player1.name);
-        const integrity = TrapDetector.scan(match.odds);
+        const integrity = TrapDetector.scan(match.odds || {p1: 1.85, p2: 1.85}); // Fallback si pas de cotes
         const conditions = GeoEngine.getConditions(match.tournament);
         return { social: pressSocial.social, press: pressSocial.press, geo: conditions, trap: integrity, injuryAlert: false };
     },
-    // ✅ CORRECTION ICI : On retourne toutes les propriétés nécessaires
     refinePrediction: (report: GodModeReportV2) => {
         try {
             const p1Form = parseScore(report.p1.form);
@@ -127,13 +139,7 @@ export const OracleAI = {
                 }
             };
         } catch (e) {
-            return { 
-                winner: report.identity.p1Name, 
-                confidence: 50, 
-                risk: 'HIGH', 
-                recoWinner: "Erreur Analyse", 
-                updatedPredictionSection: { winner: "-", confidence: "-", risk: "-", probA: "-", probB: "-", bestBet: "-", recoWinner: "-" } 
-            };
+            return { winner: report.identity.p1Name, confidence: 50, risk: 'HIGH', recoWinner: "Erreur Analyse", updatedPredictionSection: {} };
         }
     }
   }
