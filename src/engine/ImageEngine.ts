@@ -1,9 +1,57 @@
 import { GodModeReportV2 } from './types';
+import Tesseract from 'tesseract.js';
 
 export const ImageEngine = {
   analyzeScreenshot: async (file: File, currentMatch: any): Promise<GodModeReportV2> => {
     console.log("📸 Analyzing screenshot...", file.name);
-    await new Promise(r => setTimeout(r, 2000));
+    
+    try {
+      // ✅ ÉTAPE 1 : OCR pour extraire le texte du screenshot
+      const { data: { text } } = await Tesseract.recognize(file, 'eng', {
+        logger: (m) => console.log('OCR:', m)
+      });
+      
+      console.log('📝 Texte extrait:', text);
+      
+      // ✅ ÉTAPE 2 : Parser le texte pour trouver les noms de joueurs
+      const lines = text.split('\n').filter(l => l.trim());
+      
+      // Chercher des patterns de noms (format "Nom Prénom" ou "Prénom Nom")
+      const playerNames = lines.filter(line => {
+        const cleaned = line.trim();
+        // Filtre basique : contient au moins 2 mots et pas de chiffres au début
+        return cleaned.split(' ').length >= 2 && 
+               !/^\d/.test(cleaned) && 
+               cleaned.length > 5 &&
+               cleaned.length < 50;
+      });
+      
+      let player1Name = playerNames[0] || 'Joueur 1';
+      let player2Name = playerNames[1] || 'Joueur 2';
+      
+      // Nettoyer les noms
+      player1Name = player1Name.replace(/[^a-zA-Z\s-]/g, '').trim();
+      player2Name = player2Name.replace(/[^a-zA-Z\s-]/g, '').trim();
+      
+      console.log('🎾 Joueurs détectés:', player1Name, 'vs', player2Name);
+      
+      // ✅ ÉTAPE 3 : Extraire d'autres infos (tournoi, surface, etc)
+      const tournamentMatch = text.match(/(Australian Open|Roland Garros|Wimbledon|US Open|Dubai|Miami|Madrid|Rome|Monte Carlo|Cincinnati|Indian Wells|Paris|ATP Finals)/i);
+      const tournament = tournamentMatch ? tournamentMatch[0] : 'Tournoi';
+      
+      const surfaceMatch = text.match(/(Dur|Hard|Clay|Argile|Grass|Herbe|Indoor)/i);
+      let surface: 'Hard' | 'Clay' | 'Grass' | 'Indoor' = 'Hard';
+      if (surfaceMatch) {
+        const s = surfaceMatch[0].toLowerCase();
+        if (s.includes('clay') || s.includes('argile')) surface = 'Clay';
+        else if (s.includes('grass') || s.includes('herbe')) surface = 'Grass';
+        else if (s.includes('indoor')) surface = 'Indoor';
+      }
+      
+      // ✅ ÉTAPE 4 : ID unique basé sur les noms + timestamp
+      const matchId = `screenshot-${player1Name.replace(/\s/g, '-')}-vs-${player2Name.replace(/\s/g, '-')}-${Date.now()}`;
+      
+      console.log('🆔 Match ID:', matchId);
 
     // Générer 100 matchs avec données
     const generateMatches = () => {
@@ -21,14 +69,13 @@ export const ImageEngine = {
       return acc;
     };
 
-    // Surfaces avec données
     const generateSurfaces = () => {
       const acc: any = {};
       const opponents = ['Djokovic N.', 'Nadal R.', 'Medvedev D.', 'Tsitsipas S.', 'Rublev A.'];
       
-      ['Dur', 'Argile', 'Herbe'].forEach((surface) => {
+      ['Dur', 'Argile', 'Herbe'].forEach((surf) => {
         for (let i = 1; i <= 30; i++) {
-          const s = surface.toLowerCase();
+          const s = surf.toLowerCase();
           acc[`${s}Match${i}_date`] = `${String((i % 28) + 1).padStart(2, '0')}.01`;
           acc[`${s}Match${i}_opponent`] = opponents[(i-1) % opponents.length];
           acc[`${s}Match${i}_score`] = i % 2 === 0 ? '6-4 6-2' : '6-3 7-5';
@@ -38,7 +85,6 @@ export const ImageEngine = {
       return acc;
     };
 
-    // Saisons avec données
     const generateSeasons = () => {
       const acc: any = {};
       for (let i = 1; i <= 20; i++) {
@@ -53,7 +99,6 @@ export const ImageEngine = {
       return acc;
     };
 
-    // Titres avec données
     const generateTitles = () => {
       const acc: any = {};
       const tournaments = ['Australian Open', 'Roland Garros', 'Wimbledon', 'US Open', 'Dubai', 'Miami', 'Monte Carlo', 'Rome', 'Montreal', 'Cincinnati'];
@@ -68,7 +113,6 @@ export const ImageEngine = {
       return acc;
     };
 
-    // Blessures avec données
     const generateInjuries = () => {
       const acc: any = {};
       const injuries = ['Poignet', 'Genou', 'Dos', 'Cheville', 'Coude', 'Épaule', 'Hanche'];
@@ -81,202 +125,123 @@ export const ImageEngine = {
       return acc;
     };
 
-    return {
-      identity: {
-        p1Name: 'Jannik Sinner',
-        p2Name: 'Carlos Alcaraz',
-        tournament: 'Australian Open',
-        level: 'Grand Slam',
-        surface: 'Dur',
-        date: new Date().toLocaleDateString('fr-FR'),
-        round: 'Finale',
-        city: 'Melbourne',
-        timezone: 'AEDT',
-        court: 'Rod Laver Arena',
-        importanceP1: 'Majeure',
-        importanceP2: 'Majeure',
-        enjeu: 'Grand Slam',
-        time: '15:00',
-        matchStatus: 'Set 1'
-      },
-      p1: {
-        rank: '1',
-        bestRank: '1',
-        ageHeight: '23 ans / 1.88m',
-        nationality: 'ITA',
-        hand: 'Droitier',
-        style: 'Agressif',
-        winrateCareer: '78%',
-        winrateSeason: '85%',
-        winrateSurface: '82%',
-        aces: '8.2',
-        doubleFaults: '1.8',
-        firstServe: '68%',
-        form: '9/10',
-        confidence: 'Très haute',
-        injury: 'R.A.S',
-        fatigue: 'Aucune',
-        lastMatchDate: 'Il y a 2 jours',
-        serveStats: '8.5/10',
-        returnStats: '7.8/10',
-        motivation: 'Maximale',
-        social: 'Très bon moral',
-        last5: 'W-W-W-W-W',
-        afterLoss: 'Se remet vite',
-        afterWin: 'Concentré',
-        relaxation: 'Minimal',
-        pressureHandling: 'Excellent',
-        grandSlams: '2 titres',
-        wta1000: '5 titres',
-        challengers: '15 titres',
-        asFavorite: '75%',
-        asOutsider: '62%',
-        similarPlayer: 'Federer R.',
-        similarScore: '8.5/10',
-        vsRightHanded: '78%',
-        vsLeftHanded: '72%',
-        favoriteSurface: 'Dur rapide',
-        favoriteConditions: 'Chaleur',
-        worstSurface: 'Terre lente',
-        worstConditions: 'Froid',
-        oddsPlayer: '1.72',
-        oddBetfair: '1.75',
-        oddPinnacle: '1.73',
-        oddUnibet: '1.70',
-        
-        ...generateMatches(),
-        ...generateSurfaces(),
-        ...generateSeasons(),
-        ...generateTitles(),
-        ...generateInjuries(),
-        
-        match0_date: '08.02',
-        match0_tournament: 'Dubai',
-        match0_priority: '★★★',
-        news: 'En grande forme.'
-      },
-      p2: {
-        rank: '2',
-        bestRank: '1',
-        ageHeight: '24 ans / 1.88m',
-        nationality: 'ESP',
-        hand: 'Droitier',
-        style: 'Défensif-Offensif',
-        winrateCareer: '76%',
-        winrateSeason: '82%',
-        winrateSurface: '79%',
-        aces: '6.5',
-        doubleFaults: '2.3',
-        firstServe: '66%',
-        form: '8/10',
-        confidence: 'Haute',
-        injury: 'Poignet',
-        fatigue: 'Légère',
-        lastMatchDate: 'Il y a 3 jours',
-        serveStats: '7.9/10',
-        returnStats: '8.4/10',
-        motivation: 'Haute',
-        social: 'Préoccupé',
-        last5: 'W-W-L-W-W',
-        afterLoss: 'Agressif',
-        afterWin: 'Confiance',
-        relaxation: 'Modéré',
-        pressureHandling: 'Très bon',
-        grandSlams: '4 titres',
-        wta1000: '8 titres',
-        challengers: '12 titres',
-        asFavorite: '77%',
-        asOutsider: '58%',
-        similarPlayer: 'Nadal R.',
-        similarScore: '8.2/10',
-        vsRightHanded: '76%',
-        vsLeftHanded: '71%',
-        favoriteSurface: 'Terre',
-        favoriteConditions: 'Froid',
-        worstSurface: 'Gazon',
-        worstConditions: 'Chaleur',
-        oddsPlayer: '2.05',
-        oddBetfair: '2.10',
-        oddPinnacle: '2.08',
-        oddUnibet: '2.00',
-        
-        ...generateMatches(),
-        ...generateSurfaces(),
-        ...generateSeasons(),
-        ...generateTitles(),
-        ...generateInjuries(),
-        
-        match0_date: '10.02',
-        match0_tournament: 'Dubai',
-        match0_priority: '★★★',
-        news: 'Récupération.'
-      },
-      h2h: {
-        global: '2 - 1',
-        h2hMeetings: '3',
-        h2hGlobal: '2-1',
-        h2hSurface: '1-0',
-        h2hLastWin: 'Sinner',
-        h2hAvgSets: '2.3',
-        h2hTB: '33%',
-        h2hHold: '88%',
-        h2hBreak: '42%'
-      },
-      conditions: {
-        weather: 'Ensoleillé',
-        temp: '24°C',
-        wind: '8 km/h',
-        humidity: '62%',
-        courtSpeed: 'Rapide',
-        ballType: 'Wilson',
-        fatigueImpact: 'Faible',
-        altitude: 'Niveau mer',
-        advantage: 'Sinner'
-      },
-      bookmaker: {
-        oddA: '1.72',
-        oddB: '2.05',
-        spread: '-5.5',
-        movement: 'Stable',
-        smartMoney: 'Oui',
-        valueIndex: '7/10',
-        trapIndex: 'Oui',
-        specialOdds: []
-      },
-      factors: [],
-      synthesis: {
-        tech: 'Sinner',
-        mental: 'Sinner',
-        physical: 'Sinner',
-        surface: 'Sinner',
-        momentum: 'Sinner',
-        xFactor: 'Confiance',
-        risk: 'Faible'
-      },
-      prediction: {
-        winner: 'Sinner',
-        score: '6-4 7-5',
-        duration: '2h15',
-        volatility: 'Basse',
-        confidence: '8/10',
-        bestBet: '-5.5',
-        avoidBet: 'Upset',
-        altBet: 'Over 22.5',
-        probA: '72',
-        probB: '28',
-        probOver: '68',
-        probTieBreak: '35',
-        probUpset: '18',
-        risk: 'Faible',
-        recoWinner: 'Favori',
-        recoOver: 'Probable',
-        recoSet: 'Set 1'
-      },
-      stake: 'Grand Slam',
-      points: '2000',
-      objective: 'Titre',
-      motivation: 'Maximale',
-      pressureLevel: 'Haute'
-    } as any;
+      return {
+        identity: {
+          p1Name: player1Name,
+          p2Name: player2Name,
+          tournament: tournament,
+          level: 'ATP',
+          surface: surface,
+          date: new Date().toLocaleDateString('fr-FR'),
+          round: 'À déterminer',
+          city: 'À déterminer',
+          timezone: 'CET',
+          matchId: matchId, // ✅ ID unique
+          time: '15:00'
+        },
+        p1: {
+          rank: '?',
+          bestRank: '?',
+          ageHeight: '? ans / ?.??m',
+          nationality: '?',
+          hand: 'Droitier',
+          style: 'Équilibré',
+          winrateCareer: '?%',
+          winrateSeason: '?%',
+          winrateSurface: '?%',
+          aces: '?',
+          doubleFaults: '?',
+          firstServe: '?%',
+          form: '?/10',
+          injury: 'À vérifier',
+          motivation: 'Normale',
+          last5: '?-?-?-?-?',
+          
+          ...generateMatches(),
+          ...generateSurfaces(),
+          ...generateSeasons(),
+          ...generateTitles(),
+          ...generateInjuries()
+        },
+        p2: {
+          rank: '?',
+          bestRank: '?',
+          ageHeight: '? ans / ?.??m',
+          nationality: '?',
+          hand: 'Droitier',
+          style: 'Équilibré',
+          winrateCareer: '?%',
+          winrateSeason: '?%',
+          winrateSurface: '?%',
+          aces: '?',
+          doubleFaults: '?',
+          firstServe: '?%',
+          form: '?/10',
+          injury: 'À vérifier',
+          motivation: 'Normale',
+          last5: '?-?-?-?-?',
+          
+          ...generateMatches(),
+          ...generateSurfaces(),
+          ...generateSeasons(),
+          ...generateTitles(),
+          ...generateInjuries()
+        },
+        h2h: {
+          global: '? - ?',
+          surface: '? - ?',
+          advantage: 'Équilibré',
+          lastMatches: 'Données insuffisantes'
+        },
+        conditions: {
+          weather: 'À vérifier',
+          temp: '?°C',
+          wind: '? km/h',
+          altitude: 'Niveau mer',
+          humidity: '?%'
+        },
+        bookmaker: {
+          oddA: '?',
+          oddB: '?',
+          movement: 'STABLE'
+        },
+        synthesis: {
+          tech: '?',
+          mental: '?',
+          physical: '?',
+          surface: '?',
+          momentum: '?',
+          xFactor: 'À analyser',
+          risk: 'Moyen'
+        },
+        prediction: {
+          probA: '50%',
+          probB: '50%',
+          probOver: '?%',
+          probTieBreak: '?%',
+          probUpset: '?%',
+          risk: 'MODERATE',
+          recoWinner: 'Analyse manuelle requise',
+          recoOver: '?',
+          recoSet: '?'
+        }
+      } as any;
+      
+    } catch (error) {
+      console.error('❌ Erreur OCR:', error);
+      
+      // Fallback avec ID unique si OCR échoue
+      return {
+        identity: {
+          p1Name: 'Joueur 1',
+          p2Name: 'Joueur 2',
+          tournament: 'Tournoi',
+          surface: 'Hard',
+          date: new Date().toLocaleDateString('fr-FR'),
+          matchId: `screenshot-${Date.now()}` // ✅ ID unique même en cas d'erreur
+        },
+        // ... (reste du fallback)
+      } as any;
+    }
   }
 };
