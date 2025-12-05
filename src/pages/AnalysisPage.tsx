@@ -58,6 +58,10 @@ export const AnalysisPage: React.FC = () => {
   const runGodMode = async () => {
     if (!selectedMatch) return;
     
+    // TEST : ouvrir le modal immédiatement
+    console.log("🧪 TEST: Ouverture modal immédiate");
+    setShowModal(true);
+    
     setIsComputing(true); 
     
     try {
