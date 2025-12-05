@@ -11,7 +11,7 @@ import { OracleReactor } from '../components/OracleReactor';
 import { GodEngine } from '../engine/market/GodEngine';
 import { GodModeTable } from '../components/GodModeTable';
 import { ImageEngine } from '../engine/ImageEngine';
-import { GodModeReport } from '../engine/types';
+import { GodModeReportV2 } from '../engine/types';
 import { OracleAI } from '../engine';
 
 import { Globe, Cpu, CheckCircle2, Lock, Upload, Image as ImageIcon } from 'lucide-react';
@@ -26,7 +26,7 @@ export const AnalysisPage: React.FC = () => {
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
   const [isComputing, setIsComputing] = useState(false);
   
-  const [currentReport, setCurrentReport] = useState<GodModeReport | null>(null);
+  const [currentReport, setCurrentReport] = useState<GodModeReportV2 | null>(null);
   const [saveStatus, setSaveStatus] = useState("");
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -59,6 +59,7 @@ export const AnalysisPage: React.FC = () => {
            setCurrentReport(report);
         } catch (e) {
            console.error("Erreur God Mode:", e);
+           alert("Erreur lors de la génération du rapport Web");
         }
     }
     setIsComputing(false);
@@ -82,7 +83,7 @@ export const AnalysisPage: React.FC = () => {
   };
 
   // Mise à jour locale (à chaque frappe)
-  const handleReportUpdate = (newReport: GodModeReport) => {
+  const handleReportUpdate = (newReport: GodModeReportV2) => {
       setCurrentReport(newReport);
   };
 
@@ -106,12 +107,11 @@ export const AnalysisPage: React.FC = () => {
       }
 
       // Mise à jour du rapport avec la nouvelle prédiction
-      const finalReport = {
+      const finalReport: GodModeReportV2 = {
         ...currentReport,
         prediction: {
           ...currentReport.prediction,
-          // On ne met à jour que si l'IA a renvoyé quelque chose
-          confidence: refinedPrediction.confidence.toString() + "%",
+          confidence: refinedPrediction.confidence.toString(),
           risk: refinedPrediction.risk,
           recoWinner: refinedPrediction.recoWinner
         }
@@ -122,19 +122,20 @@ export const AnalysisPage: React.FC = () => {
       setCurrentReport(finalReport);
 
       // Feedback visuel
-      setSaveStatus("IA mise à jour !");
+      setSaveStatus("✅ IA mise à jour!");
       setTimeout(() => setSaveStatus(""), 3000);
 
     } catch (error) {
       console.error('Erreur sauvegarde:', error);
-      alert('Erreur lors de la sauvegarde');
+      setSaveStatus("❌ Erreur sauvegarde");
+      setTimeout(() => setSaveStatus(""), 3000);
     }
   };
 
   const getCircuitColor = (c: string) => {
-    if (c.includes('WTA')) return 'text-pink-500';
-    if (c.includes('CHALLENGER')) return 'text-yellow-500';
-    if (c.includes('ITF')) return 'text-purple-500';
+    if (c?.includes('WTA')) return 'text-pink-500';
+    if (c?.includes('CHALLENGER')) return 'text-yellow-500';
+    if (c?.includes('ITF')) return 'text-purple-500';
     return 'text-blue-500';
   };
 
@@ -143,12 +144,12 @@ export const AnalysisPage: React.FC = () => {
       <OracleReactor isVisible={isComputing} onComplete={() => setIsComputing(false)} />
       <input type="file" ref={fileInputRef} style={{ display: 'none' }} accept="image/*" onChange={handleFileUpload} />
 
-      <div className="flex flex-col lg:flex-row gap-6 h-full overflow-hidden">
+      <div className="flex flex-col lg:flex-row gap-6 h-full overflow-hidden w-full">
         
         {/* LISTE GAUCHE */}
         <div className="lg:w-1/4 xl:w-1/5 flex flex-col gap-4 flex-shrink-0 overflow-hidden">
-          <h2 className="text-2xl font-bold mb-2 flex-shrink-0">Matchs à Venir</h2>
-          <div className="overflow-y-auto pr-2 space-y-3">
+          <h2 className="text-2xl font-bold mb-2 flex-shrink-0">Matchs Actifs</h2>
+          <div className="overflow-y-auto pr-2 space-y-3 flex-1">
             {activeMatches.map((match) => (
               <MatchCard 
                 key={match.id} 
@@ -158,14 +159,18 @@ export const AnalysisPage: React.FC = () => {
                 compact 
               />
             ))}
-            {activeMatches.length === 0 && <p className="text-gray-500 border border-dashed border-neutral-800 p-4 rounded text-sm">Aucun match.</p>}
+            {activeMatches.length === 0 && (
+              <div className="text-gray-500 border border-dashed border-neutral-800 p-4 rounded text-sm">
+                Aucun match actif.
+              </div>
+            )}
           </div>
         </div>
 
         {/* TABLEAU DROITE */}
         <div className="flex-1 overflow-hidden">
           {selectedMatch ? (
-            <div className="w-full h-full flex flex-col overflow-hidden bg-surface border border-neutral-800 rounded-2xl shadow-2xl relative">
+            <div className="w-full h-full flex flex-col overflow-hidden bg-surface border border-neutral-800 rounded-2xl shadow-2xl">
               
               {/* HEADER */}
               <div className="flex justify-between items-start p-6 border-b border-neutral-800 flex-shrink-0 bg-black/20">
@@ -179,12 +184,23 @@ export const AnalysisPage: React.FC = () => {
                     </h2>
                  </div>
                  
-                 <div className="flex gap-2 items-center">
+                 <div className="flex gap-2 items-end flex-col">
                    {!currentReport ? (
-                     <>
-                       <button onClick={() => fileInputRef.current?.click()} className="bg-blue-900/50 hover:bg-blue-600 border border-blue-500/50 text-white font-bold py-2 px-4 rounded-xl flex items-center gap-2 text-xs"><Upload size={16} /> IMAGE</button>
-                       <button onClick={runGodMode} className="bg-purple-600 hover:bg-purple-500 text-white font-bold py-2 px-4 rounded-xl flex items-center gap-2 text-xs"><Cpu size={16} /> WEB</button>
-                     </>
+                     <div className="flex gap-2">
+                       <button 
+                         onClick={() => fileInputRef.current?.click()} 
+                         className="bg-blue-900/50 hover:bg-blue-600 border border-blue-500/50 text-white font-bold py-2 px-4 rounded-xl flex items-center gap-2 text-xs transition-all"
+                       >
+                         <Upload size={16} /> IMAGE
+                       </button>
+                       <button 
+                         onClick={runGodMode} 
+                         disabled={isComputing}
+                         className="bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white font-bold py-2 px-4 rounded-xl flex items-center gap-2 text-xs transition-all"
+                       >
+                         <Cpu size={16} /> WEB
+                       </button>
+                     </div>
                    ) : (
                        <div className="flex flex-col items-end">
                            <div className="px-3 py-1 bg-green-900/30 border border-green-500/30 rounded-lg text-green-400 text-xs font-bold flex items-center gap-2">
@@ -196,16 +212,16 @@ export const AnalysisPage: React.FC = () => {
                  </div>
               </div>
 
-              {/* CONTENU */}
-              <div className="flex-1 overflow-hidden p-6">
+              {/* CONTENU - GODMODETABLE AVEC HAUTEUR CORRECTE */}
+              <div className="flex-1 overflow-y-auto overflow-x-hidden">
                   {currentReport ? (
                       <GodModeTable 
                           report={currentReport} 
                           onUpdate={handleReportUpdate}
-                          onSave={handleManualSave} // ✅ C'EST CONNECTÉ ICI
+                          onSave={handleManualSave}
                       />
                   ) : (
-                      <div className="h-full flex flex-col items-center justify-center text-gray-500 border-2 border-dashed border-neutral-800 rounded-xl bg-black/10">
+                      <div className="w-full h-full flex flex-col items-center justify-center text-gray-500 border-2 border-dashed border-neutral-800 rounded-xl bg-black/10 m-6">
                           <ImageIcon size={48} className="mb-4 opacity-30"/>
                           <p className="text-sm">En attente d'analyse (Web ou Image)...</p>
                       </div>
