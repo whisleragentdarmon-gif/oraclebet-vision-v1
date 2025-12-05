@@ -1,4 +1,4 @@
-import { Circuit, SimulationResult, ComboStrategy, GodModeReportV2 } from './types';
+import { Circuit, SimulationResult, ComboStrategy, GodModeReportV2, RefinedPrediction, PredictionSection } from './types';
 import { MonteCarlo } from './MonteCarlo'; 
 import { OddsEngine } from './OddsEngine'; 
 import { LearningModule } from './LearningModule';
@@ -74,7 +74,7 @@ export const OracleAI = {
     },
     
     // 🔥 LE CERVEAU ANALYTIQUE COMPLET 🔥
-    refinePrediction: (report: GodModeReportV2) => {
+    refinePrediction: (report: GodModeReportV2): RefinedPrediction => {
         try {
             // 1. EXTRACTION DES DONNÉES DU TABLEAU
             const p1Rank = parseVal(report.p1.rank);
@@ -138,36 +138,43 @@ export const OracleAI = {
                 marketType = "VAINQUEUR";
             }
 
-            // 4. RETOUR COMPLET (Pour corriger l'erreur TS)
-            return {
-                winner,
+            // ✅ 4. RETOUR COMPLET - TYPE RefinedPrediction
+            const result: RefinedPrediction = {
+                // Champs à la racine (pour AnalysisPage)
                 confidence: Math.round(confidence),
-                risk: confidence > 75 ? 'LOW' : 'MEDIUM',
+                winner: winner,
+                risk: confidence > 75 ? 'LOW' : confidence < 45 ? 'HIGH' : 'MEDIUM',
                 recoWinner: recommendedBet,
-                market: marketType,
-                // Objet imbriqué pour l'affichage dans le tableau
+                
+                // Objet imbriqué (structure complète pour affichage tableau)
                 updatedPredictionSection: {
-                    winner,
-                    confidence: `${Math.round(confidence)}%`,
-                    risk: confidence > 75 ? 'FAIBLE' : 'MOYEN',
                     probA: `${Math.round(scoreP1)}%`,
                     probB: `${Math.round(100 - scoreP1)}%`,
-                    bestBet: recommendedBet,
-                    recoWinner: recommendedBet,
-                    volatility: marketType === 'SCORE EXACT' ? 'Haute' : 'Faible'
+                    risk: confidence > 75 ? 'FAIBLE' : confidence < 45 ? 'ÉLEVÉ' : 'MOYEN',
+                    recoWinner: recommendedBet
                 }
             };
+
+            return result;
+
         } catch (e) {
             console.error("Erreur calcul IA", e);
-            return { 
-                winner: report.identity.p1Name, 
-                confidence: 50, 
-                risk: 'HIGH', 
-                recoWinner: "Données insuffisantes", 
+            
+            // ✅ RETOUR ERROR - Même structure
+            const errorResult: RefinedPrediction = {
+                confidence: 50,
+                winner: report.identity.p1Name,
+                risk: 'HIGH',
+                recoWinner: "Données insuffisantes",
                 updatedPredictionSection: {
-                    probA: "50%", probB: "50%", bestBet: "-", recoWinner: "-", risk: "-"
-                } 
+                    probA: "50%",
+                    probB: "50%",
+                    risk: "ÉLEVÉ",
+                    recoWinner: "Analyse en attente"
+                }
             };
+
+            return errorResult;
         }
     }
   }
