@@ -4,6 +4,8 @@ import React, { useState, useRef } from 'react';
 import { GodModeReportV2 } from '../engine/types';
 import { GodModeTable } from '../components/GodModeTable';
 import { ImageEngine } from '../engine/ImageEngine';
+import { useData } from '../context/DataContext';
+import { useAnalysis } from '../context/AnalysisContext';
 import { CheckCircle, Search, Upload, X } from 'lucide-react';
 
 export const ProgramPage: React.FC = () => {
@@ -15,11 +17,58 @@ export const ProgramPage: React.FC = () => {
   const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({ show: false, message: '', type: 'success' });
   
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // ✅ Accès au contextes
+  const { addManualMatch } = useData();
+  const { saveAnalysis } = useAnalysis();
 
   // ✅ TOAST NOTIFICATION
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ show: true, message, type });
     setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000);
+  };
+
+  // ✅ SAUVEGARDER VERS ANALYSE IA
+  const handleSaveToAnalysis = () => {
+    if (!report) {
+      showToast('Aucun rapport à sauvegarder', 'error');
+      return;
+    }
+
+    try {
+      // 1️⃣ Créer un Match à partir du rapport
+      const matchId = `manual_${Date.now()}`;
+      const newMatch = {
+        id: matchId,
+        player1: { name: report.identity.p1Name },
+        player2: { name: report.identity.p2Name },
+        tournament: report.identity.tournament || 'Unknown',
+        date: report.identity.date || new Date().toISOString(),
+        status: 'LIVE' as const,
+        ai: {
+          circuit: 'WTA' as const,
+          predictedWinner: report.prediction.winner || report.identity.p1Name,
+          confidence: parseInt(report.prediction.confidence) || 50
+        }
+      };
+
+      // 2️⃣ Ajouter au DataContext
+      addManualMatch(newMatch);
+
+      // 3️⃣ Sauvegarder dans AnalysisContext
+      saveAnalysis(matchId, report);
+
+      // 4️⃣ Feedback utilisateur
+      showToast(`✅ Match ${report.identity.p1Name} vs ${report.identity.p2Name} envoyé à l'Analyse IA!`, 'success');
+
+      // 5️⃣ Réinitialiser après 2s
+      setTimeout(() => {
+        setReport(null);
+      }, 2000);
+    } catch (error) {
+      console.error('Erreur sauvegarde:', error);
+      showToast('Erreur lors de la sauvegarde', 'error');
+    }
   };
 
   // ✅ MULTI-UPLOAD
@@ -68,11 +117,8 @@ export const ProgramPage: React.FC = () => {
 
   // ✅ ENREGISTRER LA FICHE GODMODE - SIMPLE, SANS CRASH
   const handleSaveGodMode = () => {
-    if (report) {
-      console.log('✅ Fiche sauvegardée:', report);
-      showToast('✅ Fiche enregistrée!', 'success');
-      // Pas d'appel API, pas de redirection - juste un message
-    }
+    // Cette fonction sera remplacée par handleSaveToAnalysis
+    handleSaveToAnalysis();
   };
 
   // ✅ METTRE À JOUR LE RAPPORT
@@ -218,21 +264,13 @@ export const ProgramPage: React.FC = () => {
                   </p>
                 </div>
                 
-                {/* ✅ BOUTONS ACTIONS */}
-                <div className="flex gap-2 flex-shrink-0">
-                  <button 
-                    onClick={() => setShowModal(true)}
-                    className="px-4 py-2 bg-green-600 hover:bg-green-500 text-white rounded-lg font-bold text-sm transition-all"
-                  >
-                    Enregistrer Match
-                  </button>
-                  <button 
-                    onClick={() => setReport(null)} 
-                    className="px-4 py-2 text-xs underline text-gray-400 hover:text-white rounded-lg"
-                  >
-                    Nouvelle recherche
-                  </button>
-                </div>
+                {/* ✅ BOUTON NOUVELLE RECHERCHE UNIQUEMENT */}
+                <button 
+                  onClick={() => setReport(null)} 
+                  className="ml-auto px-4 py-2 text-xs underline text-gray-400 hover:text-white rounded-lg"
+                >
+                  Nouvelle recherche
+                </button>
               </div>
 
               {/* GODMODETABLE */}
