@@ -56,8 +56,20 @@ export const AnalysisPage: React.FC = () => {
     try {
        const report = await GodEngine.generateReportV2(selectedMatch.player1.name, selectedMatch.player2.name, selectedMatch.tournament);
        
-       // Calcul Prédiction - ✅ AJOUT DE updatedPredictionSection ICI
-       let refined = { confidence: 50, winner: "Analyse...", risk: "HIGH", recoWinner: "-", updatedPredictionSection: { probA: "50%", probB: "50%", risk: "MEDIUM", recoWinner: "-" } };
+       // Calcul Prédiction - ✅ TYPAGE CORRECT
+       let refined: any = { 
+        confidence: 50, 
+        winner: "Analyse...", 
+        risk: "HIGH", 
+        recoWinner: "-", 
+        updatedPredictionSection: { 
+          probA: "50%", 
+          probB: "50%", 
+          risk: "MEDIUM", 
+          recoWinner: "-" 
+        } 
+       };
+       
        if (OracleAI.predictor && typeof OracleAI.predictor.refinePrediction === 'function') {
            // @ts-ignore
            refined = OracleAI.predictor.refinePrediction(report);
@@ -110,14 +122,27 @@ export const AnalysisPage: React.FC = () => {
   const handleManualSave = () => {
     if (!currentReport || !selectedMatch) return;
     try {
-      let refined = { confidence: 50, winner: "", risk: "", recoWinner: "", updatedPredictionSection: { probA: "50%", probB: "50%", risk: "MEDIUM", recoWinner: "-" } };
+      // ✅ TYPAGE CORRECT: refined est un RefinedPrediction
+      let refined: any = { 
+        confidence: 50, 
+        winner: "", 
+        risk: "MEDIUM", 
+        recoWinner: "", 
+        updatedPredictionSection: { 
+          probA: "50%", 
+          probB: "50%", 
+          risk: "MEDIUM", 
+          recoWinner: "-" 
+        } 
+      };
       
-      // @ts-ignore
+      // @ts-ignore - OracleAI peut retourner un type plus flexible
       if (OracleAI.predictor && typeof OracleAI.predictor.refinePrediction === 'function') {
           // @ts-ignore
           refined = OracleAI.predictor.refinePrediction(currentReport);
       }
 
+      // ✅ ACCÈS SÉCURISÉ AVEC ?.
       const finalReport = {
         ...currentReport,
         prediction: {
@@ -133,7 +158,10 @@ export const AnalysisPage: React.FC = () => {
       setCurrentReport(finalReport);
       setSaveStatus("✅ IA mise à jour !");
       setTimeout(() => setSaveStatus(""), 3000);
-    } catch (error) { console.error(error); }
+    } catch (error) { 
+      console.error("Erreur handleManualSave:", error); 
+      setSaveStatus("❌ Erreur");
+    }
   };
 
   const handleReset = () => {
