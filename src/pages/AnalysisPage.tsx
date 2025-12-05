@@ -7,20 +7,20 @@ import { MatchCard } from '../components/MatchCard';
 import { Match } from '../types';
 import { OracleReactor } from '../components/OracleReactor';
 
-// IMPORTS DES MOTEURS
+// IMPORTS MOTEURS
 import { GodEngine } from '../engine/market/GodEngine';
 import { GodModeTable } from '../components/GodModeTable';
 import { ImageEngine } from '../engine/ImageEngine';
 import { GodModeReportV2 } from '../engine/types';
 import { OracleAI } from '../engine';
 
-import { Globe, Cpu, CheckCircle2, Lock, Upload, Image as ImageIcon, RotateCcw } from 'lucide-react';
+// ✅ AJOUT DE 'Zap' DANS LES IMPORTS
+import { Globe, Cpu, CheckCircle2, Lock, Upload, Image as ImageIcon, RotateCcw, Zap } from 'lucide-react';
 
 export const AnalysisPage: React.FC = () => {
   const { matches } = useData();
   const { saveAnalysis, getAnalysis } = useAnalysis();
   
-  // Filtre les matchs jouables
   const activeMatches = matches.filter(m => m.status !== 'FINISHED');
   
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
@@ -31,12 +31,10 @@ export const AnalysisPage: React.FC = () => {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Auto-sélection
   useEffect(() => {
     if (activeMatches.length > 0 && !selectedMatch) setSelectedMatch(activeMatches[0]);
   }, [matches]);
 
-  // Chargement de la mémoire
   useEffect(() => {
     if (selectedMatch) {
         const saved = getAnalysis(selectedMatch.id);
@@ -49,40 +47,33 @@ export const AnalysisPage: React.FC = () => {
     }
   }, [selectedMatch]);
 
-  // --- LE CŒUR DU SYSTÈME : SCAN WEB + CALCUL PRÉDICTION ---
+  // --- 1. SCAN WEB ---
   const runGodMode = async () => {
     if (!selectedMatch) return;
     
-    setIsComputing(true); // Lance l'animation
+    setIsComputing(true); 
     
     try {
-       // 1. Récupération des données brutes (Web, Météo, H2H)
        const report = await GodEngine.generateReportV2(selectedMatch.player1.name, selectedMatch.player2.name, selectedMatch.tournament);
        
-       // 2. CALCUL IMMÉDIAT DE LA PRÉDICTION
-       // ✅ CORRECTION ICI : On force le type 'any' pour éviter l'erreur TS2339
-       let predictionResult: any = { confidence: 50, winner: "Analyse...", risk: "HIGH", recoWinner: "-" };
-       
+       // Calcul Prédiction
+       let refined = { confidence: 50, winner: "Analyse...", risk: "HIGH", recoWinner: "-" };
        if (OracleAI.predictor && typeof OracleAI.predictor.refinePrediction === 'function') {
            // @ts-ignore
-           const refined = OracleAI.predictor.refinePrediction(report);
-           predictionResult = refined;
+           refined = OracleAI.predictor.refinePrediction(report);
        }
 
-       // 3. Fusion des données + Prédiction
        const finalReport: GodModeReportV2 = {
            ...report,
            prediction: {
                ...report.prediction,
-               // Maintenant TS accepte updatedPredictionSection car predictionResult est 'any'
-               probA: predictionResult.updatedPredictionSection?.probA || "50%",
-               probB: predictionResult.updatedPredictionSection?.probB || "50%",
-               risk: (predictionResult.risk || "MEDIUM") as string,
-               recoWinner: predictionResult.recoWinner || "En attente"
+               probA: refined.updatedPredictionSection?.probA || "50%",
+               probB: refined.updatedPredictionSection?.probB || "50%",
+               risk: (refined.risk || "MEDIUM") as string,
+               recoWinner: refined.recoWinner || "En attente"
            }
        };
 
-       // 4. Sauvegarde et Affichage
        saveAnalysis(selectedMatch.id, finalReport);
        setCurrentReport(finalReport);
 
@@ -91,32 +82,50 @@ export const AnalysisPage: React.FC = () => {
        alert("Erreur lors de la génération du rapport.");
     }
     
-    setIsComputing(false); // Arrête l'animation
+    setIsComputing(false);
   };
 
-  // Mise à jour manuelle (Quand tu tapes dans le tableau)
+  // --- 2. SCAN SCREENSHOT (Nécessaire pour éviter l'erreur TS) ---
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !selectedMatch) return;
+
+    setIsComputing(true);
+    try {
+        const reportFromImage = await ImageEngine.analyzeScreenshot(file, selectedMatch);
+        saveAnalysis(selectedMatch.id, reportFromImage);
+        setCurrentReport(reportFromImage);
+    } catch (e) {
+        console.error("Erreur lecture image", e);
+        alert("Impossible de lire l'image.");
+    }
+    setIsComputing(false);
+  };
+
   const handleReportUpdate = (newReport: GodModeReportV2) => {
       setCurrentReport(newReport);
   };
 
-  // Sauvegarde manuelle (Bouton Enregistrer)
+  // --- 3. SAUVEGARDE ---
   const handleManualSave = () => {
     if (!currentReport || !selectedMatch) return;
     try {
-      // On recalcule au cas où tu as modifié des stats manuellement
-      // ✅ CORRECTION ICI AUSSI : Type 'any'
-      let refined: any = { confidence: 50, winner: "", risk: "", recoWinner: "" };
+      let refined = { confidence: 50, winner: "", risk: "", recoWinner: "", updatedPredictionSection: { probA: "50%", probB: "50%", risk: "MEDIUM", recoWinner: "-" } };
       
       // @ts-ignore
-      if (OracleAI.predictor) refined = OracleAI.predictor.refinePrediction(currentReport);
+      if (OracleAI.predictor && typeof OracleAI.predictor.refinePrediction === 'function') {
+          // @ts-ignore
+          refined = OracleAI.predictor.refinePrediction(currentReport);
+      }
 
       const finalReport = {
         ...currentReport,
         prediction: {
           ...currentReport.prediction,
-          probA: refined.updatedPredictionSection?.probA || currentReport.prediction?.probA,
-          probB: refined.updatedPredictionSection?.probB || currentReport.prediction?.probB,
-          recoWinner: refined.recoWinner
+          probA: refined.updatedPredictionSection?.probA || "50%",
+          probB: refined.updatedPredictionSection?.probB || "50%",
+          risk: refined.updatedPredictionSection?.risk || "MEDIUM",
+          recoWinner: refined.recoWinner || "N/A"
         }
       };
 
@@ -127,10 +136,9 @@ export const AnalysisPage: React.FC = () => {
     } catch (error) { console.error(error); }
   };
 
-  // Reset (Pour forcer le cadenas et refaire une analyse)
   const handleReset = () => {
       if (window.confirm("Effacer les données et relancer une analyse ?")) {
-          setCurrentReport(null); // Retour au cadenas
+          setCurrentReport(null);
       }
   };
 
@@ -145,6 +153,8 @@ export const AnalysisPage: React.FC = () => {
   return (
     <>
       <OracleReactor isVisible={isComputing} onComplete={() => setIsComputing(false)} />
+      
+      {/* Input caché nécessaire */}
       <input type="file" ref={fileInputRef} style={{ display: 'none' }} accept="image/*" onChange={handleFileUpload} />
 
       <div className="flex flex-col lg:flex-row gap-6 h-full w-full overflow-hidden">
@@ -191,7 +201,6 @@ export const AnalysisPage: React.FC = () => {
                  
                  <div className="flex gap-2 items-center flex-shrink-0">
                    {!currentReport ? (
-                     // BOUTON SCAN (Si pas de rapport)
                      <button 
                        onClick={runGodMode} 
                        disabled={isComputing}
@@ -200,7 +209,6 @@ export const AnalysisPage: React.FC = () => {
                        <Cpu size={18} /> LANCER GOD MODE
                      </button>
                    ) : (
-                       // INDICATEUR PRÊT + RESET
                        <div className="flex flex-col items-end gap-1">
                            <div className="flex gap-2">
                                <div className="px-3 py-1 bg-green-900/30 border border-green-500/30 rounded-lg text-green-400 text-xs font-bold flex items-center gap-2">
@@ -219,7 +227,6 @@ export const AnalysisPage: React.FC = () => {
               {/* CONTENU */}
               <div className="flex-1 overflow-hidden bg-neutral-950 relative">
                   {currentReport ? (
-                      // TABLEAU DE BORD (Si analyse faite)
                       <div className="h-full overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-neutral-700">
                           <GodModeTable 
                               report={currentReport} 
@@ -229,7 +236,6 @@ export const AnalysisPage: React.FC = () => {
                           <div className="h-10"></div>
                       </div>
                   ) : (
-                      // CADENAS (Si pas d'analyse)
                       <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500 p-6">
                           <div className="border-2 border-dashed border-neutral-800 rounded-xl bg-black/10 p-12 flex flex-col items-center max-w-lg w-full">
                               <div className="relative mb-6">
@@ -244,6 +250,7 @@ export const AnalysisPage: React.FC = () => {
                                 onClick={runGodMode}
                                 className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white py-3 rounded-lg font-bold text-sm flex justify-center items-center gap-2 hover:scale-105 transition-transform"
                               >
+                                {/* ✅ UTILISATION CORRECTE DE ZAP */}
                                 <Zap size={18}/> DÉVERROUILLER
                               </button>
                           </div>
