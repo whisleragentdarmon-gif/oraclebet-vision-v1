@@ -35,6 +35,10 @@ export const AnalysisPage: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    console.log("🎯 showModal changé:", showModal);
+  }, [showModal]);
+
+  useEffect(() => {
     if (activeMatches.length > 0 && !selectedMatch) setSelectedMatch(activeMatches[0]);
   }, [matches]);
 
@@ -93,7 +97,11 @@ export const AnalysisPage: React.FC = () => {
        setCurrentReport(finalReport);
        
        // AJOUT: ouvrir le modal après 1 seconde
-       setTimeout(() => setShowModal(true), 1000);
+       console.log("🎯 Analyse terminée, ouverture du modal dans 1s...");
+       setTimeout(() => {
+         console.log("🎯 setShowModal(true) appelé !");
+         setShowModal(true);
+       }, 1000);
 
     } catch (e) {
        console.error("Erreur God Mode:", e);
@@ -299,7 +307,8 @@ export const AnalysisPage: React.FC = () => {
 
       {/* AJOUT: MODAL PRÉDICTIONS */}
       {showModal && currentReport && selectedMatch && (
-        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={() => setShowModal(false)}>
+        <div className="fixed inset-0 bg-black/90 z-[99999] flex items-center justify-center p-4" onClick={() => setShowModal(false)}>
+          {console.log("🎯 MODAL RENDU !")}
           <div className="bg-neutral-900 border-2 border-purple-500/50 rounded-2xl max-w-4xl w-full" onClick={(e) => e.stopPropagation()}>
             
             <div className="flex justify-between items-center p-6 border-b border-neutral-800">
