@@ -48,7 +48,6 @@ export const OracleReactor: React.FC<Props> = ({ isVisible, onComplete }) => {
       
       <div className="space-y-3 w-80 text-center">
         {steps.map((msg, i) => (
-            {/* ✅ CORRECTION ICI - className={` au lieu de className=` */}
             <div 
               key={i} 
               className={`flex items-center justify-center gap-3 transition-all duration-300 ${
