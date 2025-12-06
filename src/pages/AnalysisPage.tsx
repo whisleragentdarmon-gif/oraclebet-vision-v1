@@ -207,16 +207,30 @@ export const AnalysisPage: React.FC = () => {
     const file = event.target.files?.[0];
     if (!file || !selectedMatch) return;
 
+    console.log('📸 Upload screenshot - NOUVEAU match');
+    
+    // ✅ FORCER le nettoyage du rapport actuel
+    setCurrentReport(null);
+    setShowModal(false);
+    
     setIsComputing(true);
     try {
         const reportFromImage = await ImageEngine.analyzeScreenshot(file, selectedMatch);
-        saveAnalysis(selectedMatch.id, reportFromImage);
+        
+        // ✅ CORRECTION : Utiliser l'ID du rapport (unique) au lieu de selectedMatch.id
+        const uniqueMatchId = reportFromImage.identity.matchId || `screenshot-${Date.now()}`;
+        console.log('💾 Sauvegarde avec ID unique:', uniqueMatchId);
+        
+        saveAnalysis(uniqueMatchId, reportFromImage);
         setCurrentReport(reportFromImage);
     } catch (e) {
         console.error("Erreur lecture image", e);
         alert("Impossible de lire l'image.");
     }
     setIsComputing(false);
+    
+    // ✅ Reset le input file pour permettre de réuploader
+    if (event.target) event.target.value = '';
   };
 
   const handleReportUpdate = (newReport: GodModeReportV2) => {
