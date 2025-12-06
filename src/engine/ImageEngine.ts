@@ -75,19 +75,19 @@ const cleanStr = (str: string) => str.replace(/[^a-zA-Z0-9\s%.-]/g, '').trim();
  * Structure Vierge Complète (Pour écraser la mémoire)
  */
 const getEmptyReport = (matchId: string): GodModeReportV2 => {
-  // Générateur de clés vides pour les tableaux dynamiques (match1...match100)
-  const emptyMatches = Array.from({length: 100}).reduce((acc: any, _, i) => {
+  // ✅ CORRECTION ICI : On force le type 'any' pour éviter l'erreur TS2698
+  const emptyMatches: any = Array.from({length: 100}).reduce((acc: any, _, i) => {
     acc[`match${i+1}_date`] = ""; acc[`match${i+1}_opponent`] = ""; 
     acc[`match${i+1}_score`] = ""; acc[`match${i+1}_tournament`] = "";
     return acc;
   }, {});
 
-  const emptyTitles = Array.from({length: 20}).reduce((acc: any, _, i) => {
+  const emptyTitles: any = Array.from({length: 20}).reduce((acc: any, _, i) => {
     acc[`title${i+1}_year`] = ""; acc[`title${i+1}_tournament`] = "";
     return acc;
   }, {});
 
-  const emptyInjuries = Array.from({length: 10}).reduce((acc: any, _, i) => {
+  const emptyInjuries: any = Array.from({length: 10}).reduce((acc: any, _, i) => {
     acc[`injury${i+1}_date`] = ""; acc[`injury${i+1}_name`] = "";
     return acc;
   }, {});
@@ -144,7 +144,7 @@ export const ImageEngine = {
       console.log("🔄 OCR: Initialisation...");
       // @ts-ignore
       const Tesseract = await import('tesseract.js');
-      const worker = await Tesseract.createWorker('eng'); // Anglais lit mieux les données techniques
+      const worker = await Tesseract.createWorker('eng'); 
       const { data: { text } } = await worker.recognize(file);
       await worker.terminate();
 
@@ -153,16 +153,15 @@ export const ImageEngine = {
       // B. PRÉ-TRAITEMENT
       const lines = text.split('\n')
         .map(l => l.trim())
-        .filter(l => l.length > 2) // Filtre bruit court
-        .filter(l => !BLACKLIST.some(bad => l.toLowerCase().includes(bad))); // Filtre paris
+        .filter(l => l.length > 2)
+        .filter(l => !BLACKLIST.some(bad => l.toLowerCase().includes(bad)));
 
       // C. ANALYSE SÉMANTIQUE
       let potentialNames: string[] = [];
-      let currentSection = 'UNKNOWN'; // Pour savoir si on lit des stats ou des titres
-
+      
       lines.forEach((line, index) => {
         const lower = line.toLowerCase();
-        const clean = cleanStr(line);
+        // const clean = cleanStr(line); // Optionnel si on veut garder la ponctuation pour le parsing
 
         // --- 1. DÉTECTION SURFACE ---
         for (const [key, val] of Object.entries(DICTIONARY.surfaces)) {
@@ -170,12 +169,10 @@ export const ImageEngine = {
         }
 
         // --- 2. DÉTECTION NOMS (Heuristique Stricte) ---
-        // Une ligne est un nom si : Pas de chiffres, Pas de mots-clés stats, Longueur correcte
         const hasDigits = /\d/.test(line);
         const isStatKeyword = Object.values(DICTIONARY.stats).some(regex => regex.test(lower));
         
         if (!hasDigits && !isStatKeyword && line.length > 3 && line.length < 25 && line.includes(' ')) {
-            // Nettoyage supplémentaire
             const nameCandidate = line.replace(/[^a-zA-Z\s.-]/g, '').trim();
             if (nameCandidate.length > 3) potentialNames.push(nameCandidate);
         }
@@ -183,7 +180,6 @@ export const ImageEngine = {
         // --- 3. DÉTECTION CLASSEMENT (Rank) ---
         const rankMatch = line.match(/(?:ATP|WTA|Rank|#)\s?\.?\s?(\d+)/i);
         if (rankMatch) {
-            // On attribue le rang au joueur qui n'en a pas encore
             if (!report.p1.rank) report.p1.rank = `#${rankMatch[1]}`;
             else if (!report.p2.rank) report.p2.rank = `#${rankMatch[1]}`;
         }
@@ -197,20 +193,17 @@ export const ImageEngine = {
             else report.p2.ageHeight = `${ageMatch[1]} ans / ?`;
         }
         if (heightMatch) {
-             // On essaie de compléter le champ ageHeight
              if (report.p1.ageHeight.includes('?')) report.p1.ageHeight = report.p1.ageHeight.replace('?', `${heightMatch[1]}m`);
              else if (!report.p1.ageHeight) report.p1.ageHeight = `? / ${heightMatch[1]}m`;
              else if (report.p2.ageHeight.includes('?')) report.p2.ageHeight = report.p2.ageHeight.replace('?', `${heightMatch[1]}m`);
         }
 
-        // --- 5. DÉTECTION STATS (La partie complexe) ---
-        // On cherche le pattern "Chiffre - Mot Clé - Chiffre" (ex: 5 Aces 12)
-        // ou "Mot Clé - Chiffre - Chiffre"
+        // --- 5. DÉTECTION STATS ---
         const numbers = line.match(/(\d+(?:\.\d+)?%?)/g);
         
         if (numbers && numbers.length >= 2) {
             const v1 = numbers[0];
-            const v2 = numbers[1]; // Parfois le 2eme chiffre est loin, à améliorer si besoin
+            const v2 = numbers[1];
 
             if (DICTIONARY.stats.aces.test(lower)) {
                 report.p1.aces = v1; report.p2.aces = v2;
@@ -224,7 +217,7 @@ export const ImageEngine = {
             }
         }
 
-        // --- 6. DÉTECTION FORME (Série V/D) ---
+        // --- 6. DÉTECTION FORME ---
         const formMatch = line.match(/\b([VDWL])\s+([VDWL])\s+([VDWL])\s+([VDWL])\s+([VDWL])\b/i);
         if (formMatch) {
              const cleanForm = formMatch.slice(1).map(char => DICTIONARY.results[char.toLowerCase() as keyof typeof DICTIONARY.results] || 'W').join('-');
@@ -232,25 +225,23 @@ export const ImageEngine = {
              else report.p2.last5 = cleanForm;
         }
 
-        // --- 7. DÉTECTION COTES (Bookmakers) ---
+        // --- 7. DÉTECTION COTES ---
         const oddsMatch = line.match(/(\d\.\d{2})/g);
         if (oddsMatch && oddsMatch.length >= 2) {
-            // On suppose que la première paire de décimaux trouvée correspond aux cotes
             if (!report.bookmaker.oddA) {
                 report.bookmaker.oddA = oddsMatch[0];
                 report.bookmaker.oddB = oddsMatch[1];
             }
         }
 
-        // --- 8. ALERTES BLESSURE / ABANDON ---
+        // --- 8. ALERTES ---
         if (DICTIONARY.context.injury.test(lower)) {
-            report.p1.injury = "ALERTE (Scan)"; // On marque l'alerte, l'humain vérifiera qui
+            report.p1.injury = "ALERTE (Scan)";
         }
 
-      }); // Fin de la boucle lignes
+      }); 
 
       // D. ATTRIBUTION DES NOMS
-      // On essaie de faire correspondre avec les noms du match actuel
       if (potentialNames.length > 0) {
           const matchP1 = potentialNames.find(n => fallbackP1.toLowerCase().includes(n.toLowerCase().split(' ')[1] || 'xyz'));
           const matchP2 = potentialNames.find(n => fallbackP2.toLowerCase().includes(n.toLowerCase().split(' ')[1] || 'xyz'));
@@ -264,13 +255,10 @@ export const ImageEngine = {
 
     } catch (e) {
       console.error("❌ Erreur OCR Critique:", e);
-      // En cas de crash total, on renvoie quand même l'objet vide avec les noms par défaut
       report.identity.p1Name = fallbackP1;
       report.identity.p2Name = fallbackP2;
     }
 
-    // Le rapport retourné est propre, structuré, et contient des cases vides là où l'OCR a échoué.
-    // Pas d'invention.
     return report;
   }
 };
