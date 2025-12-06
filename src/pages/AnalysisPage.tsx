@@ -193,20 +193,31 @@ export const AnalysisPage: React.FC = () => {
     setIsComputing(false);
   };
 
-  // --- 2. SCAN SCREENSHOT ---
+ // --- 2. SCAN SCREENSHOT (CORRIGÉ) ---
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file || !selectedMatch) return;
 
+    // 🛑 RESET TOTAL : On efface tout ce qu'il y avait avant
+    setCurrentReport(null);
+    setSaveStatus("");
     setIsComputing(true);
+    
+    // On vide la valeur de l'input pour pouvoir ré-uploader le même fichier si besoin
+    event.target.value = ''; 
+
     try {
         const reportFromImage = await ImageEngine.analyzeScreenshot(file, selectedMatch);
+        
+        // Sauvegarde
         saveAnalysis(selectedMatch.id, reportFromImage);
         setCurrentReport(reportFromImage);
+        
     } catch (e) {
         console.error("Erreur lecture image", e);
-        alert("Impossible de lire l'image.");
+        alert("Impossible de lire l'image. Essayez une capture plus nette.");
     }
+    
     setIsComputing(false);
   };
 
