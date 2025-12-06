@@ -29,6 +29,9 @@ export const AnalysisPage: React.FC = () => {
   const [currentReport, setCurrentReport] = useState<GodModeReportV2 | null>(null);
   const [saveStatus, setSaveStatus] = useState("");
   
+  // ✅ NOUVEAU : Compteur pour forcer le refresh de GodModeTable
+  const [uploadCounter, setUploadCounter] = useState(0);
+  
   // AJOUT: state pour le modal
   const [showModal, setShowModal] = useState(false);
 
@@ -213,6 +216,9 @@ export const AnalysisPage: React.FC = () => {
     setCurrentReport(null);
     setShowModal(false);
     
+    // ✅ Incrémenter le compteur pour forcer le refresh de GodModeTable
+    setUploadCounter(prev => prev + 1);
+    
     setIsComputing(true);
     try {
         const reportFromImage = await ImageEngine.analyzeScreenshot(file, selectedMatch);
@@ -383,6 +389,7 @@ export const AnalysisPage: React.FC = () => {
                       )}
                       
                       <GodModeTable 
+                          key={`godmode-${uploadCounter}-${currentReport?.identity.p1Name || 'p1'}-vs-${currentReport?.identity.p2Name || 'p2'}`}
                           report={currentReport || getEmptyReport()} 
                           onUpdate={handleReportUpdate}
                           onSave={handleManualSave}
