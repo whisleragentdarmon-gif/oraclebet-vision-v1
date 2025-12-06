@@ -410,12 +410,26 @@ export const AnalysisPage: React.FC = () => {
                           </div>
                       )}
                       
-                      <GodModeTable 
-                          key={`godmode-${uploadCounter}-${currentReport?.identity.p1Name || 'p1'}-vs-${currentReport?.identity.p2Name || 'p2'}`}
-                          report={currentReport || getEmptyReport()} 
-                          onUpdate={handleReportUpdate}
-                          onSave={handleManualSave}
-                      />
+                      {(() => {
+                        const reportToUse = currentReport || getEmptyReport();
+                        console.log('🎨 RENDU GodModeTable avec:', {
+                          uploadCounter,
+                          p1Name: reportToUse?.identity?.p1Name,
+                          p2Name: reportToUse?.identity?.p2Name,
+                          p1Rank: reportToUse?.p1?.rank,
+                          p2Rank: reportToUse?.p2?.rank,
+                          key: `godmode-${uploadCounter}-${reportToUse?.identity?.p1Name || 'p1'}-vs-${reportToUse?.identity?.p2Name || 'p2'}`
+                        });
+                        
+                        return (
+                          <GodModeTable 
+                              key={`godmode-${uploadCounter}-${reportToUse?.identity?.p1Name || 'p1'}-vs-${reportToUse?.identity?.p2Name || 'p2'}`}
+                              report={reportToUse} 
+                              onUpdate={handleReportUpdate}
+                              onSave={handleManualSave}
+                          />
+                        );
+                      })()}
                       <div className="h-10"></div>
                   </div>
               </div>
