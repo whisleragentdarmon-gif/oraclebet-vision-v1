@@ -53,12 +53,11 @@ export const ImageEngine = {
       console.error('❌ OCR error:', error);
     }
     
-    // POPUP VALIDATION
-    const name1 = prompt(`Joueur 1: "${player1Name || 'Non détecté'}"`, player1Name || 'Joueur 1');
-    const name2 = prompt(`Joueur 2: "${player2Name || 'Non détecté'}"`, player2Name || 'Joueur 2');
-    
-    player1Name = name1?.trim() || `Player-${analysisCount}-A`;
-    player2Name = name2?.trim() || `Player-${analysisCount}-B`;
+    // Si OCR a échoué, utiliser des noms par défaut
+    if (!player1Name || !player2Name) {
+      player1Name = `Player-${analysisCount}-A`;
+      player2Name = `Player-${analysisCount}-B`;
+    }
     
     console.log('✅ Noms finaux:', player1Name, 'vs', player2Name);
     
