@@ -113,10 +113,7 @@ export const ImageEngine = {
     const player1Name = finalName1?.trim() || `Player-${analysisCounter}-A`;
     const player2Name = finalName2?.trim() || `Player-${analysisCounter}-B`;
     
-    const matchId = `screenshot-${player1Name.replace(/\s/g, '-')}-vs-${player2Name.replace(/\s/g, '-')}-${timestamp}-${Math.random().toString(36).substring(2, 9)}`;
-    
     console.log('✅ Noms:', player1Name, 'vs', player2Name);
-    console.log('🆔 ID:', matchId);
     console.log('==========================================');
     
     return {
@@ -127,8 +124,7 @@ export const ImageEngine = {
         surface: detectedSurface,
         date: new Date().toLocaleDateString('fr-FR'),
         time: '15:00',
-        round: 'À déterminer',
-        matchId: matchId
+        round: 'À déterminer'
       },
       p1: {
         rank: '?', bestRank: '?', ageHeight: '? / ?', nationality: '?',
