@@ -18,13 +18,20 @@ export const ImageEngine = {
   analyzeScreenshot: async (file: File, currentMatch: any): Promise<GodModeReportV2> => {
     // ✅ SÉCURITÉ 1 : Empêcher analyses trop rapprochées (contamination)
     const now = Date.now();
-    if (now - lastAnalysisTimestamp < 500) {
-      console.warn('⚠️ Analyse trop rapide, attente de 500ms...');
-      await new Promise(r => setTimeout(r, 500));
+    const analyseNumber = lastAnalysisTimestamp === 0 ? 1 : Math.floor((now - lastAnalysisTimestamp) / 1000);
+    
+    console.log('===========================================');
+    console.log(`📸 ANALYSE #${analyseNumber} - ${file.name}`);
+    console.log(`⏰ Timestamp: ${now}`);
+    console.log(`⏱️ Délai depuis dernière: ${now - lastAnalysisTimestamp}ms`);
+    console.log('===========================================');
+    
+    if (now - lastAnalysisTimestamp < 1000) {
+      console.warn('⚠️ Analyse trop rapide, attente de 1 seconde pour éviter contamination...');
+      await new Promise(r => setTimeout(r, 1000));
     }
     
-    console.log("📸 Analyzing screenshot...", file.name);
-    console.log("🔒 Nouvelle analyse - réinitialisation complète");
+    console.log("🔒 Réinitialisation TOTALE des variables");
     
     // ✅ SÉCURITÉ 2 : Variables TOUJOURS réinitialisées à chaque appel
     let player1Name = '';
@@ -34,18 +41,23 @@ export const ImageEngine = {
     let needsManualInput = false;
     
     try {
-      // Import dynamique de Tesseract
+      // ✅ CRÉER UN WORKER COMPLÈTEMENT NEUF à chaque fois
+      console.log('🔄 Création d\'un NOUVEAU worker Tesseract...');
       const Tesseract = await import('tesseract.js') as unknown as TesseractModule;
-      
-      console.log('🔄 Démarrage OCR...');
       const worker = await Tesseract.createWorker();
+      console.log('✅ Worker créé avec succès');
       
       // Reconnaissance du texte
+      console.log('🔍 Démarrage OCR...');
       const { data: { text } } = await worker.recognize(file);
-      console.log('📝 Texte détecté:', text);
+      console.log('📝 TEXTE BRUT DÉTECTÉ:');
+      console.log('---START---');
+      console.log(text);
+      console.log('---END---');
       
       // Parser les noms de joueurs
       const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+      console.log(`📊 ${lines.length} lignes extraites`);
       
       // Chercher les noms (lignes avec 2+ mots, pas de chiffres au début)
       const potentialNames = lines.filter(line => {
@@ -57,9 +69,16 @@ export const ImageEngine = {
                !/vs|versus|@/i.test(line);
       });
       
+      console.log(`🎾 ${potentialNames.length} noms potentiels trouvés:`);
+      potentialNames.forEach((name, i) => console.log(`  ${i+1}. "${name}"`));
+      
       if (potentialNames.length >= 2) {
         const name1 = potentialNames[0].replace(/[^a-zA-Z\s-]/g, '').trim();
         const name2 = potentialNames[1].replace(/[^a-zA-Z\s-]/g, '').trim();
+        
+        console.log(`🔍 Candidats après nettoyage:`);
+        console.log(`  Joueur 1: "${name1}"`);
+        console.log(`  Joueur 2: "${name2}"`);
         
         // ✅ VALIDATION : Vérifier si les noms semblent corrects
         const isValidName = (name: string) => {
@@ -68,16 +87,22 @@ export const ImageEngine = {
                  /^[a-zA-Z\s-]+$/.test(name); // Que des lettres
         };
         
-        if (isValidName(name1) && isValidName(name2)) {
+        const valid1 = isValidName(name1);
+        const valid2 = isValidName(name2);
+        
+        console.log(`✓ Validation Joueur 1: ${valid1 ? '✅ VALIDE' : '❌ INVALIDE'}`);
+        console.log(`✓ Validation Joueur 2: ${valid2 ? '✅ VALIDE' : '❌ INVALIDE'}`);
+        
+        if (valid1 && valid2) {
           player1Name = name1;
           player2Name = name2;
-          console.log('✅ Noms validés:', player1Name, 'vs', player2Name);
+          console.log('🎉 Noms validés et acceptés !');
         } else {
-          console.warn('⚠️ Noms détectés invalides:', name1, 'vs', name2);
+          console.warn('⚠️ Noms détectés invalides');
           needsManualInput = true;
         }
       } else {
-        console.warn('⚠️ Pas assez de noms détectés');
+        console.warn(`⚠️ Pas assez de noms détectés (${potentialNames.length}/2 requis)`);
         needsManualInput = true;
       }
       
@@ -106,13 +131,21 @@ export const ImageEngine = {
       }
       
       // ✅ SÉCURITÉ 3 : Terminer proprement le worker (évite contamination)
+      console.log('🧹 Nettoyage du worker Tesseract...');
       await worker.terminate();
-      console.log('🧹 Worker Tesseract nettoyé');
+      console.log('✅ Worker terminé et libéré de la mémoire');
       
     } catch (error) {
-      console.warn('⚠️ OCR échoué:', error);
+      console.error('❌ ERREUR OCR:', error);
       needsManualInput = true;
     }
+    
+    console.log('-------------------------------------------');
+    console.log(`📋 Résultat OCR:`);
+    console.log(`   Joueur 1: "${player1Name || 'VIDE'}"`);
+    console.log(`   Joueur 2: "${player2Name || 'VIDE'}"`);
+    console.log(`   Besoin saisie manuelle: ${needsManualInput ? 'OUI' : 'NON'}`);
+    console.log('-------------------------------------------');
     
     // ✅ SI DÉTECTION ÉCHOUÉE OU INVALIDE : Demander saisie manuelle
     if (needsManualInput || !player1Name || !player2Name) {
@@ -147,19 +180,32 @@ export const ImageEngine = {
     const randomSuffix = Math.random().toString(36).substring(2, 7);
     const matchId = `screenshot-${player1Name.replace(/\s/g, '-')}-vs-${player2Name.replace(/\s/g, '-')}-${uniqueTimestamp}-${randomSuffix}`;
     
+    console.log('🆔 Génération ID:');
+    console.log(`   Base: ${player1Name} vs ${player2Name}`);
+    console.log(`   Timestamp: ${uniqueTimestamp}`);
+    console.log(`   Random: ${randomSuffix}`);
+    console.log(`   ID final: ${matchId}`);
+    
     // ✅ SÉCURITÉ 5 : Vérifier qu'on ne réutilise pas le même ID
     if (matchId === lastMatchId) {
-      console.error('❌ ERREUR : Même ID détecté ! Ajout de suffixe');
-      const newId = `${matchId}-retry-${Math.random()}`;
+      console.error('❌ ALERTE: Même ID détecté ! Ajout de suffixe supplémentaire');
+      const newId = `${matchId}-duplicate-${Math.random().toString(36).substring(2, 5)}`;
       lastMatchId = newId;
+      console.log(`   Nouvel ID: ${newId}`);
     } else {
+      console.log('✅ ID unique confirmé');
       lastMatchId = matchId;
     }
     
     // ✅ SÉCURITÉ 6 : Mettre à jour le timestamp de dernière analyse
     lastAnalysisTimestamp = uniqueTimestamp;
     
-    console.log('✅ Analyse terminée:', { player1Name, player2Name, tournament, surface, matchId: lastMatchId });
+    console.log('===========================================');
+    console.log('✅ ANALYSE TERMINÉE');
+    console.log(`   Joueur 1: ${player1Name}`);
+    console.log(`   Joueur 2: ${player2Name}`);
+    console.log(`   Match ID: ${lastMatchId}`);
+    console.log('===========================================');
     
     // Générer les données de remplissage pour le tableau
     const generateMatches = () => {
