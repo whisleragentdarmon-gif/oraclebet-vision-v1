@@ -10,14 +10,28 @@ interface TesseractModule {
   createWorker: () => Promise<TesseractWorker>;
 }
 
+// ✅ SÉCURITÉ : Cache de protection contre réutilisation
+let lastAnalysisTimestamp = 0;
+let lastMatchId = '';
+
 export const ImageEngine = {
   analyzeScreenshot: async (file: File, currentMatch: any): Promise<GodModeReportV2> => {
-    console.log("📸 Analyzing screenshot...", file.name);
+    // ✅ SÉCURITÉ 1 : Empêcher analyses trop rapprochées (contamination)
+    const now = Date.now();
+    if (now - lastAnalysisTimestamp < 500) {
+      console.warn('⚠️ Analyse trop rapide, attente de 500ms...');
+      await new Promise(r => setTimeout(r, 500));
+    }
     
-    let player1Name = 'Joueur 1';
-    let player2Name = 'Joueur 2';
-    let tournament = 'Tournoi';
+    console.log("📸 Analyzing screenshot...", file.name);
+    console.log("🔒 Nouvelle analyse - réinitialisation complète");
+    
+    // ✅ SÉCURITÉ 2 : Variables TOUJOURS réinitialisées à chaque appel
+    let player1Name = '';
+    let player2Name = '';
+    let tournament = '';
     let surface: 'Hard' | 'Clay' | 'Grass' | 'Indoor' = 'Hard';
+    let needsManualInput = false;
     
     try {
       // Import dynamique de Tesseract
@@ -44,9 +58,27 @@ export const ImageEngine = {
       });
       
       if (potentialNames.length >= 2) {
-        player1Name = potentialNames[0].replace(/[^a-zA-Z\s-]/g, '').trim();
-        player2Name = potentialNames[1].replace(/[^a-zA-Z\s-]/g, '').trim();
-        console.log('🎾 Joueurs détectés:', player1Name, 'vs', player2Name);
+        const name1 = potentialNames[0].replace(/[^a-zA-Z\s-]/g, '').trim();
+        const name2 = potentialNames[1].replace(/[^a-zA-Z\s-]/g, '').trim();
+        
+        // ✅ VALIDATION : Vérifier si les noms semblent corrects
+        const isValidName = (name: string) => {
+          return name.length >= 4 && // Au moins 4 caractères
+                 name.split(' ').length >= 2 && // Au moins 2 mots
+                 /^[a-zA-Z\s-]+$/.test(name); // Que des lettres
+        };
+        
+        if (isValidName(name1) && isValidName(name2)) {
+          player1Name = name1;
+          player2Name = name2;
+          console.log('✅ Noms validés:', player1Name, 'vs', player2Name);
+        } else {
+          console.warn('⚠️ Noms détectés invalides:', name1, 'vs', name2);
+          needsManualInput = true;
+        }
+      } else {
+        console.warn('⚠️ Pas assez de noms détectés');
+        needsManualInput = true;
       }
       
       // Détecter le tournoi
@@ -73,18 +105,45 @@ export const ImageEngine = {
         surface = 'Indoor';
       }
       
-      // Terminer le worker
+      // ✅ SÉCURITÉ 3 : Terminer proprement le worker (évite contamination)
       await worker.terminate();
+      console.log('🧹 Worker Tesseract nettoyé');
       
     } catch (error) {
-      console.warn('⚠️ OCR échoué, utilisation des valeurs par défaut:', error);
-      // On continue avec les valeurs par défaut
+      console.warn('⚠️ OCR échoué:', error);
+      needsManualInput = true;
     }
     
-    // Générer un ID unique basé sur les noms + timestamp
-    const matchId = `screenshot-${player1Name.replace(/\s/g, '-')}-vs-${player2Name.replace(/\s/g, '-')}-${Date.now()}`;
+    // ✅ SI DÉTECTION ÉCHOUÉE OU INVALIDE : Demander saisie manuelle
+    if (needsManualInput || !player1Name || !player2Name) {
+      console.log('❓ Saisie manuelle requise');
+      const name1 = prompt('❓ Nom du Joueur 1 (ex: Novak Djokovic) :');
+      const name2 = prompt('❓ Nom du Joueur 2 (ex: Rafael Nadal) :');
+      
+      player1Name = name1 && name1.trim() ? name1.trim() : 'Joueur 1';
+      player2Name = name2 && name2.trim() ? name2.trim() : 'Joueur 2';
+      
+      console.log('✍️ Noms saisis manuellement:', player1Name, 'vs', player2Name);
+    }
     
-    console.log('✅ Analyse terminée:', { player1Name, player2Name, tournament, surface, matchId });
+    // ✅ SÉCURITÉ 4 : ID UNIQUE avec timestamp millisecondes + random
+    const uniqueTimestamp = Date.now();
+    const randomSuffix = Math.random().toString(36).substring(2, 7);
+    const matchId = `screenshot-${player1Name.replace(/\s/g, '-')}-vs-${player2Name.replace(/\s/g, '-')}-${uniqueTimestamp}-${randomSuffix}`;
+    
+    // ✅ SÉCURITÉ 5 : Vérifier qu'on ne réutilise pas le même ID
+    if (matchId === lastMatchId) {
+      console.error('❌ ERREUR : Même ID détecté ! Ajout de suffixe');
+      const newId = `${matchId}-retry-${Math.random()}`;
+      lastMatchId = newId;
+    } else {
+      lastMatchId = matchId;
+    }
+    
+    // ✅ SÉCURITÉ 6 : Mettre à jour le timestamp de dernière analyse
+    lastAnalysisTimestamp = uniqueTimestamp;
+    
+    console.log('✅ Analyse terminée:', { player1Name, player2Name, tournament, surface, matchId: lastMatchId });
     
     // Générer les données de remplissage pour le tableau
     const generateMatches = () => {
@@ -129,12 +188,12 @@ export const ImageEngine = {
       identity: {
         p1Name: player1Name,
         p2Name: player2Name,
-        tournament: tournament,
+        tournament: tournament || 'Tournoi',
         surface: surface,
         date: new Date().toLocaleDateString('fr-FR'),
         time: '15:00',
         round: 'À déterminer',
-        matchId: matchId
+        matchId: lastMatchId // ✅ Utilise l'ID sécurisé
       },
       p1: {
         rank: '?',
