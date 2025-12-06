@@ -210,30 +210,52 @@ export const AnalysisPage: React.FC = () => {
     const file = event.target.files?.[0];
     if (!file || !selectedMatch) return;
 
-    console.log('📸 Upload screenshot - NOUVEAU match');
+    console.log('========================================');
+    console.log('📸 DÉBUT UPLOAD SCREENSHOT');
+    console.log('Fichier:', file.name);
+    console.log('Match sélectionné:', selectedMatch.id);
+    console.log('========================================');
     
     // ✅ FORCER le nettoyage du rapport actuel
+    console.log('🧹 Nettoyage currentReport...');
     setCurrentReport(null);
     setShowModal(false);
     
     // ✅ Incrémenter le compteur pour forcer le refresh de GodModeTable
-    setUploadCounter(prev => prev + 1);
+    setUploadCounter(prev => {
+      console.log('📊 Compteur upload:', prev, '->', prev + 1);
+      return prev + 1;
+    });
     
     setIsComputing(true);
     try {
+        console.log('🔄 Appel ImageEngine.analyzeScreenshot...');
         const reportFromImage = await ImageEngine.analyzeScreenshot(file, selectedMatch);
+        
+        console.log('✅ ImageEngine retourné:');
+        console.log('  - Joueur 1:', reportFromImage.identity.p1Name);
+        console.log('  - Joueur 2:', reportFromImage.identity.p2Name);
+        console.log('  - P1 Rank:', reportFromImage.p1.rank);
+        console.log('  - P2 Rank:', reportFromImage.p2.rank);
         
         // ✅ CORRECTION : Générer un ID unique basé sur les noms + timestamp
         const timestamp = Date.now();
         const randomSuffix = Math.random().toString(36).substring(2, 9);
         const uniqueMatchId = `screenshot-${reportFromImage.identity.p1Name.replace(/\s/g, '-')}-vs-${reportFromImage.identity.p2Name.replace(/\s/g, '-')}-${timestamp}-${randomSuffix}`;
         
-        console.log('💾 Sauvegarde avec ID unique:', uniqueMatchId);
+        console.log('💾 ID unique généré:', uniqueMatchId);
+        console.log('💾 Sauvegarde dans AnalysisContext...');
         
         saveAnalysis(uniqueMatchId, reportFromImage);
+        
+        console.log('✅ setCurrentReport avec nouveau rapport...');
         setCurrentReport(reportFromImage);
+        
+        console.log('========================================');
+        console.log('✅ FIN UPLOAD SCREENSHOT');
+        console.log('========================================');
     } catch (e) {
-        console.error("Erreur lecture image", e);
+        console.error("❌ Erreur lecture image", e);
         alert("Impossible de lire l'image.");
     }
     setIsComputing(false);
