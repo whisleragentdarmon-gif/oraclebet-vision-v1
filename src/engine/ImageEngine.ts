@@ -1,264 +1,202 @@
 import { GodModeReportV2 } from './types';
 
-// ============================================================================
-// 1. LE DICTIONNAIRE ULTIME (FR/EN)
-// ============================================================================
-
-const DICTIONARY = {
-  // Surfaces et Conditions
-  surfaces: {
-    'terre': 'Clay', 'clay': 'Clay', 'brique': 'Clay', 'red': 'Clay',
-    'dur': 'Hard', 'hard': 'Hard', 'beton': 'Hard', 'acrylic': 'Hard',
-    'salle': 'Indoor', 'indoor': 'Indoor', 'i_hard': 'Indoor', 'gymnase': 'Indoor',
-    'gazon': 'Grass', 'grass': 'Grass', 'herbe': 'Grass', 'lawn': 'Grass',
-    'moquette': 'Carpet', 'carpet': 'Carpet'
-  },
-  // Résultats de matchs
-  results: {
-    'v': 'W', 'd': 'L', 'win': 'W', 'loss': 'L', 'g': 'W', 'p': 'L',
-    'victoire': 'W', 'defaite': 'L', 'won': 'W', 'lost': 'L'
-  },
-  // Mots-clés Statistiques (Regex patterns)
-  stats: {
-    aces: /aces|as/i,
-    doubleFaults: /double.*faut|df/i,
-    firstServe: /1er.*serv|1st.*serv/i,
-    win1stServe: /pts.*1er|win.*1st/i,
-    win2ndServe: /pts.*2nd|win.*2nd/i,
-    breakPoints: /balle.*break|break.*point|bp/i,
-    returnPoints: /retour|return/i,
-    winners: /gagnant|winner/i,
-    unforced: /faut.*direct|unforced/i
-  },
-  // Mots-clés Profil
-  profile: {
-    rank: /rang|rank|atp|wta|#/i,
-    age: /age|ans|years|yo/i,
-    height: /taille|height|cm|m/i,
-    hand: /main|hand|droitier|gaucher|right|left/i,
-    country: /pays|country|nat/i
-  },
-  // Mots-clés Contexte (Blessures, etc)
-  context: {
-    injury: /bless|injur|medic|kine|physio|abandon|retire/i,
-    walkover: /wo|walkover|forfait/i,
-    weather: /vent|wind|pluie|rain|temp/i
-  }
-};
-
-// Liste Noire (Anti-Bruit de Pari)
-const BLACKLIST = [
-  'connexion', 'inscription', 'solde', 'mon compte', 'paris', 'sportif',
-  'mise', 'gain', 'potentiel', 'cashout', 'ticket', 'combiné', 'simple',
-  'cote', 'total', 'vainqueur', 'remboursé', 'freebet', 'mybets', 'scanner',
-  'imprimer', 'partager', 'ref', 'id', 'bet', 'win', 'max', 'gains', 'possibles',
-  'matchs', 'selection', 'cotes', 'boost', 'promo', 'offres', 'mes paris'
-];
-
-// ============================================================================
-// 2. TYPES ET UTILITAIRES
-// ============================================================================
-
+// Type pour Tesseract
 interface TesseractWorker {
   recognize: (image: File | string) => Promise<{ data: { text: string } }>;
   terminate: () => Promise<void>;
 }
 
-let lastTimestamp = 0;
+interface TesseractModule {
+  createWorker: () => Promise<TesseractWorker>;
+}
 
-/**
- * Nettoyeur de texte : enlève les caractères spéciaux bizarres de l'OCR
- */
-const cleanStr = (str: string) => str.replace(/[^a-zA-Z0-9\s%.-]/g, '').trim();
-
-/**
- * Structure Vierge Complète (Pour écraser la mémoire)
- */
-const getEmptyReport = (matchId: string): GodModeReportV2 => {
-  // ✅ CORRECTION ICI : On force le type 'any' pour éviter l'erreur TS2698
-  const emptyMatches: any = Array.from({length: 100}).reduce((acc: any, _, i) => {
-    acc[`match${i+1}_date`] = ""; acc[`match${i+1}_opponent`] = ""; 
-    acc[`match${i+1}_score`] = ""; acc[`match${i+1}_tournament`] = "";
-    return acc;
-  }, {});
-
-  const emptyTitles: any = Array.from({length: 20}).reduce((acc: any, _, i) => {
-    acc[`title${i+1}_year`] = ""; acc[`title${i+1}_tournament`] = "";
-    return acc;
-  }, {});
-
-  const emptyInjuries: any = Array.from({length: 10}).reduce((acc: any, _, i) => {
-    acc[`injury${i+1}_date`] = ""; acc[`injury${i+1}_name`] = "";
-    return acc;
-  }, {});
-
-  return {
-    identity: {
-      p1Name: "", p2Name: "", tournament: "", surface: "Hard",
-      date: new Date().toLocaleDateString('fr-FR'), time: "", round: "", matchId
-    },
-    p1: {
-      rank: "", bestRank: "", ageHeight: "", nationality: "", hand: "", style: "",
-      winrateCareer: "", winrateSeason: "", winrateSurface: "",
-      aces: "", doubleFaults: "", firstServe: "", form: "", injury: "", motivation: "", last5: "",
-      ...emptyMatches, ...emptyTitles, ...emptyInjuries
-    },
-    p2: {
-      rank: "", bestRank: "", ageHeight: "", nationality: "", hand: "", style: "",
-      winrateCareer: "", winrateSeason: "", winrateSurface: "",
-      aces: "", doubleFaults: "", firstServe: "", form: "", injury: "", motivation: "", last5: "",
-      ...emptyMatches, ...emptyTitles, ...emptyInjuries
-    },
-    h2h: { global: "", surface: "", advantage: "", lastMatches: "" },
-    conditions: { weather: "", temp: "", wind: "", altitude: "", humidity: "" },
-    bookmaker: { oddA: "", oddB: "", movement: "" },
-    synthesis: { tech: "", mental: "", physical: "", surface: "", momentum: "", xFactor: "", risk: "" },
-    prediction: {
-      probA: "", probB: "", probOver: "", probTieBreak: "", probUpset: "", risk: "",
-      recoWinner: "", recoOver: "", recoSet: ""
-    }
-  } as unknown as GodModeReportV2;
-};
-
-// ============================================================================
-// 3. LE MOTEUR D'EXTRACTION
-// ============================================================================
+// Cache anti-contamination
+let lastMatchId = '';
+let analysisCount = 0;
 
 export const ImageEngine = {
   analyzeScreenshot: async (file: File, currentMatch: any): Promise<GodModeReportV2> => {
+    analysisCount++;
+    const uniqueTimestamp = Date.now();
     
-    // A. RESET & ANTI-SPAM
-    const now = Date.now();
-    if (now - lastTimestamp < 1000) await new Promise(r => setTimeout(r, 800));
-    lastTimestamp = now;
-
-    // On part d'une feuille blanche absolue
-    const uniqueId = `scan-${now}`;
-    const report = getEmptyReport(uniqueId);
+    console.log('===========================================');
+    console.log(`📸 ANALYSE #${analysisCount}`);
+    console.log(`⏰ Timestamp: ${uniqueTimestamp}`);
+    console.log('===========================================');
     
-    // Noms de secours (si OCR échoue totalement)
-    const fallbackP1 = currentMatch?.player1?.name || "Joueur 1";
-    const fallbackP2 = currentMatch?.player2?.name || "Joueur 2";
-
+    // Délai anti-spam
+    await new Promise(r => setTimeout(r, 500));
+    
+    let player1Name = '';
+    let player2Name = '';
+    let isValid = false;
+    
     try {
-      console.log("🔄 OCR: Initialisation...");
-      // @ts-ignore
-      const Tesseract = await import('tesseract.js');
-      const worker = await Tesseract.createWorker('eng'); 
+      console.log('🔄 Démarrage OCR Tesseract...');
+      const Tesseract = await import('tesseract.js') as unknown as TesseractModule;
+      const worker = await Tesseract.createWorker();
+      
       const { data: { text } } = await worker.recognize(file);
       await worker.terminate();
-
-      console.log("📝 Texte OCR brut :", text.substring(0, 150) + "...");
-
-      // B. PRÉ-TRAITEMENT
-      const lines = text.split('\n')
-        .map(l => l.trim())
-        .filter(l => l.length > 2)
-        .filter(l => !BLACKLIST.some(bad => l.toLowerCase().includes(bad)));
-
-      // C. ANALYSE SÉMANTIQUE
-      let potentialNames: string[] = [];
       
-      lines.forEach((line, index) => {
-        const lower = line.toLowerCase();
-        // const clean = cleanStr(line); // Optionnel si on veut garder la ponctuation pour le parsing
-
-        // --- 1. DÉTECTION SURFACE ---
-        for (const [key, val] of Object.entries(DICTIONARY.surfaces)) {
-            if (lower.includes(key)) report.identity.surface = val as any;
-        }
-
-        // --- 2. DÉTECTION NOMS (Heuristique Stricte) ---
-        const hasDigits = /\d/.test(line);
-        const isStatKeyword = Object.values(DICTIONARY.stats).some(regex => regex.test(lower));
+      console.log('📝 Texte OCR (100 premiers caractères):', text.substring(0, 100));
+      
+      // Extraire les noms
+      const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 3);
+      
+      const potentialNames = lines.filter(line => {
+        // Filtre basique : 2+ mots, pas de chiffres au début, longueur raisonnable
+        const words = line.split(' ').filter(w => w.length > 1);
+        return words.length >= 2 && 
+               words.length <= 4 &&
+               !/^\d/.test(line) && 
+               line.length > 5 && 
+               line.length < 35;
+      });
+      
+      console.log(`🎾 ${potentialNames.length} noms potentiels:`, potentialNames.slice(0, 5));
+      
+      if (potentialNames.length >= 2) {
+        const name1 = potentialNames[0].replace(/[^a-zA-Z\s.-]/g, '').trim();
+        const name2 = potentialNames[1].replace(/[^a-zA-Z\s.-]/g, '').trim();
         
-        if (!hasDigits && !isStatKeyword && line.length > 3 && line.length < 25 && line.includes(' ')) {
-            const nameCandidate = line.replace(/[^a-zA-Z\s.-]/g, '').trim();
-            if (nameCandidate.length > 3) potentialNames.push(nameCandidate);
-        }
-
-        // --- 3. DÉTECTION CLASSEMENT (Rank) ---
-        const rankMatch = line.match(/(?:ATP|WTA|Rank|#)\s?\.?\s?(\d+)/i);
-        if (rankMatch) {
-            if (!report.p1.rank) report.p1.rank = `#${rankMatch[1]}`;
-            else if (!report.p2.rank) report.p2.rank = `#${rankMatch[1]}`;
-        }
-
-        // --- 4. DÉTECTION AGE / TAILLE ---
-        const ageMatch = line.match(/(\d{2})\s?(?:ans|years|yo)/i);
-        const heightMatch = line.match(/(\d\.\d{2})\s?m/i);
+        // Validation basique
+        const check1 = name1.length >= 4 && name1.split(' ').length >= 2;
+        const check2 = name2.length >= 4 && name2.split(' ').length >= 2;
         
-        if (ageMatch) {
-            if (!report.p1.ageHeight.includes('/')) report.p1.ageHeight = `${ageMatch[1]} ans / ?`;
-            else report.p2.ageHeight = `${ageMatch[1]} ans / ?`;
+        if (check1 && check2) {
+          player1Name = name1;
+          player2Name = name2;
+          isValid = true;
+          console.log('✅ Noms détectés:', player1Name, 'vs', player2Name);
+        } else {
+          console.warn('⚠️ Noms invalides');
         }
-        if (heightMatch) {
-             if (report.p1.ageHeight.includes('?')) report.p1.ageHeight = report.p1.ageHeight.replace('?', `${heightMatch[1]}m`);
-             else if (!report.p1.ageHeight) report.p1.ageHeight = `? / ${heightMatch[1]}m`;
-             else if (report.p2.ageHeight.includes('?')) report.p2.ageHeight = report.p2.ageHeight.replace('?', `${heightMatch[1]}m`);
-        }
-
-        // --- 5. DÉTECTION STATS ---
-        const numbers = line.match(/(\d+(?:\.\d+)?%?)/g);
-        
-        if (numbers && numbers.length >= 2) {
-            const v1 = numbers[0];
-            const v2 = numbers[1];
-
-            if (DICTIONARY.stats.aces.test(lower)) {
-                report.p1.aces = v1; report.p2.aces = v2;
-            }
-            else if (DICTIONARY.stats.doubleFaults.test(lower)) {
-                report.p1.doubleFaults = v1; report.p2.doubleFaults = v2;
-            }
-            else if (DICTIONARY.stats.firstServe.test(lower)) {
-                report.p1.firstServe = v1.includes('%') ? v1 : v1+'%'; 
-                report.p2.firstServe = v2.includes('%') ? v2 : v2+'%';
-            }
-        }
-
-        // --- 6. DÉTECTION FORME ---
-        const formMatch = line.match(/\b([VDWL])\s+([VDWL])\s+([VDWL])\s+([VDWL])\s+([VDWL])\b/i);
-        if (formMatch) {
-             const cleanForm = formMatch.slice(1).map(char => DICTIONARY.results[char.toLowerCase() as keyof typeof DICTIONARY.results] || 'W').join('-');
-             if (!report.p1.last5) report.p1.last5 = cleanForm;
-             else report.p2.last5 = cleanForm;
-        }
-
-        // --- 7. DÉTECTION COTES ---
-        const oddsMatch = line.match(/(\d\.\d{2})/g);
-        if (oddsMatch && oddsMatch.length >= 2) {
-            if (!report.bookmaker.oddA) {
-                report.bookmaker.oddA = oddsMatch[0];
-                report.bookmaker.oddB = oddsMatch[1];
-            }
-        }
-
-        // --- 8. ALERTES ---
-        if (DICTIONARY.context.injury.test(lower)) {
-            report.p1.injury = "ALERTE (Scan)";
-        }
-
-      }); 
-
-      // D. ATTRIBUTION DES NOMS
-      if (potentialNames.length > 0) {
-          const matchP1 = potentialNames.find(n => fallbackP1.toLowerCase().includes(n.toLowerCase().split(' ')[1] || 'xyz'));
-          const matchP2 = potentialNames.find(n => fallbackP2.toLowerCase().includes(n.toLowerCase().split(' ')[1] || 'xyz'));
-
-          report.identity.p1Name = matchP1 || (potentialNames[0] || fallbackP1);
-          report.identity.p2Name = matchP2 || (potentialNames[1] || fallbackP2);
-      } else {
-          report.identity.p1Name = fallbackP1;
-          report.identity.p2Name = fallbackP2;
       }
-
-    } catch (e) {
-      console.error("❌ Erreur OCR Critique:", e);
-      report.identity.p1Name = fallbackP1;
-      report.identity.p2Name = fallbackP2;
+      
+    } catch (error) {
+      console.error('❌ Erreur OCR:', error);
     }
-
-    return report;
+    
+    // POPUP DE VALIDATION (TOUJOURS)
+    console.log('🔔 Affichage popup...');
+    
+    const confirmedName1 = prompt(
+      `Joueur 1 détecté: "${player1Name || 'Non détecté'}"\n\nValidez ou modifiez:`,
+      player1Name || 'Joueur 1'
+    );
+    
+    const confirmedName2 = prompt(
+      `Joueur 2 détecté: "${player2Name || 'Non détecté'}"\n\nValidez ou modifiez:`,
+      player2Name || 'Joueur 2'  
+    );
+    
+    player1Name = confirmedName1 && confirmedName1.trim() ? confirmedName1.trim() : `Joueur-${analysisCount}-A`;
+    player2Name = confirmedName2 && confirmedName2.trim() ? confirmedName2.trim() : `Joueur-${analysisCount}-B`;
+    
+    console.log('✅ Noms finaux:', player1Name, 'vs', player2Name);
+    
+    // ID UNIQUE GARANTI
+    const randomSuffix = Math.random().toString(36).substring(2, 9);
+    const newMatchId = `${player1Name.replace(/\s/g, '-')}-vs-${player2Name.replace(/\s/g, '-')}-${uniqueTimestamp}-${randomSuffix}`;
+    
+    // Vérification anti-doublon
+    if (newMatchId === lastMatchId) {
+      console.error('⚠️ Même ID détecté, ajout suffixe');
+      lastMatchId = `${newMatchId}-retry`;
+    } else {
+      lastMatchId = newMatchId;
+    }
+    
+    console.log('🆔 Match ID:', lastMatchId);
+    console.log('===========================================');
+    
+    // RAPPORT VIERGE COMPLET
+    return {
+      identity: {
+        p1Name: player1Name,
+        p2Name: player2Name,
+        tournament: 'Tournoi',
+        surface: 'Hard',
+        date: new Date().toLocaleDateString('fr-FR'),
+        time: '15:00',
+        round: 'À déterminer',
+        matchId: lastMatchId
+      },
+      p1: {
+        rank: '?',
+        bestRank: '?',
+        ageHeight: '? / ?',
+        nationality: '?',
+        hand: 'Droitier',
+        style: 'Équilibré',
+        winrateCareer: '?',
+        winrateSeason: '?',
+        winrateSurface: '?',
+        aces: '?',
+        doubleFaults: '?',
+        firstServe: '?',
+        form: '?/10',
+        injury: 'À vérifier',
+        motivation: 'Normale',
+        last5: '?'
+      },
+      p2: {
+        rank: '?',
+        bestRank: '?',
+        ageHeight: '? / ?',
+        nationality: '?',
+        hand: 'Droitier',
+        style: 'Équilibré',
+        winrateCareer: '?',
+        winrateSeason: '?',
+        winrateSurface: '?',
+        aces: '?',
+        doubleFaults: '?',
+        firstServe: '?',
+        form: '?/10',
+        injury: 'À vérifier',
+        motivation: 'Normale',
+        last5: '?'
+      },
+      h2h: {
+        global: '? - ?',
+        surface: '? - ?',
+        advantage: 'Équilibré',
+        lastMatches: 'À analyser'
+      },
+      conditions: {
+        weather: 'Ensoleillé',
+        temp: '24°C',
+        wind: '10 km/h',
+        altitude: 'Niveau mer',
+        humidity: '60%'
+      },
+      bookmaker: {
+        oddA: '1.95',
+        oddB: '1.95',
+        movement: 'STABLE'
+      },
+      synthesis: {
+        tech: player1Name,
+        mental: 'Équilibré',
+        physical: player1Name,
+        surface: 'Équilibré',
+        momentum: player1Name,
+        xFactor: 'À déterminer',
+        risk: 'Moyen'
+      },
+      prediction: {
+        probA: '50%',
+        probB: '50%',
+        probOver: '50%',
+        probTieBreak: '40%',
+        probUpset: '30%',
+        risk: 'MODERATE',
+        recoWinner: 'À analyser avec GOD MODE',
+        recoOver: '?',
+        recoSet: '?'
+      }
+    } as any;
   }
 };
