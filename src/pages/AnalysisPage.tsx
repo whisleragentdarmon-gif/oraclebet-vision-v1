@@ -217,8 +217,11 @@ export const AnalysisPage: React.FC = () => {
     try {
         const reportFromImage = await ImageEngine.analyzeScreenshot(file, selectedMatch);
         
-        // ✅ CORRECTION : Utiliser l'ID du rapport (unique) au lieu de selectedMatch.id
-        const uniqueMatchId = reportFromImage.identity.matchId || `screenshot-${Date.now()}`;
+        // ✅ CORRECTION : Générer un ID unique basé sur les noms + timestamp
+        const timestamp = Date.now();
+        const randomSuffix = Math.random().toString(36).substring(2, 9);
+        const uniqueMatchId = `screenshot-${reportFromImage.identity.p1Name.replace(/\s/g, '-')}-vs-${reportFromImage.identity.p2Name.replace(/\s/g, '-')}-${timestamp}-${randomSuffix}`;
+        
         console.log('💾 Sauvegarde avec ID unique:', uniqueMatchId);
         
         saveAnalysis(uniqueMatchId, reportFromImage);
