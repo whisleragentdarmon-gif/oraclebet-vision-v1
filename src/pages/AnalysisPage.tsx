@@ -125,6 +125,15 @@ export const AnalysisPage: React.FC = () => {
     if (activeMatches.length > 0 && !selectedMatch) setSelectedMatch(activeMatches[0]);
   }, [matches]);
 
+  // ✅ NOUVEAU : Réinitialiser le rapport quand on change de match
+  useEffect(() => {
+    if (selectedMatch) {
+      console.log('🔄 Changement de match détecté, nettoyage du rapport');
+      setCurrentReport(null);
+      setShowModal(false);
+    }
+  }, [selectedMatch?.id]); // Déclenche quand l'ID du match change
+
   useEffect(() => {
     if (selectedMatch) {
         const saved = getAnalysis(selectedMatch.id);
@@ -193,31 +202,20 @@ export const AnalysisPage: React.FC = () => {
     setIsComputing(false);
   };
 
- // --- 2. SCAN SCREENSHOT (CORRIGÉ) ---
+  // --- 2. SCAN SCREENSHOT ---
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file || !selectedMatch) return;
 
-    // 🛑 RESET TOTAL : On efface tout ce qu'il y avait avant
-    setCurrentReport(null);
-    setSaveStatus("");
     setIsComputing(true);
-    
-    // On vide la valeur de l'input pour pouvoir ré-uploader le même fichier si besoin
-    event.target.value = ''; 
-
     try {
         const reportFromImage = await ImageEngine.analyzeScreenshot(file, selectedMatch);
-        
-        // Sauvegarde
         saveAnalysis(selectedMatch.id, reportFromImage);
         setCurrentReport(reportFromImage);
-        
     } catch (e) {
         console.error("Erreur lecture image", e);
-        alert("Impossible de lire l'image. Essayez une capture plus nette.");
+        alert("Impossible de lire l'image.");
     }
-    
     setIsComputing(false);
   };
 
