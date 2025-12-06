@@ -1,6 +1,20 @@
 import { GodModeReportV2 } from './types';
 
-// Type pour Tesseract
+// DICTIONNAIRE TENNIS
+const TENNIS_DICT = {
+  surfaces: {
+    'dur': 'Hard', 'hard': 'Hard', 'duro': 'Hard',
+    'terre': 'Clay', 'clay': 'Clay', 'battue': 'Clay',
+    'herbe': 'Grass', 'grass': 'Grass', 'gazon': 'Grass',
+    'indoor': 'Indoor', 'salle': 'Indoor'
+  },
+  
+  rejectKeywords: [
+    'resume', 'chances', 'support', 'uniquement', 'ligne',
+    'formulaire', 'afficher', 'match', 'tournoi', 'h2h'
+  ]
+};
+
 interface TesseractWorker {
   recognize: (image: File | string) => Promise<{ data: { text: string } }>;
   terminate: () => Promise<void>;
@@ -10,67 +24,75 @@ interface TesseractModule {
   createWorker: () => Promise<TesseractWorker>;
 }
 
-// Cache anti-contamination
-let lastMatchId = '';
-let analysisCount = 0;
+let analysisCounter = 0;
+
+const isValidPlayerName = (name: string): boolean => {
+  if (!name || name.length < 4) return false;
+  
+  const words = name.split(' ').filter(w => w.length > 1);
+  if (words.length < 2 || words.length > 4) return false;
+  
+  if (name === name.toUpperCase()) return false;
+  
+  const nameLower = name.toLowerCase();
+  for (const keyword of TENNIS_DICT.rejectKeywords) {
+    if (nameLower.includes(keyword)) return false;
+  }
+  
+  if (/\d/.test(name)) return false;
+  
+  return true;
+};
 
 export const ImageEngine = {
   analyzeScreenshot: async (file: File, currentMatch: any): Promise<GodModeReportV2> => {
-    analysisCount++;
-    const uniqueTimestamp = Date.now();
+    analysisCounter++;
+    const timestamp = Date.now();
     
-    console.log('===========================================');
-    console.log(`📸 ANALYSE #${analysisCount}`);
-    console.log(`⏰ Timestamp: ${uniqueTimestamp}`);
-    console.log('===========================================');
+    console.log('==========================================');
+    console.log(`📸 ANALYSE #${analysisCounter} - ${file.name}`);
+    console.log('==========================================');
     
-    // Délai anti-spam
-    await new Promise(r => setTimeout(r, 500));
+    await new Promise(r => setTimeout(r, 800));
     
-    let player1Name = '';
-    let player2Name = '';
-    let isValid = false;
+    let detectedName1 = '';
+    let detectedName2 = '';
+    let detectedSurface: 'Hard' | 'Clay' | 'Grass' | 'Indoor' = 'Hard';
     
     try {
-      console.log('🔄 Démarrage OCR Tesseract...');
+      console.log('🔄 OCR Tesseract...');
       const Tesseract = await import('tesseract.js') as unknown as TesseractModule;
       const worker = await Tesseract.createWorker();
       
       const { data: { text } } = await worker.recognize(file);
       await worker.terminate();
       
-      console.log('📝 Texte OCR (100 premiers caractères):', text.substring(0, 100));
+      console.log('📝 OCR:', text.substring(0, 150));
       
-      // Extraire les noms
-      const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 3);
+      const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 2);
       
-      const potentialNames = lines.filter(line => {
-        // Filtre basique : 2+ mots, pas de chiffres au début, longueur raisonnable
-        const words = line.split(' ').filter(w => w.length > 1);
-        return words.length >= 2 && 
-               words.length <= 4 &&
-               !/^\d/.test(line) && 
-               line.length > 5 && 
-               line.length < 35;
-      });
+      const namesCandidates: string[] = [];
       
-      console.log(`🎾 ${potentialNames.length} noms potentiels:`, potentialNames.slice(0, 5));
+      for (const line of lines) {
+        const cleaned = line.replace(/[^a-zA-Z\s.-]/g, '').trim();
+        if (cleaned && isValidPlayerName(cleaned)) {
+          namesCandidates.push(cleaned);
+        }
+      }
       
-      if (potentialNames.length >= 2) {
-        const name1 = potentialNames[0].replace(/[^a-zA-Z\s.-]/g, '').trim();
-        const name2 = potentialNames[1].replace(/[^a-zA-Z\s.-]/g, '').trim();
-        
-        // Validation basique
-        const check1 = name1.length >= 4 && name1.split(' ').length >= 2;
-        const check2 = name2.length >= 4 && name2.split(' ').length >= 2;
-        
-        if (check1 && check2) {
-          player1Name = name1;
-          player2Name = name2;
-          isValid = true;
-          console.log('✅ Noms détectés:', player1Name, 'vs', player2Name);
-        } else {
-          console.warn('⚠️ Noms invalides');
+      console.log(`🎾 ${namesCandidates.length} noms:`, namesCandidates.slice(0, 3));
+      
+      if (namesCandidates.length >= 2) {
+        detectedName1 = namesCandidates[0];
+        detectedName2 = namesCandidates[1];
+        console.log('✅ Noms:', detectedName1, 'vs', detectedName2);
+      }
+      
+      const textLower = text.toLowerCase();
+      for (const [key, value] of Object.entries(TENNIS_DICT.surfaces)) {
+        if (textLower.includes(key)) {
+          detectedSurface = value as any;
+          break;
         }
       }
       
@@ -78,124 +100,66 @@ export const ImageEngine = {
       console.error('❌ Erreur OCR:', error);
     }
     
-    // POPUP DE VALIDATION (TOUJOURS)
-    console.log('🔔 Affichage popup...');
-    
-    const confirmedName1 = prompt(
-      `Joueur 1 détecté: "${player1Name || 'Non détecté'}"\n\nValidez ou modifiez:`,
-      player1Name || 'Joueur 1'
+    const finalName1 = prompt(
+      `Joueur 1: "${detectedName1 || 'Non détecté'}"\n\nValidez:`,
+      detectedName1 || 'Joueur 1'
     );
     
-    const confirmedName2 = prompt(
-      `Joueur 2 détecté: "${player2Name || 'Non détecté'}"\n\nValidez ou modifiez:`,
-      player2Name || 'Joueur 2'  
+    const finalName2 = prompt(
+      `Joueur 2: "${detectedName2 || 'Non détecté'}"\n\nValidez:`,
+      detectedName2 || 'Joueur 2'
     );
     
-    player1Name = confirmedName1 && confirmedName1.trim() ? confirmedName1.trim() : `Joueur-${analysisCount}-A`;
-    player2Name = confirmedName2 && confirmedName2.trim() ? confirmedName2.trim() : `Joueur-${analysisCount}-B`;
+    const player1Name = finalName1?.trim() || `Player-${analysisCounter}-A`;
+    const player2Name = finalName2?.trim() || `Player-${analysisCounter}-B`;
     
-    console.log('✅ Noms finaux:', player1Name, 'vs', player2Name);
+    const matchId = `screenshot-${player1Name.replace(/\s/g, '-')}-vs-${player2Name.replace(/\s/g, '-')}-${timestamp}-${Math.random().toString(36).substring(2, 9)}`;
     
-    // ID UNIQUE GARANTI
-    const randomSuffix = Math.random().toString(36).substring(2, 9);
-    const newMatchId = `${player1Name.replace(/\s/g, '-')}-vs-${player2Name.replace(/\s/g, '-')}-${uniqueTimestamp}-${randomSuffix}`;
+    console.log('✅ Noms:', player1Name, 'vs', player2Name);
+    console.log('🆔 ID:', matchId);
+    console.log('==========================================');
     
-    // Vérification anti-doublon
-    if (newMatchId === lastMatchId) {
-      console.error('⚠️ Même ID détecté, ajout suffixe');
-      lastMatchId = `${newMatchId}-retry`;
-    } else {
-      lastMatchId = newMatchId;
-    }
-    
-    console.log('🆔 Match ID:', lastMatchId);
-    console.log('===========================================');
-    
-    // RAPPORT VIERGE COMPLET
     return {
       identity: {
         p1Name: player1Name,
         p2Name: player2Name,
         tournament: 'Tournoi',
-        surface: 'Hard',
+        surface: detectedSurface,
         date: new Date().toLocaleDateString('fr-FR'),
         time: '15:00',
         round: 'À déterminer',
-        matchId: lastMatchId
+        matchId: matchId
       },
       p1: {
-        rank: '?',
-        bestRank: '?',
-        ageHeight: '? / ?',
-        nationality: '?',
-        hand: 'Droitier',
-        style: 'Équilibré',
-        winrateCareer: '?',
-        winrateSeason: '?',
-        winrateSurface: '?',
-        aces: '?',
-        doubleFaults: '?',
-        firstServe: '?',
-        form: '?/10',
-        injury: 'À vérifier',
-        motivation: 'Normale',
-        last5: '?'
+        rank: '?', bestRank: '?', ageHeight: '? / ?', nationality: '?',
+        hand: 'Droitier', style: 'Équilibré', winrateCareer: '?',
+        winrateSeason: '?', winrateSurface: '?', aces: '?',
+        doubleFaults: '?', firstServe: '?', form: '?/10',
+        injury: 'À vérifier', motivation: 'Normale', last5: '?'
       },
       p2: {
-        rank: '?',
-        bestRank: '?',
-        ageHeight: '? / ?',
-        nationality: '?',
-        hand: 'Droitier',
-        style: 'Équilibré',
-        winrateCareer: '?',
-        winrateSeason: '?',
-        winrateSurface: '?',
-        aces: '?',
-        doubleFaults: '?',
-        firstServe: '?',
-        form: '?/10',
-        injury: 'À vérifier',
-        motivation: 'Normale',
-        last5: '?'
+        rank: '?', bestRank: '?', ageHeight: '? / ?', nationality: '?',
+        hand: 'Droitier', style: 'Équilibré', winrateCareer: '?',
+        winrateSeason: '?', winrateSurface: '?', aces: '?',
+        doubleFaults: '?', firstServe: '?', form: '?/10',
+        injury: 'À vérifier', motivation: 'Normale', last5: '?'
       },
       h2h: {
-        global: '? - ?',
-        surface: '? - ?',
-        advantage: 'Équilibré',
-        lastMatches: 'À analyser'
+        global: '? - ?', surface: '? - ?', advantage: 'Équilibré', lastMatches: 'À analyser'
       },
       conditions: {
-        weather: 'Ensoleillé',
-        temp: '24°C',
-        wind: '10 km/h',
-        altitude: 'Niveau mer',
-        humidity: '60%'
+        weather: 'Ensoleillé', temp: '24°C', wind: '10 km/h', altitude: 'Niveau mer', humidity: '60%'
       },
       bookmaker: {
-        oddA: '1.95',
-        oddB: '1.95',
-        movement: 'STABLE'
+        oddA: '1.95', oddB: '1.95', movement: 'STABLE'
       },
       synthesis: {
-        tech: player1Name,
-        mental: 'Équilibré',
-        physical: player1Name,
-        surface: 'Équilibré',
-        momentum: player1Name,
-        xFactor: 'À déterminer',
-        risk: 'Moyen'
+        tech: player1Name, mental: 'Équilibré', physical: player1Name,
+        surface: 'Équilibré', momentum: player1Name, xFactor: 'À déterminer', risk: 'Moyen'
       },
       prediction: {
-        probA: '50%',
-        probB: '50%',
-        probOver: '50%',
-        probTieBreak: '40%',
-        probUpset: '30%',
-        risk: 'MODERATE',
-        recoWinner: 'À analyser avec GOD MODE',
-        recoOver: '?',
-        recoSet: '?'
+        probA: '50%', probB: '50%', probOver: '50%', probTieBreak: '40%',
+        probUpset: '30%', risk: 'MODERATE', recoWinner: 'GOD MODE requis', recoOver: '?', recoSet: '?'
       }
     } as any;
   }
