@@ -80,11 +80,46 @@ export const ImageEngine = {
         console.log(`  Joueur 1: "${name1}"`);
         console.log(`  Joueur 2: "${name2}"`);
         
-        // ✅ VALIDATION : Vérifier si les noms semblent corrects
+        // ✅ VALIDATION STRICTE : Vérifier si les noms semblent corrects
         const isValidName = (name: string) => {
-          return name.length >= 4 && // Au moins 4 caractères
-                 name.split(' ').length >= 2 && // Au moins 2 mots
-                 /^[a-zA-Z\s-]+$/.test(name); // Que des lettres
+          // Règle 1: Au moins 4 caractères
+          if (name.length < 4) return false;
+          
+          // Règle 2: Au moins 2 mots
+          const words = name.split(' ').filter(w => w.length > 0);
+          if (words.length < 2) return false;
+          
+          // Règle 3: Que des lettres, espaces et tirets
+          if (!/^[a-zA-Z\s-]+$/.test(name)) return false;
+          
+          // ✅ Règle 4: PAS tout en majuscules (évite "RESUME CHANCES")
+          if (name === name.toUpperCase()) {
+            console.warn(`   ❌ Rejeté (tout en majuscules): "${name}"`);
+            return false;
+          }
+          
+          // ✅ Règle 5: Pas plus de 4 mots (évite "RESUME CHANCES HH SUPPORT")
+          if (words.length > 4) {
+            console.warn(`   ❌ Rejeté (trop de mots): "${name}"`);
+            return false;
+          }
+          
+          // ✅ Règle 6: Rejeter les mots-clés suspects
+          const suspectKeywords = [
+            'resume', 'chances', 'support', 'uniquement', 'arpisea',
+            'ligne', 'paiement', 'formulaire', 'afficher', 'dernier',
+            'match', 'tournoi', 'h2h', 'profil', 'stats'
+          ];
+          
+          const nameLower = name.toLowerCase();
+          for (const keyword of suspectKeywords) {
+            if (nameLower.includes(keyword)) {
+              console.warn(`   ❌ Rejeté (mot-clé suspect "${keyword}"): "${name}"`);
+              return false;
+            }
+          }
+          
+          return true;
         };
         
         const valid1 = isValidName(name1);
