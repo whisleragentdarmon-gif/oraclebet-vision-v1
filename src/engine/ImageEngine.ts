@@ -117,14 +117,30 @@ export const ImageEngine = {
     // ✅ SI DÉTECTION ÉCHOUÉE OU INVALIDE : Demander saisie manuelle
     if (needsManualInput || !player1Name || !player2Name) {
       console.log('❓ Saisie manuelle requise');
-      const name1 = prompt('❓ Nom du Joueur 1 (ex: Novak Djokovic) :');
-      const name2 = prompt('❓ Nom du Joueur 2 (ex: Rafael Nadal) :');
-      
-      player1Name = name1 && name1.trim() ? name1.trim() : 'Joueur 1';
-      player2Name = name2 && name2.trim() ? name2.trim() : 'Joueur 2';
-      
-      console.log('✍️ Noms saisis manuellement:', player1Name, 'vs', player2Name);
+      player1Name = '';
+      player2Name = '';
     }
+    
+    // ✅ POPUP DE CONFIRMATION TOUJOURS (pour débug et validation)
+    console.log('🔔 Affichage popup de confirmation...');
+    
+    const detectedName1 = player1Name || 'Non détecté';
+    const detectedName2 = player2Name || 'Non détecté';
+    
+    const confirmedName1 = prompt(
+      `✅ Joueur 1 détecté : "${detectedName1}"\n\n` +
+      `Appuyez sur OK pour valider, ou modifiez :`
+    , detectedName1);
+    
+    const confirmedName2 = prompt(
+      `✅ Joueur 2 détecté : "${detectedName2}"\n\n` +
+      `Appuyez sur OK pour valider, ou modifiez :`
+    , detectedName2);
+    
+    player1Name = confirmedName1 && confirmedName1.trim() ? confirmedName1.trim() : 'Joueur 1';
+    player2Name = confirmedName2 && confirmedName2.trim() ? confirmedName2.trim() : 'Joueur 2';
+    
+    console.log('✅ Noms finaux:', player1Name, 'vs', player2Name);
     
     // ✅ SÉCURITÉ 4 : ID UNIQUE avec timestamp millisecondes + random
     const uniqueTimestamp = Date.now();
