@@ -17,8 +17,9 @@ const PlayerCard = ({
     activeTab, 
     setActiveTab, 
     colorClass, 
-    onChange, // Nouvelle prop pour remonter le changement
-    scrollRef
+    onChange, 
+    scrollRef,
+    opponentName // <--- AJOUT ICI
   }: { 
     playerKey: 'p1' | 'p2', 
     name: string, 
@@ -27,7 +28,8 @@ const PlayerCard = ({
     setActiveTab: (t: any) => void, 
     colorClass: string, 
     onChange: (path: string[], value: string) => void,
-    scrollRef: React.RefObject<HTMLDivElement>
+    scrollRef: React.RefObject<HTMLDivElement>,
+    opponentName: string // <--- ET AJOUT ICI (TYPE)
   }) => {
 
     return (
