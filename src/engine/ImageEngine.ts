@@ -1,20 +1,5 @@
 import { GodModeReportV2 } from './types';
 
-// DICTIONNAIRE TENNIS
-const TENNIS_DICT = {
-  surfaces: {
-    'dur': 'Hard', 'hard': 'Hard', 'duro': 'Hard',
-    'terre': 'Clay', 'clay': 'Clay', 'battue': 'Clay',
-    'herbe': 'Grass', 'grass': 'Grass', 'gazon': 'Grass',
-    'indoor': 'Indoor', 'salle': 'Indoor'
-  },
-  
-  rejectKeywords: [
-    'resume', 'chances', 'support', 'uniquement', 'ligne',
-    'formulaire', 'afficher', 'match', 'tournoi', 'h2h'
-  ]
-};
-
 interface TesseractWorker {
   recognize: (image: File | string) => Promise<{ data: { text: string } }>;
   terminate: () => Promise<void>;
@@ -24,139 +9,155 @@ interface TesseractModule {
   createWorker: () => Promise<TesseractWorker>;
 }
 
-let analysisCounter = 0;
-
-const isValidPlayerName = (name: string): boolean => {
-  if (!name || name.length < 4) return false;
-  
-  const words = name.split(' ').filter(w => w.length > 1);
-  if (words.length < 2 || words.length > 4) return false;
-  
-  if (name === name.toUpperCase()) return false;
-  
-  const nameLower = name.toLowerCase();
-  for (const keyword of TENNIS_DICT.rejectKeywords) {
-    if (nameLower.includes(keyword)) return false;
-  }
-  
-  if (/\d/.test(name)) return false;
-  
-  return true;
-};
+let analysisCount = 0;
 
 export const ImageEngine = {
   analyzeScreenshot: async (file: File, currentMatch: any): Promise<GodModeReportV2> => {
-    analysisCounter++;
+    analysisCount++;
     const timestamp = Date.now();
     
     console.log('==========================================');
-    console.log(`📸 ANALYSE #${analysisCounter} - ${file.name}`);
+    console.log(`🔧 ImageEngine ANALYSE #${analysisCount}`);
+    console.log(`📁 Fichier: ${file.name}`);
     console.log('==========================================');
     
-    await new Promise(r => setTimeout(r, 800));
+    await new Promise(r => setTimeout(r, 500));
     
-    let detectedName1 = '';
-    let detectedName2 = '';
-    let detectedSurface: 'Hard' | 'Clay' | 'Grass' | 'Indoor' = 'Hard';
+    let player1Name = '';
+    let player2Name = '';
     
+    // OCR Tesseract
     try {
-      console.log('🔄 OCR Tesseract...');
+      console.log('🔄 Tesseract OCR...');
       const Tesseract = await import('tesseract.js') as unknown as TesseractModule;
       const worker = await Tesseract.createWorker();
       
       const { data: { text } } = await worker.recognize(file);
       await worker.terminate();
       
-      console.log('📝 OCR:', text.substring(0, 150));
+      console.log('📝 Texte:', text.substring(0, 100));
       
-      const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 2);
+      // Extraction noms basique
+      const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 3);
+      const names = lines.filter(line => {
+        const words = line.split(' ').filter(w => w.length > 1);
+        return words.length >= 2 && words.length <= 4 && !/^\d/.test(line);
+      });
       
-      const namesCandidates: string[] = [];
-      
-      for (const line of lines) {
-        const cleaned = line.replace(/[^a-zA-Z\s.-]/g, '').trim();
-        if (cleaned && isValidPlayerName(cleaned)) {
-          namesCandidates.push(cleaned);
-        }
-      }
-      
-      console.log(`🎾 ${namesCandidates.length} noms:`, namesCandidates.slice(0, 3));
-      
-      if (namesCandidates.length >= 2) {
-        detectedName1 = namesCandidates[0];
-        detectedName2 = namesCandidates[1];
-        console.log('✅ Noms:', detectedName1, 'vs', detectedName2);
-      }
-      
-      const textLower = text.toLowerCase();
-      for (const [key, value] of Object.entries(TENNIS_DICT.surfaces)) {
-        if (textLower.includes(key)) {
-          detectedSurface = value as any;
-          break;
-        }
+      if (names.length >= 2) {
+        player1Name = names[0].replace(/[^a-zA-Z\s.-]/g, '').trim();
+        player2Name = names[1].replace(/[^a-zA-Z\s.-]/g, '').trim();
       }
       
     } catch (error) {
-      console.error('❌ Erreur OCR:', error);
+      console.error('❌ OCR error:', error);
     }
     
-    const finalName1 = prompt(
-      `Joueur 1: "${detectedName1 || 'Non détecté'}"\n\nValidez:`,
-      detectedName1 || 'Joueur 1'
-    );
+    // POPUP VALIDATION
+    const name1 = prompt(`Joueur 1: "${player1Name || 'Non détecté'}"`, player1Name || 'Joueur 1');
+    const name2 = prompt(`Joueur 2: "${player2Name || 'Non détecté'}"`, player2Name || 'Joueur 2');
     
-    const finalName2 = prompt(
-      `Joueur 2: "${detectedName2 || 'Non détecté'}"\n\nValidez:`,
-      detectedName2 || 'Joueur 2'
-    );
+    player1Name = name1?.trim() || `Player-${analysisCount}-A`;
+    player2Name = name2?.trim() || `Player-${analysisCount}-B`;
     
-    const player1Name = finalName1?.trim() || `Player-${analysisCounter}-A`;
-    const player2Name = finalName2?.trim() || `Player-${analysisCounter}-B`;
+    console.log('✅ Noms finaux:', player1Name, 'vs', player2Name);
     
-    console.log('✅ Noms:', player1Name, 'vs', player2Name);
-    console.log('==========================================');
-    
-    return {
+    // RAPPORT 100% VIERGE - AUCUNE DONNÉE RÉUTILISÉE
+    const freshReport = {
       identity: {
         p1Name: player1Name,
         p2Name: player2Name,
         tournament: 'Tournoi',
-        surface: detectedSurface,
+        surface: 'Hard',
         date: new Date().toLocaleDateString('fr-FR'),
         time: '15:00',
         round: 'À déterminer'
       },
-      p1: {
-        rank: '?', bestRank: '?', ageHeight: '? / ?', nationality: '?',
-        hand: 'Droitier', style: 'Équilibré', winrateCareer: '?',
-        winrateSeason: '?', winrateSurface: '?', aces: '?',
-        doubleFaults: '?', firstServe: '?', form: '?/10',
-        injury: 'À vérifier', motivation: 'Normale', last5: '?'
-      },
-      p2: {
-        rank: '?', bestRank: '?', ageHeight: '? / ?', nationality: '?',
-        hand: 'Droitier', style: 'Équilibré', winrateCareer: '?',
-        winrateSeason: '?', winrateSurface: '?', aces: '?',
-        doubleFaults: '?', firstServe: '?', form: '?/10',
-        injury: 'À vérifier', motivation: 'Normale', last5: '?'
-      },
+      p1: createFreshPlayerData(),
+      p2: createFreshPlayerData(),
       h2h: {
-        global: '? - ?', surface: '? - ?', advantage: 'Équilibré', lastMatches: 'À analyser'
+        global: '? - ?',
+        surface: '? - ?',
+        advantage: 'Équilibré',
+        lastMatches: 'À analyser'
       },
       conditions: {
-        weather: 'Ensoleillé', temp: '24°C', wind: '10 km/h', altitude: 'Niveau mer', humidity: '60%'
+        weather: 'Ensoleillé',
+        temp: '24°C',
+        wind: '10 km/h',
+        altitude: 'Niveau mer',
+        humidity: '60%'
       },
       bookmaker: {
-        oddA: '1.95', oddB: '1.95', movement: 'STABLE'
+        oddA: '1.95',
+        oddB: '1.95',
+        movement: 'STABLE'
       },
       synthesis: {
-        tech: player1Name, mental: 'Équilibré', physical: player1Name,
-        surface: 'Équilibré', momentum: player1Name, xFactor: 'À déterminer', risk: 'Moyen'
+        tech: player1Name,
+        mental: 'Équilibré',
+        physical: player1Name,
+        surface: 'Équilibré',
+        momentum: player1Name,
+        xFactor: 'À déterminer',
+        risk: 'Moyen'
       },
       prediction: {
-        probA: '50%', probB: '50%', probOver: '50%', probTieBreak: '40%',
-        probUpset: '30%', risk: 'MODERATE', recoWinner: 'GOD MODE requis', recoOver: '?', recoSet: '?'
+        probA: '50%',
+        probB: '50%',
+        probOver: '50%',
+        probTieBreak: '40%',
+        probUpset: '30%',
+        risk: 'MODERATE',
+        recoWinner: 'Analyse requise',
+        recoOver: '?',
+        recoSet: '?'
       }
-    } as any;
+    };
+    
+    console.log('📦 Rapport créé:');
+    console.log('  - P1:', freshReport.identity.p1Name);
+    console.log('  - P2:', freshReport.identity.p2Name);
+    console.log('  - P1 Rank:', freshReport.p1.rank);
+    console.log('  - P2 Rank:', freshReport.p2.rank);
+    console.log('==========================================');
+    
+    return freshReport as any;
   }
 };
+
+// Fonction pour créer des données joueur 100% vierges
+function createFreshPlayerData() {
+  return {
+    rank: '?',
+    bestRank: '?',
+    ageHeight: '? / ?',
+    nationality: '?',
+    hand: 'Droitier',
+    style: 'Équilibré',
+    winrateCareer: '?',
+    winrateSeason: '?',
+    winrateSurface: '?',
+    aces: '?',
+    doubleFaults: '?',
+    firstServe: '?',
+    form: '?/10',
+    injury: 'À vérifier',
+    motivation: 'Normale',
+    last5: '?',
+    // Tous les champs à '?' ou vides
+    tournamentRank: '1/2',
+    oddsPlayer: '1.95',
+    holdPercent: '?',
+    breakPercent: '?',
+    trend: '?',
+    avgSets: '?',
+    tbPercent: '?',
+    firstSetWin: '?',
+    windImpact: '?',
+    coldImpact: '?',
+    oddBetfair: '1.95',
+    oddPinnacle: '1.95',
+    oddUnibet: '1.95'
+  };
+}
