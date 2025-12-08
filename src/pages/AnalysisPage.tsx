@@ -10,12 +10,12 @@ import { OracleReactor } from '../components/OracleReactor';
 // IMPORTS MOTEURS
 import { GodEngine } from '../engine/market/GodEngine';
 import { GodModeTable } from '../components/GodModeTable';
-import { ImageEngine } from '../engine/ImageEngine';
+import { ImageEngine } from '../engine/ImageEngine'; // Assure-toi que c'est bien la version "BANNED_WORDS" que je t'ai donnée
 import { GodModeReportV2 } from '../engine/types';
 import { OracleAI } from '../engine';
 
 // Icons
-import { Globe, Cpu, CheckCircle2, Save, X, Zap } from 'lucide-react';
+import { Globe, Cpu, Save, X, Zap } from 'lucide-react';
 
 export const AnalysisPage: React.FC = () => {
   const { matches } = useData();
@@ -29,7 +29,7 @@ export const AnalysisPage: React.FC = () => {
   const [currentReport, setCurrentReport] = useState<GodModeReportV2 | null>(null);
   const [saveStatus, setSaveStatus] = useState("");
   
-  // Compteur pour forcer le re-rendu complet du tableau (évite les bugs d'affichage)
+  // Compteur CRUCIAL pour forcer le re-rendu complet du tableau et vider la mémoire visuelle
   const [uploadCounter, setUploadCounter] = useState(0);
   
   const [showModal, setShowModal] = useState(false);
@@ -38,7 +38,7 @@ export const AnalysisPage: React.FC = () => {
   // --- GESTION DU MATCH SÉLECTIONNÉ ---
 
   useEffect(() => {
-    // Sélectionne le premier match par défaut si rien n'est sélectionné
+    // Sélectionne le premier match par défaut si rien n'est sélectionné au démarrage
     if (activeMatches.length > 0 && !selectedMatch) setSelectedMatch(activeMatches[0]);
   }, [matches]);
 
@@ -112,44 +112,52 @@ export const AnalysisPage: React.FC = () => {
     setIsComputing(false);
   };
 
-  // --- 2. SCAN SCREENSHOT (UPLOAD CORRIGÉ) ---
+  // --- 2. SCAN SCREENSHOT (UPLOAD CORRIGÉ & BLINDÉ) ---
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
     console.log('📸 DÉBUT UPLOAD SCREENSHOT');
     
-    // ÉTAPE 1 : Nettoyage immédiat de l'interface
+    // ÉTAPE 1 : Nettoyage immédiat de l'interface (Ecran noir)
     setIsComputing(true);
     setCurrentReport(null); 
     setShowModal(false);
     
-    // Petit délai pour laisser React faire le vide
-    await new Promise(r => setTimeout(r, 100));
+    // Petit délai pour laisser React faire le vide visuellement
+    await new Promise(r => setTimeout(r, 150));
 
     try {
-        // ÉTAPE 2 : Analyse via ImageEngine (avec le code amélioré que je t'ai donné avant)
-        // On passe 'null' en 2ème argument pour ne pas mélanger avec les données précédentes
+        // ÉTAPE 2 : Analyse via ImageEngine
+        // IMPORTANT : On passe 'null' en 2ème argument pour dire "Oublie le match d'avant"
+        // Cela force l'OCR à ne se baser QUE sur l'image
         const reportFromImage = await ImageEngine.analyzeScreenshot(file, null);
         
-        console.log('✅ Données reçues de ImageEngine:', reportFromImage.identity.p1Name);
+        console.log('✅ Données reçues:', reportFromImage.identity.p1Name, 'vs', reportFromImage.identity.p2Name);
 
-        // ÉTAPE 3 : Création d'un ID unique ou utilisation du match sélectionné
-        // Si un match est sélectionné, on attache l'image à ce match, sinon on crée un ID temporaire
+        // ÉTAPE 3 : Gestion de l'ID de sauvegarde
+        // Si un match est sélectionné dans la liste, on écrase ses données.
+        // Sinon, on crée un ID temporaire.
         const targetId = selectedMatch ? selectedMatch.id : `scan-${Date.now()}`;
         
+        // On sauvegarde dans le contexte
         saveAnalysis(targetId, reportFromImage);
         
         // ÉTAPE 4 : Mise à jour de l'état
         setCurrentReport(reportFromImage);
-        setUploadCounter(prev => prev + 1); // Force le tableau à se régénérer complètement
+        
+        // CRUCIAL : On incrémente le compteur.
+        // Grâce à la prop "key" dans le tableau, React va DÉTRUIRE l'ancien tableau et en CRÉER un nouveau.
+        // C'est ce qui règle le bug des "données qui restent en mémoire".
+        setUploadCounter(prev => prev + 1); 
 
     } catch (e) {
         console.error("❌ Erreur lecture image", e);
         alert("Impossible de lire l'image. Vérifiez qu'elle est nette.");
     } finally {
         setIsComputing(false);
-        // ÉTAPE 5 : Reset de l'input file (CRUCIAL pour pouvoir ré-uploader le même fichier)
+        // ÉTAPE 5 : Reset de l'input file 
+        // Permet de ré-uploader exactement la même image si on veut réessayer
         if (event.target) event.target.value = '';
     }
   };
@@ -198,7 +206,7 @@ export const AnalysisPage: React.FC = () => {
     return 'text-blue-500';
   };
 
-  // Génération d'un rapport vide par défaut pour éviter le crash si null
+  // Génération d'un rapport vide par défaut
   const getEmptyReport = (): GodModeReportV2 => {
     return {
       identity: { p1Name: 'Joueur 1', p2Name: 'Joueur 2', tournament: '-', surface: '-', date: '', time: '' },
@@ -307,9 +315,12 @@ export const AnalysisPage: React.FC = () => {
                       {/* Rendu du Tableau (GodModeTable) */}
                       {(() => {
                         const reportToUse = currentReport || getEmptyReport();
-                        // La clé (key) force React à détruire et recréer le composant si l'upload change
-                        // Cela corrige le bug où les anciennes données restent affichées
-                        const dynamicKey = `godmode-${uploadCounter}-${selectedMatch.id}`;
+                        
+                        // --- ASTUCE CLÉ POUR FORCER LE RESET DES INPUTS ---
+                        // En incluant 'uploadCounter' dans la key, React va détruire l'ancien tableau
+                        // et en créer un tout neuf à chaque nouvel upload.
+                        // Plus de données fantômes !
+                        const dynamicKey = `godmode-reset-${uploadCounter}-${selectedMatch.id}`;
                         
                         return (
                           <GodModeTable 
