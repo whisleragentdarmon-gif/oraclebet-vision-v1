@@ -1,24 +1,26 @@
 import React, { useState } from 'react';
 import { Layout } from './components/Layout';
-import { ProgramPage } from './pages/ProgramPage'; // Saisie Manuelle
-import { AnalysisPage } from './pages/AnalysisPage'; // Calcul IA
+// On utilise ProgramPage comme page principale de saisie
+import { ProgramPage } from './pages/ProgramPage'; 
+import { AnalysisPage } from './pages/AnalysisPage'; // Celle-ci servira pour voir les résultats IA après
 import { LoginPage } from './pages/LoginPage';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { DataProvider } from './context/DataContext';
 import { AnalysisProvider } from './context/AnalysisContext';
-// ... autres imports ...
+import { ConfigProvider } from './context/ConfigContext';
+import { BankrollProvider } from './context/BankrollContext';
 
 const AuthenticatedApp: React.FC = () => {
   const { isAuthenticated } = useAuth();
-  const [activeTab, setActiveTab] = useState('program'); // Commence par la saisie
+  // On démarre sur le programme pour saisir les données
+  const [activeTab, setActiveTab] = useState('program'); 
 
   if (!isAuthenticated) return <LoginPage />;
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'program': return <ProgramPage />; // Etape 1 : Remplir
-      case 'analysis': return <AnalysisPage />; // Etape 2 : Analyser
-      // ... autres ...
+      case 'program': return <ProgramPage />;
+      case 'analysis': return <AnalysisPage />;
       default: return <ProgramPage />;
     }
   };
@@ -33,11 +35,15 @@ const AuthenticatedApp: React.FC = () => {
 const App: React.FC = () => {
   return (
     <AuthProvider>
-      <DataProvider>
-        <AnalysisProvider>
-           <AuthenticatedApp />
-        </AnalysisProvider>
-      </DataProvider>
+      <ConfigProvider>
+      <BankrollProvider>
+        <DataProvider>
+          <AnalysisProvider>
+             <AuthenticatedApp />
+          </AnalysisProvider>
+        </DataProvider>
+      </BankrollProvider>
+      </ConfigProvider>
     </AuthProvider>
   );
 };
