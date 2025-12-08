@@ -9,22 +9,24 @@ interface Props {
   onSave?: () => void;
 }
 
-// --- COMPOSANT PLAYER CARD (INTÉGRAL) ---
+// --- COMPOSANT PLAYER CARD CORRIGÉ ---
 const PlayerCard = ({ 
     playerKey, 
     name, 
     data, 
     colorClass, 
-    onChange 
+    onChange,
+    opponentName // <--- AJOUTÉ ICI
   }: { 
     playerKey: 'p1' | 'p2', 
     name: string, 
     data: any, 
     colorClass: string, 
-    onChange: (path: string[], value: string) => void
+    onChange: (path: string[], value: string) => void,
+    opponentName: string // <--- TYPAGE AJOUTÉ ICI
   }) => {
 
-    // Seul state local autorisé : l'onglet actif (navigation visuelle uniquement)
+    // State local pour la navigation des onglets
     const [activeTab, setActiveTab] = useState('PROFIL');
     const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -498,25 +500,18 @@ const PlayerCard = ({
 };
 
 
-// --- COMPOSANT PRINCIPAL GOD MODE TABLE (ARCHI CLEAN) ---
+// --- COMPOSANT PRINCIPAL GOD MODE TABLE ---
 export const GodModeTable: React.FC<Props> = ({ report, onUpdate, onSave }) => {
   
-  // Fonction de mise à jour sécurisée (Deep Copy)
+  // Fonction de mise à jour sécurisée
   const handleChange = (path: string[], value: string) => {
-    // 1. On clone proprement l'objet
     const newReport = JSON.parse(JSON.stringify(report));
-    
-    // 2. On parcourt le chemin
     let current: any = newReport;
     for (let i = 0; i < path.length - 1; i++) {
       if (!current[path[i]]) current[path[i]] = {};
       current = current[path[i]];
     }
-    
-    // 3. On assigne la valeur
     current[path[path.length - 1]] = value;
-    
-    // 4. On remonte au parent (AnalysisPage)
     onUpdate(newReport);
   };
 
@@ -565,7 +560,7 @@ export const GodModeTable: React.FC<Props> = ({ report, onUpdate, onSave }) => {
                 </div>
             </div>
 
-            {/* CONDITIONS MÉTÉO (Éditable) */}
+            {/* CONDITIONS MÉTÉO */}
             <div className="bg-black/40 border border-neutral-700 rounded-lg p-3 grid grid-cols-2 gap-2 text-xs">
                 <div className="flex flex-col gap-1">
                   <div className="flex items-center gap-1 text-gray-400">
@@ -624,10 +619,9 @@ export const GodModeTable: React.FC<Props> = ({ report, onUpdate, onSave }) => {
           </div>
       </div>
 
-      {/* ZONE PRINCIPALE - DOUBLE CARTE JOUEUR */}
+      {/* ZONE PRINCIPALE */}
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-3 p-3 overflow-hidden">
           <PlayerCard 
-            // 🛑 LA CLÉ MAGIQUE : Force le reset visuel si le nom change
             key={`p1-${report.identity.p1Name}`}
             playerKey="p1" 
             name={report.identity.p1Name} 
