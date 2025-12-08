@@ -1,6 +1,6 @@
 import { GodModeReportV2 } from './types';
 
-// --- INTERFACES POUR TESSERACT (Pour éviter les erreurs TypeScript) ---
+// Interfaces pour éviter les erreurs TypeScript
 interface TesseractWorker {
   recognize: (image: File | string) => Promise<{ data: { text: string } }>;
   terminate: () => Promise<void>;
@@ -13,58 +13,39 @@ interface TesseractModule {
 
 let analysisCount = 0;
 
-// --- FONCTION MAGIQUE : PRÉ-TRAITEMENT DE L'IMAGE ---
-// Transforme l'image en Noir & Blanc haute définition pour aider l'IA
+// --- 1. PRÉ-TRAITEMENT D'IMAGE (LA CLÉ POUR BIEN LIRE LES NOMS) ---
 const preprocessImage = (file: File): Promise<string> => {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     const reader = new FileReader();
     reader.onload = (event) => {
       const img = new Image();
       img.onload = () => {
-        try {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            
-            if (!ctx) {
-                // Fallback si canvas non supporté
-                return resolve(event.target?.result as string);
-            }
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return resolve(event.target?.result as string);
 
-            // On agrandit l'image x2 pour mieux lire les petits textes
-            canvas.width = img.width * 2;
-            canvas.height = img.height * 2;
-            
-            // Lissage pour l'agrandissement
-            ctx.imageSmoothingEnabled = false;
-            ctx.scale(2, 2);
-            ctx.drawImage(img, 0, 0);
+        // On agrandit l'image x2.5 (Crucial pour les petits textes de Flashscore)
+        canvas.width = img.width * 2.5;
+        canvas.height = img.height * 2.5;
+        
+        ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-            // Algorithme de binarisation (Noir et Blanc)
-            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            const data = imageData.data;
-            
-            // On parcourt chaque pixel
-            for (let i = 0; i < data.length; i += 4) {
-              // Moyenne RGB
-              const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
-              // Contraste extrême : Si c'est un peu gris, ça devient blanc, sinon noir.
-              // Le seuil 160 est optimisé pour les captures d'écran type Flashscore clair
-              const color = avg > 160 ? 255 : 0; 
-              
-              data[i] = color;     // Red
-              data[i + 1] = color; // Green
-              data[i + 2] = color; // Blue
-            }
-            
-            ctx.putImageData(imageData, 0, 0);
-            resolve(canvas.toDataURL('image/jpeg', 0.9));
-        } catch (e) {
-            // En cas d'erreur de traitement d'image, on renvoie l'originale
-            console.warn("Erreur preprocessing image, utilisation original", e);
-            resolve(event.target?.result as string);
+        // Filtre "Binarisation" : Tout ce qui n'est pas presque blanc devient noir
+        // Cela efface le fond gris/bleu des sites de scores
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const data = imageData.data;
+        for (let i = 0; i < data.length; i += 4) {
+          const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
+          // Seuil ajusté : < 150 devient noir (texte), > 150 devient blanc (fond)
+          const color = avg < 150 ? 0 : 255; 
+          data[i] = color;     // R
+          data[i + 1] = color; // G
+          data[i + 2] = color; // B
         }
+        ctx.putImageData(imageData, 0, 0);
+        resolve(canvas.toDataURL('image/jpeg', 1.0));
       };
-      img.onerror = reject;
       img.src = event.target?.result as string;
     };
     reader.readAsDataURL(file);
@@ -74,206 +55,141 @@ const preprocessImage = (file: File): Promise<string> => {
 export const ImageEngine = {
   analyzeScreenshot: async (file: File, currentMatch: any): Promise<GodModeReportV2> => {
     analysisCount++;
-    
-    console.log('==========================================');
-    console.log(`🔧 ANALYSE IMAGE #${analysisCount}`);
-    console.log('==========================================');
-    
+    console.log(`🔧 SCAN #${analysisCount} (Mode Local - Gratuit)`);
+
     let player1Name = '';
     let player2Name = '';
     let player1Rank = '?';
     let player2Rank = '?';
     let detectedMatches: any[] = [];
-    
-    // Valeurs par défaut pour éviter le crash
-    let extractedTextLength = 0;
 
     try {
-      console.log('🔄 Chargement dynamique de Tesseract...');
-      // Import dynamique pour éviter les erreurs "window not defined" au build
+      // Import dynamique de Tesseract (évite les bugs de build)
       const Tesseract = await import('tesseract.js') as unknown as TesseractModule;
       
-      console.log('🎨 Pré-traitement de l\'image (Canvas)...');
+      // On prépare l'image
       const processedImage = await preprocessImage(file);
       
-      console.log('🧠 Création du Worker OCR...');
-      // On charge les modèles anglais et français
-      const worker = await Tesseract.createWorker('eng+fra');
+      // On crée le worker
+      const worker = await Tesseract.createWorker('eng+fra'); // Anglais + Français
       
-      // Configuration fine pour ne lire que ce qui nous intéresse
+      // Configuration pour forcer la lecture ligne par ligne
       await worker.setParameters({
-        tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-:.()/éèàê% ',
+        tessedit_pageseg_mode: '6', // Mode "Bloc de texte uniforme" (Meilleur pour les tableaux)
         preserve_interword_spaces: '1',
-      });
-      
-      console.log('📸 Reconnaissance du texte...');
+      } as any);
+
       const { data: { text } } = await worker.recognize(processedImage);
-      
-      extractedTextLength = text.length;
-      console.log('📝 Texte brut extrait:', extractedTextLength, 'caractères');
-      
       await worker.terminate();
-      
-      // --- ANALYSE SÉMANTIQUE ---
-      
+
+      console.log('📝 Texte lu brut:', text.substring(0, 100) + '...');
+
+      // --- ANALYSE INTELLIGENTE ---
       const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 2);
-      
+
       for (const line of lines) {
-        const lower = line.toLowerCase();
-        
-        // 1. Détection des Rangs (ex: "ATP 45", "# 12", "Rank: 10")
-        const rankMatch = line.match(/(?:ATP|WTA|Rank|#)\s*[:.-]?\s*(\d+)/i);
+        // Nettoyage de la ligne (On garde lettres, accents, chiffres, tirets)
+        // Ex: "Djokovic N. (Srb)" -> "Djokovic N Srb"
+        const cleanLine = line.replace(/[^a-zA-Z0-9\u00C0-\u00FF\s.-]/g, ' ').trim();
+        const lower = cleanLine.toLowerCase();
+
+        // 1. DÉTECTION DES RANGS (Ex: "#12", "ATP 4")
+        // On cherche un motif "ATP" ou "#" suivi d'un nombre
+        const rankMatch = line.match(/(?:ATP|Rank|#)\s*[:.]?\s*(\d+)/i);
         if (rankMatch) {
-          const rank = rankMatch[1];
-          if (player1Rank === '?') {
-             player1Rank = rank;
-             console.log('   🏆 Rang J1 trouvé:', rank);
-          } else if (player2Rank === '?' && rank !== player1Rank) {
-             player2Rank = rank;
-             console.log('   🏆 Rang J2 trouvé:', rank);
-          }
+            const rank = rankMatch[1];
+            if (player1Rank === '?') player1Rank = rank;
+            else if (player2Rank === '?' && rank !== player1Rank) player2Rank = rank;
         }
 
-        // 2. Détection des Noms
-        // On exclut les lignes qui ressemblent à des dates, des scores ou des mots système
-        const isDateOrScore = /\d/.test(line) && (line.match(/\d/g) || []).length > 2;
-        const isSystemWord = ['resume', 'chances', 'match', 'tournoi', 'stat', 'profil', 'score', 'bet365', 'unibet'].some(k => lower.includes(k));
-        
-        // Nettoyage : On garde lettres, espaces, tirets et points
-        const cleanLine = line.replace(/[^a-zA-Z\u00C0-\u00FF\s.-]/g, '').trim();
-        
-        if (!isDateOrScore && !isSystemWord && cleanLine.length > 3 && cleanLine.length < 30) {
-            if (!player1Name) {
-                player1Name = cleanLine;
-                console.log('   👤 Nom J1 candidat:', player1Name);
-            } else if (!player2Name && Math.abs(cleanLine.length - player1Name.length) > 1 && !cleanLine.includes(player1Name)) {
-                // On vérifie que c'est bien un nom différent
-                player2Name = cleanLine;
-                console.log('   👤 Nom J2 candidat:', player2Name);
-            }
+        // 2. DÉTECTION DES MATCHS (Ex: "12.05. 6-4 6-2")
+        // On cherche un score de tennis (X-Y)
+        const scoreMatch = line.match(/(\d{1}-\d{1}.*\d{1}-\d{1}|\d{1}-\d{1})/);
+        const dateMatch = line.match(/\d{2}[./]\d{2}/); // JJ.MM ou JJ/MM
+
+        if (dateMatch && scoreMatch) {
+             // C'est une ligne de match !
+             detectedMatches.push({
+                 date: dateMatch[0],
+                 score: scoreMatch[0],
+                 opponent: 'Adversaire', // Difficile à extraire sans contexte
+                 tournament: 'Tournoi'
+             });
         }
-        
-        // 3. Détection des Matchs (Date + Score)
-        // Format supporté : "12.05." ou "12.05" suivi plus loin d'un score "6-4"
-        if (/\d{2}\.\d{2}/.test(line) || /\d{2}\/\d{2}/.test(line)) {
-            const hasScore = /(\d{1,2}-\d{1,2})/.test(line);
-            if (hasScore) {
-                const scoreMatch = line.match(/(\d{1,2}-\d{1,2}.*)/);
-                detectedMatches.push({
-                    date: line.substring(0, 6).replace(/[^\d.]/g, ''),
-                    score: scoreMatch ? scoreMatch[0] : '?-?',
-                    opponent: 'Adversaire', // Difficile à extraire précisément sur une seule ligne
-                    tournament: 'Tournoi'
-                });
+        // 3. DÉTECTION DES NOMS (Le plus dur)
+        else {
+            // Si la ligne n'est PAS un match, PAS un mot système, et a une bonne longueur
+            const isSystem = ['match', 'tournoi', 'score', 'resume', 'h2h', 'bet', 'cote'].some(k => lower.includes(k));
+            const hasTooManyNumbers = (line.match(/\d/g) || []).length > 2;
+
+            if (!isSystem && !hasTooManyNumbers && cleanLine.length > 3 && cleanLine.length < 25) {
+                // On suppose que c'est un nom
+                if (!player1Name) {
+                    player1Name = cleanLine;
+                    console.log('✅ J1 trouvé:', player1Name);
+                } else if (!player2Name && !cleanLine.includes(player1Name)) {
+                    // Vérification simple pour ne pas prendre le même nom ou une variante
+                    const ratio = Math.abs(cleanLine.length - player1Name.length);
+                    if (ratio > 2 || cleanLine[0] !== player1Name[0]) {
+                        player2Name = cleanLine;
+                        console.log('✅ J2 trouvé:', player2Name);
+                    }
+                }
             }
         }
       }
-      
-    } catch (error) {
-      console.error('❌ ERREUR CRITIQUE IMAGE ENGINE:', error);
+
+    } catch (e) {
+      console.error('❌ Erreur Tesseract:', e);
     }
-    
-    // --- CONSTRUCTION DU RAPPORT FINAL ---
-    
-    // Fallback si l'OCR a échoué
-    const p1FinalName = player1Name || (currentMatch ? currentMatch.player1.name : `Joueur A`);
-    const p2FinalName = player2Name || (currentMatch ? currentMatch.player2.name : `Joueur B`);
-    
-    console.log('📊 RÉSULTAT FINAL:');
-    console.log(`   J1: ${p1FinalName} (#${player1Rank})`);
-    console.log(`   J2: ${p2FinalName} (#${player2Rank})`);
-    
+
+    // --- CONSTRUCTION DU RESULTAT ---
+    const p1 = player1Name || (currentMatch ? currentMatch.player1.name : 'Joueur A');
+    const p2 = player2Name || (currentMatch ? currentMatch.player2.name : 'Joueur B');
+
     return {
       identity: {
-        p1Name: p1FinalName,
-        p2Name: p2FinalName,
+        p1Name: p1,
+        p2Name: p2,
         tournament: 'Analyse Image',
-        surface: 'Dur', // Valeur par défaut
+        surface: 'Dur',
         date: new Date().toLocaleDateString('fr-FR'),
-        time: new Date().toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'}),
+        time: '12:00',
         round: '1er Tour'
       },
-      p1: createPlayerData(p1FinalName, player1Rank, detectedMatches),
-      p2: createPlayerData(p2FinalName, player2Rank, []),
-      h2h: { 
-          global: '? - ?', 
-          surface: '? - ?', 
-          advantage: 'Équilibré', 
-          lastMatches: 'Données image insuffisantes' 
-      },
-      conditions: { 
-          weather: 'Non détecté', 
-          temp: '20°C', 
-          wind: '0 km/h', 
-          altitude: '-', 
-          humidity: '-' 
-      },
-      bookmaker: { 
-          oddA: '1.90', 
-          oddB: '1.90', 
-          movement: 'STABLE' 
-      },
-      synthesis: { 
-          tech: p1FinalName, 
-          mental: 'Équilibré', 
-          physical: 'Équilibré', 
-          surface: 'Équilibré', 
-          momentum: 'Équilibré', 
-          xFactor: 'Aucun', 
-          risk: 'HIGH' 
-      },
+      p1: createPlayerData(p1, player1Rank, detectedMatches),
+      p2: createPlayerData(p2, player2Rank, []),
+      h2h: { global: '? - ?' },
+      conditions: { weather: '?', temp: '?' },
+      bookmaker: { oddA: '1.90', oddB: '1.90', movement: 'STABLE' },
+      synthesis: { risk: 'HIGH', xFactor: 'Aucun' },
       prediction: { 
-          probA: '50%', 
-          probB: '50%', 
-          probOver: '50%', 
-          probTieBreak: '30%', 
-          probUpset: '20%', 
-          risk: 'HIGH', 
-          recoWinner: 'Analyse humaine requise', 
-          recoOver: 'NO BET', 
-          recoSet: 'NO BET' 
+          probA: '50%', probB: '50%', 
+          recoWinner: 'Analyse manuelle requise', 
+          risk: 'HIGH' 
       }
     } as any;
   }
 };
 
-// Helper pour formater les données joueurs
+// Helper inchangé
 function createPlayerData(name: string, rank: string, matches: any[]) {
-  const data: any = {
-    rank: rank !== '?' ? rank : '100+',
-    bestRank: rank !== '?' ? rank : '?',
-    ageHeight: '? / ?',
-    nationality: '?',
-    hand: 'Droitier',
-    style: 'Polyvalent',
-    winrateCareer: '50%',
-    winrateSeason: '50%',
-    winrateSurface: '50%',
-    aces: '5.0',
-    doubleFaults: '3.0',
-    firstServe: '60%',
-    form: matches.length > 0 ? '7/10' : '5/10',
-    injury: 'Rien',
-    motivation: 'Normale',
-    last5: '?',
-    tournamentRank: '-',
-    oddsPlayer: '1.90'
-  };
-  
-  // Remplissage des matchs détectés
-  for (let i = 0; i < 20; i++) {
-    if (i < matches.length) {
-      data[`match${i+1}_date`] = matches[i].date;
-      data[`match${i+1}_opponent`] = matches[i].opponent;
-      data[`match${i+1}_score`] = matches[i].score;
-      data[`match${i+1}_tournament`] = matches[i].tournament;
-    } else {
-      data[`match${i+1}_date`] = '';
-      data[`match${i+1}_opponent`] = '';
-      data[`match${i+1}_score`] = '';
-      data[`match${i+1}_tournament`] = '';
+    const data: any = { 
+        rank: rank !== '?' ? rank : '-', 
+        form: matches.length > 0 ? '7/10' : '5/10',
+        hand: 'Droitier',
+        nationality: '?'
+    };
+    for (let i = 0; i < 20; i++) {
+        if(i < matches.length) {
+            data[`match${i+1}_date`] = matches[i].date;
+            data[`match${i+1}_score`] = matches[i].score;
+            data[`match${i+1}_opponent`] = matches[i].opponent;
+        } else {
+            data[`match${i+1}_date`] = '';
+            data[`match${i+1}_score`] = '';
+            data[`match${i+1}_opponent`] = '';
+        }
     }
-  }
-  
-  return data;
+    return data;
 }
