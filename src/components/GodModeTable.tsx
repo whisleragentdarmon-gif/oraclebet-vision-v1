@@ -9,7 +9,7 @@ interface Props {
   onSave?: () => void;
 }
 
-// --- COMPOSANT PLAYER CARD (SORTI POUR ÉVITER LE BUG DE FOCUS) ---
+// --- COMPOSANT PLAYER CARD COMPLET ---
 const PlayerCard = ({ 
     playerKey, 
     name, 
@@ -46,7 +46,7 @@ const PlayerCard = ({
               <span className="inline-flex items-center gap-1 bg-black/50 px-3 py-2 rounded border border-neutral-700 text-gray-300 font-mono">
                   <Trophy size={13} className={colorClass}/> RANG: 
                   <input 
-                      value={data?.rank || '0'} 
+                      value={data?.rank || ''} 
                       onChange={(e) => onChange([playerKey, 'rank'], e.target.value)}
                       className="bg-transparent w-12 text-white outline-none font-bold text-center"
                   />
@@ -54,7 +54,7 @@ const PlayerCard = ({
               <span className="inline-flex items-center gap-1 bg-black/50 px-3 py-2 rounded border border-neutral-700 text-gray-300 font-mono">
                   🏆 Tournoi: 
                   <input 
-                      value={data?.tournamentRank || '1/2'} 
+                      value={data?.tournamentRank || ''} 
                       onChange={(e) => onChange([playerKey, 'tournamentRank'], e.target.value)}
                       className="bg-transparent w-14 text-white outline-none font-bold text-center"
                   />
@@ -62,7 +62,7 @@ const PlayerCard = ({
               <span className="inline-flex items-center gap-1 bg-blue-900/30 px-3 py-2 rounded border border-blue-500/40 text-blue-300 font-mono font-bold">
                   💰 Cote: 
                   <input 
-                      value={data?.oddsPlayer || '1.95'} 
+                      value={data?.oddsPlayer || ''} 
                       onChange={(e) => onChange([playerKey, 'oddsPlayer'], e.target.value)}
                       className="bg-transparent w-16 text-white outline-none font-bold text-center"
                   />
@@ -147,11 +147,11 @@ const PlayerCard = ({
                     <div className="grid grid-cols-1 gap-2 text-xs">
                         <div className="bg-green-900/15 border border-green-500/40 p-2 rounded flex justify-between items-center">
                             <span className="text-green-400 font-bold text-xs">HOLD %</span>
-                            <input value={data?.holdPercent || '82%'} onChange={(e) => onChange([playerKey, 'holdPercent'], e.target.value)} className="bg-transparent text-right w-14 outline-none text-white font-bold text-sm"/>
+                            <input value={data?.holdPercent || ''} onChange={(e) => onChange([playerKey, 'holdPercent'], e.target.value)} className="bg-transparent text-right w-14 outline-none text-white font-bold text-sm"/>
                         </div>
                         <div className="bg-red-900/15 border border-red-500/40 p-2 rounded flex justify-between items-center">
                             <span className="text-red-400 font-bold text-xs">BREAK %</span>
-                            <input value={data?.breakPercent || '42%'} onChange={(e) => onChange([playerKey, 'breakPercent'], e.target.value)} className="bg-transparent text-right w-14 outline-none text-white font-bold text-sm"/>
+                            <input value={data?.breakPercent || ''} onChange={(e) => onChange([playerKey, 'breakPercent'], e.target.value)} className="bg-transparent text-right w-14 outline-none text-white font-bold text-sm"/>
                         </div>
                     </div>
                  </div>
@@ -178,11 +178,11 @@ const PlayerCard = ({
                     <div className="border border-neutral-700 rounded-lg overflow-hidden text-xs bg-black/40 grid grid-cols-2">
                         <div className="border-b border-r border-neutral-800 p-2">
                             <span className="text-gray-400 text-xs block font-semibold">Vent</span>
-                            <input value={data?.windImpact || '+8%'} onChange={(e) => onChange([playerKey, 'windImpact'], e.target.value)} className="bg-transparent text-white outline-none w-full font-bold text-sm mt-1"/>
+                            <input value={data?.windImpact || ''} onChange={(e) => onChange([playerKey, 'windImpact'], e.target.value)} className="bg-transparent text-white outline-none w-full font-bold text-sm mt-1"/>
                         </div>
                         <div className="border-b border-neutral-800 p-2">
                             <span className="text-gray-400 text-xs block font-semibold">Froid</span>
-                            <input value={data?.coldImpact || '-10%'} onChange={(e) => onChange([playerKey, 'coldImpact'], e.target.value)} className="bg-transparent text-white outline-none w-full font-bold text-sm mt-1"/>
+                            <input value={data?.coldImpact || ''} onChange={(e) => onChange([playerKey, 'coldImpact'], e.target.value)} className="bg-transparent text-white outline-none w-full font-bold text-sm mt-1"/>
                         </div>
                     </div>
                  </div>
@@ -197,7 +197,7 @@ const PlayerCard = ({
                         ].map((row, i) => (
                             <div key={i} className="grid grid-cols-[40%_60%] border-b border-neutral-800 last:border-0 p-2">
                                 <span className="text-gray-400 font-semibold text-xs">{row.l}</span>
-                                <input value={data?.[row.k] || '1.80'} onChange={(e) => onChange([playerKey, row.k], e.target.value)} className="bg-transparent text-right outline-none text-white font-mono text-xs font-bold"/>
+                                <input value={data?.[row.k] || ''} onChange={(e) => onChange([playerKey, row.k], e.target.value)} className="bg-transparent text-right outline-none text-white font-mono text-xs font-bold"/>
                             </div>
                         ))}
                     </div>
@@ -550,7 +550,7 @@ export const GodModeTable: React.FC<Props> = ({ report, onUpdate, onSave }) => {
                     <div className="flex items-center gap-1 bg-white/5 px-3 py-1 rounded border border-white/10">
                         <Calendar size={13} className="text-gray-400"/> 
                         <input 
-                          value={report.identity.date || '03.12.2025'} 
+                          value={report.identity.date || ''} 
                           onChange={(e) => handleChange(['identity', 'date'], e.target.value)} 
                           className="bg-transparent w-20 outline-none font-mono text-xs"
                         />
@@ -558,7 +558,7 @@ export const GodModeTable: React.FC<Props> = ({ report, onUpdate, onSave }) => {
                     <div className="flex items-center gap-1 bg-white/5 px-3 py-1 rounded border border-white/10">
                         <Clock size={13} className="text-gray-400"/> 
                         <input 
-                          value={(report.identity as any).time || '16:40'} 
+                          value={(report.identity as any).time || ''} 
                           onChange={(e) => handleChange(['identity', 'time'], e.target.value)} 
                           className="bg-transparent w-14 outline-none font-mono text-xs"
                         />
@@ -636,8 +636,7 @@ export const GodModeTable: React.FC<Props> = ({ report, onUpdate, onSave }) => {
       {/* ZONE PRINCIPALE - DOUBLE CARTE JOUEUR */}
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-3 p-3 overflow-hidden">
           <PlayerCard 
-            // 🛑 ICI : La CLÉ UNIQUE force React à détruire et recréer la carte quand le nom change.
-            // C'est ce qui réinitialise proprement tous les inputs.
+            // LA CLÉ QUI RÉSOUT TOUT LE PROBLÈME DE MÉMOIRE
             key={`p1-${report.identity.p1Name}`}
             playerKey="p1" 
             name={report.identity.p1Name} 
@@ -650,7 +649,6 @@ export const GodModeTable: React.FC<Props> = ({ report, onUpdate, onSave }) => {
             scrollRef={scrollP1Ref}
           />
           <PlayerCard 
-            // 🛑 ICI AUSSI
             key={`p2-${report.identity.p2Name}`}
             playerKey="p2" 
             name={report.identity.p2Name} 
