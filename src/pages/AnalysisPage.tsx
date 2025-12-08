@@ -10,12 +10,12 @@ import { OracleReactor } from '../components/OracleReactor';
 // IMPORTS MOTEURS
 import { GodEngine } from '../engine/market/GodEngine';
 import { GodModeTable } from '../components/GodModeTable';
-import { ImageEngine } from '../engine/ImageEngine'; // Assure-toi que c'est bien la version "BANNED_WORDS" que je t'ai donnée
+import { ImageEngine } from '../engine/ImageEngine';
 import { GodModeReportV2 } from '../engine/types';
 import { OracleAI } from '../engine';
 
 // Icons
-import { Globe, Cpu, Save, X, Zap } from 'lucide-react';
+import { Globe, Cpu, CheckCircle2, Save, X, Zap } from 'lucide-react';
 
 export const AnalysisPage: React.FC = () => {
   const { matches } = useData();
@@ -128,7 +128,7 @@ export const AnalysisPage: React.FC = () => {
     await new Promise(r => setTimeout(r, 150));
 
     try {
-        // ÉTAPE 2 : Analyse via ImageEngine
+        // ÉTAPE 2 : Analyse via ImageEngine (Le nouveau avec BANNED_WORDS)
         // IMPORTANT : On passe 'null' en 2ème argument pour dire "Oublie le match d'avant"
         // Cela force l'OCR à ne se baser QUE sur l'image
         const reportFromImage = await ImageEngine.analyzeScreenshot(file, null);
