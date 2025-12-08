@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+export const AnalysisPage: React.FC = () => {
 import { GodModeReportV2 } from '../engine/types';
 import { GodModeTable } from '../components/GodModeTable';
 import { ImageEngine } from '../engine/ImageEngine';
