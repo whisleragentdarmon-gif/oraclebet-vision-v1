@@ -19,7 +19,7 @@ const PlayerCard = ({
     colorClass, 
     onChange, 
     scrollRef,
-    opponentName // <--- AJOUT ICI
+    opponentName
   }: { 
     playerKey: 'p1' | 'p2', 
     name: string, 
@@ -29,7 +29,7 @@ const PlayerCard = ({
     colorClass: string, 
     onChange: (path: string[], value: string) => void,
     scrollRef: React.RefObject<HTMLDivElement>,
-    opponentName: string // <--- ET AJOUT ICI (TYPE)
+    opponentName: string
   }) => {
 
     return (
@@ -636,6 +636,9 @@ export const GodModeTable: React.FC<Props> = ({ report, onUpdate, onSave }) => {
       {/* ZONE PRINCIPALE - DOUBLE CARTE JOUEUR */}
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-3 p-3 overflow-hidden">
           <PlayerCard 
+            // 🛑 ICI : La CLÉ UNIQUE force React à détruire et recréer la carte quand le nom change.
+            // C'est ce qui réinitialise proprement tous les inputs.
+            key={`p1-${report.identity.p1Name}`}
             playerKey="p1" 
             name={report.identity.p1Name} 
             data={report.p1} 
@@ -647,6 +650,8 @@ export const GodModeTable: React.FC<Props> = ({ report, onUpdate, onSave }) => {
             scrollRef={scrollP1Ref}
           />
           <PlayerCard 
+            // 🛑 ICI AUSSI
+            key={`p2-${report.identity.p2Name}`}
             playerKey="p2" 
             name={report.identity.p2Name} 
             data={report.p2} 
