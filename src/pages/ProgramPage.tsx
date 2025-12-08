@@ -37,24 +37,24 @@ export const ProgramPage: React.FC = () => {
             // Si on a déjà rempli des trucs, on les affiche pour continuer
             setCurrentReport(saved);
         } else {
-            // Sinon, on affiche un tableau STRICTEMENT VIERGE (avec juste les noms)
+            // Sinon, on affiche un tableau STRICTEMENT VIERGE
             setCurrentReport(createBlankReport(selectedMatch));
         }
         
-        // Reset visuel
+        // Reset visuel (Important !)
         setFormKey(prev => prev + 1);
         setStatusMsg("");
     }
   }, [selectedMatch?.id]);
 
-  // 3. Sauvegarde vers la page Analyse
+  // 3. Sauvegarde
   const handleSaveForAnalysis = () => {
     if (!currentReport || !selectedMatch) return;
     
     // On sauvegarde dans le contexte global
     saveAnalysis(selectedMatch.id, currentReport);
     
-    setStatusMsg("✅ Données envoyées vers l'Analyse !");
+    setStatusMsg("✅ Données sauvegardées !");
     setTimeout(() => setStatusMsg(""), 3000);
   };
 
@@ -64,11 +64,13 @@ export const ProgramPage: React.FC = () => {
       if(confirm("Remettre le tableau à zéro ?")) {
           const blank = createBlankReport(selectedMatch);
           setCurrentReport(blank);
+          // On sauvegarde le vide pour écraser l'ancienne sauvegarde
+          saveAnalysis(selectedMatch.id, blank);
           setFormKey(prev => prev + 1);
       }
   };
 
-  // Générateur de tableau vierge
+  // Générateur de tableau vierge (CORRIGÉ pour TypeScript)
   const createBlankReport = (match: Match): GodModeReportV2 => {
     return {
       identity: { 
@@ -85,7 +87,12 @@ export const ProgramPage: React.FC = () => {
       conditions: { weather: '', temp: '', wind: '' },
       bookmaker: { oddA: '1.90', oddB: '1.90' },
       synthesis: { risk: '', xFactor: '' },
-      prediction: { probA: '', probB: '', recoWinner: '' } // Prédiction vide pour l'instant
+      // On initialise tous les champs pour éviter les bugs
+      prediction: { 
+          probA: '', probB: '', recoWinner: '', 
+          probOver: '', probTieBreak: '', probUpset: '', 
+          recoOver: '', recoSet: '', risk: 'MEDIUM' 
+      } 
     } as any;
   };
 
@@ -99,7 +106,7 @@ export const ProgramPage: React.FC = () => {
                 <Calendar className="text-blue-500" size={18}/> Programme
             </h2>
           </div>
-          <div className="overflow-y-auto p-2 space-y-2 flex-1">
+          <div className="overflow-y-auto p-2 space-y-2 flex-1 scrollbar-thin scrollbar-thumb-neutral-700">
             {activeMatches.map((match) => (
               <MatchCard 
                 key={match.id} match={match} 
@@ -156,6 +163,10 @@ export const ProgramPage: React.FC = () => {
 // Helper cases vides
 function createEmptyProfile() {
     const d: any = { rank: '', form: '', hand: '', nationality: '' };
-    for(let i=1; i<=20; i++) d[`match${i}_date`] = '', d[`match${i}_score`] = '', d[`match${i}_opponent`] = '';
+    for(let i=1; i<=20; i++) {
+        d[`match${i}_date`] = ''; 
+        d[`match${i}_score`] = ''; 
+        d[`match${i}_opponent`] = '';
+    }
     return d;
 }
