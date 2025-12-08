@@ -1,112 +1,124 @@
-export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
+'use client';
 
-  try {
-    const { image } = req.body;
+import React, { useState } from 'react';
 
-    if (!image) {
-      return res.status(400).json({ error: 'No image provided' });
+export default function ScreenshotAnalyzer({ onDataExtracted }: any) {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [data, setData] = useState(null);
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // 1. REINITIALISATION TOTALE (Vital pour éviter le problème de mémoire)
+    setError('');
+    setData(null);
+    setLoading(true);
+    
+    // On dit au composant parent (AnalysisPage) de tout vider aussi
+    if (onDataExtracted) {
+        onDataExtracted(null); 
     }
 
-    console.log('📸 Analyzing screenshot with Claude Vision...');
-
-    // Call Claude API with vision
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'x-api-key': process.env.CLAUDE_API_KEY,
-        'anthropic-version': '2023-06-01',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'claude-3-5-sonnet-20241022',
-        max_tokens: 1024,
-        messages: [
-          {
-            role: 'user',
-            content: [
-              {
-                type: 'image',
-                source: {
-                  type: 'base64',
-                  media_type: 'image/jpeg',
-                  data: image
-                }
-              },
-              {
-                type: 'text',
-                text: `Analyze this tennis match screenshot and extract the following data. Return ONLY valid JSON, no other text:
-
-{
-  "p1Name": "Player 1 full name",
-  "p1Rank": "ranking number",
-  "p1Nationality": "country",
-  "p1Hand": "Right or Left",
-  "p2Name": "Player 2 full name",
-  "p2Rank": "ranking number",
-  "p2Nationality": "country",
-  "p2Hand": "Right or Left",
-  "tournament": "tournament name",
-  "surface": "Hard/Clay/Grass",
-  "date": "date if visible",
-  "round": "round if visible",
-  "h2h": "head to head record if visible"
-}
-
-If you cannot find a field, use null. Be precise with names and rankings.`
-              }
-            ]
-          }
-        ]
-      })
-    });
-
-    const result = await response.json();
-
-    if (!response.ok) {
-      console.error('Claude API error:', result);
-      return res.status(500).json({ error: 'Claude API error', details: result });
-    }
-
-    console.log('✅ Claude response:', result);
-
-    // Extract the text content
-    const textContent = result.content[0].text;
-    console.log('📝 Text from Claude:', textContent);
-
-    // Parse JSON from Claude's response
-    let data;
     try {
-      // Try to extract JSON from the response
-      const jsonMatch = textContent.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        data = JSON.parse(jsonMatch[0]);
-      } else {
-        data = JSON.parse(textContent);
-      }
-    } catch (parseError) {
-      console.error('JSON parse error:', parseError);
-      console.error('Claude response was:', textContent);
-      return res.status(500).json({ 
-        error: 'Failed to parse Claude response',
-        raw: textContent
-      });
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        const result = event.target?.result as string;
+        // On garde le header data:image... pour que l'API puisse valider si besoin, 
+        // ou on le split ici. Ton API attend du base64 pur, donc on split.
+        const base64 = result.split(',')[1];
+
+        const response = await fetch('/api/analyze_screenshot', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ image: base64 })
+        });
+
+        const resultData = await response.json();
+
+        if (!response.ok) {
+          throw new Error(resultData.error || 'Erreur API');
+        }
+
+        // 2. SUCCÈS
+        setData(resultData.data);
+        setLoading(false);
+
+        if (onDataExtracted) {
+          onDataExtracted(resultData.data);
+        }
+      };
+
+      reader.readAsDataURL(file);
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || "Erreur d'analyse");
+      setLoading(false);
+    } finally {
+        // 3. RESET DE L'INPUT (Pour pouvoir ré-uploader le même fichier)
+        e.target.value = '';
     }
+  };
 
-    console.log('✅ Extracted data:', data);
+  return (
+    <div style={{
+      padding: '20px',
+      backgroundColor: '#1a1a1a', // Changé pour faire plus pro/sombre
+      borderRadius: '12px',
+      marginBottom: '20px',
+      border: '1px solid #333'
+    }}>
+      <h2 style={{ color: '#fff', marginBottom: '15px', fontSize: '16px', fontWeight: 'bold', display:'flex', alignItems:'center', gap:'10px' }}>
+        📸 ANALYSEUR FLASHSCORE (CLAUDE VISION)
+      </h2>
 
-    return res.status(200).json({
-      success: true,
-      data: data
-    });
+      <input
+        type="file"
+        accept="image/*"
+        onChange={handleFileSelect}
+        disabled={loading}
+        style={{
+          padding: '10px',
+          marginBottom: '10px',
+          width: '100%',
+          backgroundColor: '#333',
+          color: 'white',
+          border: '1px solid #555',
+          borderRadius: '6px',
+          cursor: loading ? 'wait' : 'pointer'
+        }}
+      />
 
-  } catch (error) {
-    console.error('❌ Error analyzing screenshot:', error);
-    return res.status(500).json({
-      error: 'Error analyzing screenshot',
-      details: error.message
-    });
-  }
+      {loading && (
+        <div style={{ color: '#4ADE80', fontSize: '14px', fontWeight: 'bold', marginTop: '10px', display:'flex', alignItems:'center', gap:'8px' }}>
+          <span className="animate-spin">🌀</span> Analyse IA en cours... (5-10s)
+        </div>
+      )}
+
+      {error && (
+        <div style={{ color: '#ff4444', backgroundColor: 'rgba(255,0,0,0.1)', padding: '10px', borderRadius: '4px', marginTop: '10px' }}>
+          ❌ Erreur: {error}
+        </div>
+      )}
+
+      {data && (
+        <div style={{ backgroundColor: '#2a2a2a', padding: '15px', borderRadius: '8px', marginTop: '15px', border: '1px solid #444' }}>
+          <h3 style={{ color: '#4ADE80', marginBottom: '10px', fontSize:'14px' }}>✅ Données Extraites avec succès</h3>
+          <div style={{ fontSize: '13px', color: '#ccc', display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px' }}>
+            <div>
+                <div style={{color:'#888', fontSize:'10px'}}>JOUEUR 1</div>
+                <div style={{fontWeight:'bold', color:'white'}}>{(data as any).p1Name}</div>
+                <div style={{color:'#aaa'}}>Class: #{(data as any).p1Rank || '?'}</div>
+            </div>
+            <div>
+                <div style={{color:'#888', fontSize:'10px'}}>JOUEUR 2</div>
+                <div style={{fontWeight:'bold', color:'white'}}>{(data as any).p2Name}</div>
+                <div style={{color:'#aaa'}}>Class: #{(data as any).p2Rank || '?'}</div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
