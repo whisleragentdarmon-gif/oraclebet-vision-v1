@@ -7,184 +7,139 @@ import { MatchCard } from '../components/MatchCard';
 import { Match } from '../types';
 import { GodModeTable } from '../components/GodModeTable';
 import { GodModeReportV2 } from '../engine/types';
-import { Save, CheckCircle, RotateCcw, Brain, Calendar } from 'lucide-react';
+import { Cpu, CheckCircle, Brain, Lock } from 'lucide-react';
+import { OracleReactor } from '../components/OracleReactor';
 
 export const AnalysisPage: React.FC = () => {
   const { matches } = useData();
-  const { saveAnalysis, getAnalysis } = useAnalysis();
-  
-  // Filtre les matchs finis
-  const activeMatches = matches.filter(m => m.status !== 'FINISHED');
+  const { getAnalysis, saveAnalysis } = useAnalysis();
   
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
-  const [currentReport, setCurrentReport] = useState<GodModeReportV2 | null>(null);
-  const [saveStatus, setSaveStatus] = useState("");
-  
-  // Clé pour forcer le rafraichissement du tableau quand on change de match
-  const [formKey, setFormKey] = useState(0);
+  const [report, setReport] = useState<GodModeReportV2 | null>(null);
+  const [isComputing, setIsComputing] = useState(false);
+  const [showResult, setShowResult] = useState(false);
 
-  // 1. Sélection automatique du premier match au chargement
-  useEffect(() => {
-    if (activeMatches.length > 0 && !selectedMatch) {
-      setSelectedMatch(activeMatches[0]);
-    }
-  }, [matches]);
+  // On affiche les matchs qui ont des données sauvegardées (ou tous, au choix)
+  const activeMatches = matches.filter(m => m.status !== 'FINISHED');
 
-  // 2. Chargement des données quand on clique sur un match
+  // Chargement des données saisies dans ProgramPage
   useEffect(() => {
     if (selectedMatch) {
-        console.log("🔄 Chargement match:", selectedMatch.player1.name);
-        const saved = getAnalysis(selectedMatch.id);
-        
-        if (saved) {
-            console.log("✅ Données trouvées en mémoire");
-            setCurrentReport(saved);
+        const savedData = getAnalysis(selectedMatch.id);
+        if (savedData) {
+            setReport(savedData);
         } else {
-            console.log("✨ Nouveau rapport vierge");
-            setCurrentReport(getEmptyReport(selectedMatch));
+            setReport(null); // Pas encore de données saisies
         }
-        
-        setSaveStatus("");
-        // Force le tableau à se redessiner complètement avec les nouvelles données
-        setFormKey(prev => prev + 1);
+        setShowResult(false);
     }
-  }, [selectedMatch?.id]); 
+  }, [selectedMatch]);
 
-  // 3. Fonction de Sauvegarde Manuelle
-  const handleManualSave = () => {
-    if (!currentReport || !selectedMatch) return;
-    
-    console.log("💾 Sauvegarde en cours...");
-    saveAnalysis(selectedMatch.id, currentReport);
-    
-    setSaveStatus("✅ Sauvegardé !");
-    setTimeout(() => setSaveStatus(""), 2000);
+  // --- LE CERVEAU : C'est ici que l'IA prend tes données manuelles ---
+  const runGodAnalysis = async () => {
+      if (!report || !selectedMatch) return;
+      
+      setIsComputing(true);
+      
+      // Simulation du temps de réflexion
+      await new Promise(r => setTimeout(r, 2000));
+
+      // 🧠 ALGORITHME DE DÉCISION (Basé sur tes saisies)
+      // Ici, on fait semblant que l'IA réfléchit sur tes données
+      const p1Score = calculateScore(report.p1);
+      const p2Score = calculateScore(report.p2);
+      
+      const total = p1Score + p2Score;
+      const probA = Math.round((p1Score / total) * 100);
+      const probB = 100 - probA;
+
+      const newReport = { ...report };
+      newReport.prediction = {
+          probA: `${probA}%`,
+          probB: `${probB}%`,
+          risk: Math.abs(probA - 50) < 10 ? 'HIGH' : 'MEDIUM',
+          recoWinner: probA > probB ? report.identity.p1Name : report.identity.p2Name
+      };
+
+      // Sauvegarde du résultat final
+      saveAnalysis(selectedMatch.id, newReport);
+      setReport(newReport);
+      setIsComputing(false);
+      setShowResult(true);
   };
 
-  // 4. Fonction de Reset (Remettre à zéro)
-  const handleReset = () => {
-      if(!selectedMatch) return;
-      if(confirm("Voulez-vous effacer toutes les données de ce match ?")) {
-          const empty = getEmptyReport(selectedMatch);
-          setCurrentReport(empty);
-          saveAnalysis(selectedMatch.id, empty);
-          setFormKey(prev => prev + 1);
-      }
-  };
-
-  // Helper pour créer un rapport vide mais pré-rempli avec les noms
-  const getEmptyReport = (match: Match): GodModeReportV2 => {
-    return {
-      identity: { 
-          p1Name: match.player1.name, 
-          p2Name: match.player2.name, 
-          tournament: match.tournament, 
-          surface: match.surface || 'Dur', 
-          date: new Date().toLocaleDateString('fr-FR'), 
-          time: '12:00' 
-      },
-      p1: createEmptyProfile(),
-      p2: createEmptyProfile(),
-      h2h: { global: '' },
-      conditions: { weather: '', temp: '' },
-      bookmaker: { oddA: match.odds?.p1?.toString() || '', oddB: match.odds?.p2?.toString() || '' },
-      synthesis: { risk: 'HIGH' },
-      prediction: { probA: '50%', probB: '50%', recoWinner: 'À définir' }
-    } as any;
+  // Petite fonction bidon pour simuler un calcul de score (à remplacer par ton vrai algo)
+  const calculateScore = (profile: any) => {
+      let score = 50;
+      if (profile.rank && parseInt(profile.rank) < 50) score += 10;
+      if (profile.form === '8/10' || profile.form === '9/10') score += 15;
+      if (profile.hand === 'Gaucher') score += 5;
+      return score;
   };
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 h-full w-full overflow-hidden p-4">
-        
-        {/* --- COLONNE GAUCHE : LISTE DES MATCHS --- */}
-        <div className="lg:w-1/4 xl:w-1/5 flex flex-col gap-4 flex-shrink-0 h-full overflow-hidden bg-neutral-900 border border-neutral-800 rounded-xl">
-          <div className="p-4 border-b border-neutral-800 bg-black/20">
-            <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                <Calendar className="text-neon" size={18}/> Matchs ({activeMatches.length})
-            </h2>
-          </div>
-          
-          <div className="overflow-y-auto p-2 space-y-2 flex-1 scrollbar-thin scrollbar-thumb-neutral-700">
-            {activeMatches.map((match) => (
-              <MatchCard 
-                key={match.id} 
-                match={match} 
-                selected={selectedMatch?.id === match.id} 
-                onClick={() => setSelectedMatch(match)} 
-                compact 
-              />
-            ))}
-            {activeMatches.length === 0 && (
-              <div className="text-gray-500 text-center p-4 text-sm">Aucun match disponible.</div>
-            )}
-          </div>
-        </div>
-
-        {/* --- COLONNE DROITE : TABLEAU DE SAISIE --- */}
-        <div className="flex-1 h-full overflow-hidden flex flex-col bg-neutral-950 border border-neutral-800 rounded-xl relative">
-          {selectedMatch && currentReport ? (
-            <>
-              {/* Header Actions */}
-              <div className="h-16 border-b border-neutral-800 flex items-center justify-between px-6 bg-black/20 shrink-0">
-                  <div>
-                      <h2 className="text-xl font-bold text-white flex gap-2 items-center">
-                          <span className="text-blue-400">{currentReport.identity.p1Name}</span>
-                          <span className="text-gray-600 text-sm">VS</span>
-                          <span className="text-orange-400">{currentReport.identity.p2Name}</span>
-                      </h2>
-                      <p className="text-xs text-gray-500">{currentReport.identity.tournament}</p>
-                  </div>
-                  
-                  <div className="flex gap-3 items-center">
-                      {saveStatus && (
-                          <span className="text-green-400 text-sm font-bold animate-pulse flex items-center gap-1">
-                              <CheckCircle size={14}/> {saveStatus}
-                          </span>
-                      )}
-                      
-                      <button 
-                        onClick={handleReset}
-                        className="p-2 text-gray-500 hover:text-red-500 transition-colors"
-                        title="Réinitialiser"
-                      >
-                          <RotateCcw size={18}/>
-                      </button>
-
-                      <button 
-                        onClick={handleManualSave}
-                        className="bg-neon hover:bg-orange-600 text-white px-6 py-2 rounded-lg font-bold flex gap-2 items-center shadow-lg shadow-orange-500/20 transition-all"
-                      >
-                          <Save size={18}/> SAUVEGARDER
-                      </button>
-                  </div>
-              </div>
-
-              {/* Le Tableau */}
-              <div className="flex-1 overflow-hidden relative">
-                  <GodModeTable 
-                      key={formKey} // LA CLÉ MAGIQUE : Force le refresh quand on change de match
-                      report={currentReport} 
-                      onUpdate={setCurrentReport} // Met à jour le state local quand tu tapes
-                      onSave={handleManualSave}
-                  />
-              </div>
-            </>
-          ) : (
-            <div className="flex h-full items-center justify-center text-gray-500 flex-col gap-4">
-                <Brain size={48} className="opacity-20"/>
-                <p>Sélectionnez un match à gauche pour commencer l'analyse manuelle.</p>
+    <>
+      <OracleReactor isVisible={isComputing} onComplete={() => {}} />
+      
+      <div className="flex flex-col lg:flex-row gap-6 h-full w-full overflow-hidden p-4">
+        {/* LISTE */}
+        <div className="lg:w-1/4 xl:w-1/5 flex flex-col gap-4 bg-neutral-900 border border-neutral-800 rounded-xl">
+            <div className="p-4 border-b border-neutral-800">
+                <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                    <Brain className="text-purple-500" size={18}/> Analyses Prêtes
+                </h2>
             </div>
-          )}
+            <div className="overflow-y-auto p-2 space-y-2 flex-1">
+                {activeMatches.map(m => (
+                    <MatchCard key={m.id} match={m} selected={selectedMatch?.id === m.id} onClick={() => setSelectedMatch(m)} compact />
+                ))}
+            </div>
         </div>
-    </div>
+
+        {/* CENTRE DE COMMANDE */}
+        <div className="flex-1 bg-neutral-950 border border-neutral-800 rounded-xl overflow-hidden flex flex-col relative">
+            {selectedMatch && report ? (
+                <>
+                    <div className="h-16 border-b border-neutral-800 flex items-center justify-between px-6 bg-black/20 shrink-0">
+                        <div className="text-white font-bold text-lg">
+                            Analyse IA : {report.identity.p1Name} vs {report.identity.p2Name}
+                        </div>
+                        <button 
+                            onClick={runGodAnalysis}
+                            disabled={isComputing}
+                            className="bg-purple-600 hover:bg-purple-500 text-white px-6 py-2 rounded-lg font-bold flex gap-2 items-center shadow-lg shadow-purple-500/20"
+                        >
+                            <Cpu size={18}/> LANCER GOD ANALYSE
+                        </button>
+                    </div>
+
+                    <div className="flex-1 overflow-hidden relative">
+                        {/* Si le résultat est là, on affiche un overlay ou on met à jour le tableau */}
+                        {showResult && (
+                            <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50 bg-neutral-900 border-2 border-green-500 p-4 rounded-xl shadow-2xl flex items-center gap-4 animate-bounce-in">
+                                <CheckCircle className="text-green-500" size={32}/>
+                                <div>
+                                    <div className="text-green-400 font-bold text-lg">PRÉDICTION TERMINÉE</div>
+                                    <div className="text-white text-sm">Vainqueur probable : <span className="font-bold text-yellow-400">{report.prediction.recoWinner}</span></div>
+                                </div>
+                            </div>
+                        )}
+                        
+                        <GodModeTable report={report} onUpdate={setReport} onSave={() => {}} />
+                    </div>
+                </>
+            ) : (
+                <div className="flex h-full items-center justify-center text-gray-500 flex-col gap-4">
+                    <Lock size={48} className="opacity-20"/>
+                    {selectedMatch ? (
+                        <p>Aucune donnée saisie pour ce match. Allez dans l'onglet "Programme" d'abord.</p>
+                    ) : (
+                        <p>Sélectionnez un match pour lancer l'analyse.</p>
+                    )}
+                </div>
+            )}
+        </div>
+      </div>
+    </>
   );
 };
-
-// Helper pour initialiser les champs vides
-function createEmptyProfile() {
-    const d: any = { rank: '', form: '', hand: '', nationality: '' };
-    for(let i=1; i<=20; i++) {
-        d[`match${i}_date`] = ''; d[`match${i}_score`] = ''; d[`match${i}_opponent`] = '';
-    }
-    return d;
-}
