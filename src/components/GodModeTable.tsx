@@ -9,28 +9,24 @@ interface Props {
   onSave?: () => void;
 }
 
-// --- COMPOSANT PLAYER CARD COMPLET ---
+// --- COMPOSANT PLAYER CARD (INTÉGRAL) ---
 const PlayerCard = ({ 
     playerKey, 
     name, 
     data, 
-    activeTab, 
-    setActiveTab, 
     colorClass, 
-    onChange, 
-    scrollRef,
-    opponentName
+    onChange 
   }: { 
     playerKey: 'p1' | 'p2', 
     name: string, 
     data: any, 
-    activeTab: string, 
-    setActiveTab: (t: any) => void, 
     colorClass: string, 
-    onChange: (path: string[], value: string) => void,
-    scrollRef: React.RefObject<HTMLDivElement>,
-    opponentName: string
+    onChange: (path: string[], value: string) => void
   }) => {
+
+    // Seul state local autorisé : l'onglet actif (navigation visuelle uniquement)
+    const [activeTab, setActiveTab] = useState('PROFIL');
+    const scrollRef = useRef<HTMLDivElement>(null);
 
     return (
     <div className="bg-neutral-900 border border-neutral-800 rounded-lg overflow-hidden flex flex-col h-full shadow-lg">
@@ -40,7 +36,7 @@ const PlayerCard = ({
           <div>
             <div className={`text-xl font-bold uppercase flex items-center gap-2 ${colorClass}`}>
                 <span className="text-2xl">●</span> 
-                <span>{name}</span>
+                <span className="truncate">{name}</span>
             </div>
             <div className="flex gap-2 mt-2 flex-wrap text-xs">
               <span className="inline-flex items-center gap-1 bg-black/50 px-3 py-2 rounded border border-neutral-700 text-gray-300 font-mono">
@@ -76,7 +72,7 @@ const PlayerCard = ({
           {['PROFIL', 'STATS', 'PSYCHO', 'CALENDRIER', 'H2H', 'ENJEUX', 'MATCHS', 'TERRAIN', 'BILAN', 'TITRES', 'BLESSURES', 'TENDANCE'].map((tab) => (
               <button 
                 key={tab}
-                onClick={() => setActiveTab(tab as any)}
+                onClick={() => setActiveTab(tab)}
                 className={`flex-shrink-0 py-2 px-3 text-xs font-bold uppercase tracking-wider hover:bg-white/5 transition-colors ${activeTab === tab ? `text-white border-b-2 ${playerKey === 'p1' ? 'border-blue-500' : 'border-orange-500'} bg-white/10` : 'text-gray-500'}`}
               >
                   {tab}
@@ -502,14 +498,9 @@ const PlayerCard = ({
 };
 
 
-// --- COMPOSANT PRINCIPAL GOD MODE TABLE ---
+// --- COMPOSANT PRINCIPAL GOD MODE TABLE (ARCHI CLEAN) ---
 export const GodModeTable: React.FC<Props> = ({ report, onUpdate, onSave }) => {
   
-  const [tabP1, setTabP1] = useState<'PROFIL' | 'STATS' | 'PSYCHO' | 'CALENDRIER' | 'H2H' | 'ENJEUX' | 'MATCHS' | 'TERRAIN' | 'BILAN' | 'TITRES' | 'BLESSURES' | 'TENDANCE'>('PROFIL');
-  const [tabP2, setTabP2] = useState<'PROFIL' | 'STATS' | 'PSYCHO' | 'CALENDRIER' | 'H2H' | 'ENJEUX' | 'MATCHS' | 'TERRAIN' | 'BILAN' | 'TITRES' | 'BLESSURES' | 'TENDANCE'>('PROFIL');
-  const scrollP1Ref = useRef<HTMLDivElement>(null);
-  const scrollP2Ref = useRef<HTMLDivElement>(null);
-
   // Fonction de mise à jour sécurisée (Deep Copy)
   const handleChange = (path: string[], value: string) => {
     // 1. On clone proprement l'objet
@@ -525,7 +516,7 @@ export const GodModeTable: React.FC<Props> = ({ report, onUpdate, onSave }) => {
     // 3. On assigne la valeur
     current[path[path.length - 1]] = value;
     
-    // 4. On remonte au parent
+    // 4. On remonte au parent (AnalysisPage)
     onUpdate(newReport);
   };
 
@@ -581,7 +572,7 @@ export const GodModeTable: React.FC<Props> = ({ report, onUpdate, onSave }) => {
                     <Thermometer size={12}/> <span className="text-xs">Temp</span>
                   </div>
                   <input 
-                    value={report.conditions.temp || '14°C'} 
+                    value={report.conditions.temp || ''} 
                     onChange={(e) => handleChange(['conditions', 'temp'], e.target.value)} 
                     className="bg-transparent text-white font-bold outline-none w-full text-xs"
                   />
@@ -591,7 +582,7 @@ export const GodModeTable: React.FC<Props> = ({ report, onUpdate, onSave }) => {
                     <Wind size={12}/> <span className="text-xs">Vent</span>
                   </div>
                   <input 
-                    value={report.conditions.wind || '12 km/h Nord'} 
+                    value={report.conditions.wind || ''} 
                     onChange={(e) => handleChange(['conditions', 'wind'], e.target.value)} 
                     className="bg-transparent text-white font-bold outline-none w-full text-xs"
                   />
@@ -601,7 +592,7 @@ export const GodModeTable: React.FC<Props> = ({ report, onUpdate, onSave }) => {
                     <Droplets size={12}/> <span className="text-xs">Humidité</span>
                   </div>
                   <input 
-                    value={report.conditions.humidity || '68%'} 
+                    value={report.conditions.humidity || ''} 
                     onChange={(e) => handleChange(['conditions', 'humidity'], e.target.value)} 
                     className="bg-transparent text-white font-bold outline-none w-full text-xs"
                   />
@@ -611,7 +602,7 @@ export const GodModeTable: React.FC<Props> = ({ report, onUpdate, onSave }) => {
                     <Eye size={12}/> <span className="text-xs">Météo</span>
                   </div>
                   <input 
-                    value={report.conditions.weather || 'Bonne'} 
+                    value={report.conditions.weather || ''} 
                     onChange={(e) => handleChange(['conditions', 'weather'], e.target.value)} 
                     className="bg-transparent text-white font-bold outline-none w-full text-xs"
                   />
@@ -636,29 +627,23 @@ export const GodModeTable: React.FC<Props> = ({ report, onUpdate, onSave }) => {
       {/* ZONE PRINCIPALE - DOUBLE CARTE JOUEUR */}
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-3 p-3 overflow-hidden">
           <PlayerCard 
-            // LA CLÉ QUI RÉSOUT TOUT LE PROBLÈME DE MÉMOIRE
+            // 🛑 LA CLÉ MAGIQUE : Force le reset visuel si le nom change
             key={`p1-${report.identity.p1Name}`}
             playerKey="p1" 
             name={report.identity.p1Name} 
             data={report.p1} 
-            activeTab={tabP1} 
-            setActiveTab={setTabP1} 
-            opponentName={report.identity.p2Name}
             colorClass="text-blue-500"
             onChange={handleChange}
-            scrollRef={scrollP1Ref}
+            opponentName={report.identity.p2Name}
           />
           <PlayerCard 
             key={`p2-${report.identity.p2Name}`}
             playerKey="p2" 
             name={report.identity.p2Name} 
             data={report.p2} 
-            activeTab={tabP2} 
-            setActiveTab={setTabP2} 
-            opponentName={report.identity.p1Name}
             colorClass="text-orange-500"
             onChange={handleChange}
-            scrollRef={scrollP2Ref}
+            opponentName={report.identity.p1Name}
           />
       </div>
 
