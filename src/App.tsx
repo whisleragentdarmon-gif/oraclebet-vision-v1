@@ -1,12 +1,16 @@
 import React, { useState } from 'react';
 import { Layout } from './components/Layout';
-import { ProgramPage } from './pages/ProgramPage'; // 👈 Nouvelle page
-import { AnalysisPage } from './pages/AnalysisPage';
+
+// ✅ ON IMPORTE LA NOUVELLE PAGE QUI MARCHE
+import { ProgramPage } from './pages/ProgramPage'; 
+
 import { ComboPage } from './pages/ComboPage';
 import { VipPage } from './pages/VipPage';
 import { BankrollPage } from './pages/BankrollPage';
 import { LoginPage } from './pages/LoginPage';
 import { HistoryPage } from './pages/HistoryPage';
+
+// Contextes
 import { BankrollProvider } from './context/BankrollContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ConfigProvider } from './context/ConfigContext';
@@ -15,16 +19,16 @@ import { AnalysisProvider } from './context/AnalysisContext';
 
 const AuthenticatedApp: React.FC = () => {
   const { isAuthenticated } = useAuth();
-  // On arrive direct sur le programme
+  // On pointe par défaut sur 'program' (ta page de scan)
   const [activeTab, setActiveTab] = useState('program'); 
 
   if (!isAuthenticated) return <LoginPage />;
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'program': return <ProgramPage />; // 👈 La page unique
+      case 'program': return <ProgramPage />; // ✅ C'est ici que le scan se passe
       case 'history': return <HistoryPage />;
-      case 'analysis': return <AnalysisPage />;
+      // On retire AnalysisPage car ProgramPage la remplace
       case 'combos': return <ComboPage />;
       case 'bankroll': return <BankrollPage />;
       case 'vip': return <VipPage />;
