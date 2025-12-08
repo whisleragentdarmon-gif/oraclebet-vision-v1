@@ -12,6 +12,7 @@ interface TesseractModule {
 
 let analysisCount = 0;
 
+// Pré-traitement pour nettoyer le gris et les pubs visuelles
 const preprocessImage = (file: File): Promise<string> => {
   return new Promise((resolve) => {
     const reader = new FileReader();
@@ -22,19 +23,23 @@ const preprocessImage = (file: File): Promise<string> => {
         const ctx = canvas.getContext('2d');
         if (!ctx) return resolve(event.target?.result as string);
 
-        // Zoom x3 pour bien séparer les lettres
+        // Zoom x3 pour bien séparer les lettres collées
         canvas.width = img.width * 3;
         canvas.height = img.height * 3;
+        
         ctx.imageSmoothingEnabled = false;
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-        // Contraste Binaire
+        // Contraste Binaire Strict
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         const data = imageData.data;
         for (let i = 0; i < data.length; i += 4) {
           const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
-          const color = avg < 165 ? 0 : 255; 
-          data[i] = data[i+1] = data[i+2] = color;
+          // Seuil < 170 : Noir (Texte), Sinon Blanc (Fond)
+          const color = avg < 170 ? 0 : 255; 
+          data[i] = color;     
+          data[i + 1] = color; 
+          data[i + 2] = color; 
         }
         ctx.putImageData(imageData, 0, 0);
         resolve(canvas.toDataURL('image/jpeg', 1.0));
@@ -48,7 +53,7 @@ const preprocessImage = (file: File): Promise<string> => {
 export const ImageEngine = {
   analyzeScreenshot: async (file: File, currentMatch?: any): Promise<GodModeReportV2> => {
     analysisCount++;
-    console.log(`🛡️ SCAN V4 (Splitter) #${analysisCount}`);
+    console.log(`🛡️ SCAN V5 (Splitter & Anti-Pub) #${analysisCount}`);
 
     let player1Name = '';
     let player2Name = '';
@@ -60,21 +65,21 @@ export const ImageEngine = {
       const worker = await Tesseract.createWorker('eng+fra'); 
       
       await worker.setParameters({
-        tessedit_pageseg_mode: '6', // Bloc uniforme
+        tessedit_pageseg_mode: '6', // Bloc uniforme (force la lecture ligne par ligne)
         preserve_interword_spaces: '1',
       } as any);
 
       const { data: { text } } = await worker.recognize(processedImage);
       await worker.terminate();
 
-      // --- LISTE NOIRE MISE À JOUR ---
+      // --- LISTE NOIRE CIBLÉE (Mise à jour avec tes retours) ---
       const BANNED = [
-        'faites', 'pari', 'afficher', 'plus', 'connexion', 'inscription',
-        'wta', 'atp', 'itf', 'challenger', 'rank', 'rang', 'tête',
-        'resume', 'chances', 'h2h', 'tete', 'matchs', 'tableau', 'cote',
-        'bet365', 'unibet', 'winamax', 'betclic', '1xbet',
-        'janv', 'fev', 'mars', 'avr', 'mai', 'juin', 'juil', 'aout', 'sept', 'oct', 'nov', 'dec',
-        'actobre', 'wtaczet', 'tarc', 'czet', 'me', 'les', 'cy', '25', '1e'
+        'faites', 'pari', 'afficher', 'plus', 'connexion', 'inscription', // UI
+        'wta', 'atp', 'itf', 'challenger', 'rank', 'rang', 'tête', // Mots clés tennis
+        'resume', 'chances', 'h2h', 'tete', 'matchs', 'tableau', 'cote', // Onglets
+        'bet365', 'unibet', 'winamax', 'betclic', '1xbet', // Pubs
+        'janv', 'fev', 'mars', 'avr', 'mai', 'juin', 'juil', 'aout', 'sept', 'oct', 'nov', 'dec', // Mois
+        'actobre', 'wtaczet', 'tarc', 'czet', 'me', 'les', 'cy', '25', '1e' // Tes erreurs spécifiques
       ];
 
       const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 2);
@@ -84,38 +89,48 @@ export const ImageEngine = {
 
         // 1. FILTRE POUBELLE
         if (BANNED.some(bad => lower.includes(bad))) continue;
-        if (/\d{2}[./]\d{2}/.test(line)) continue; // Date
-        if (line.includes(':')) continue; // Heure
+        if (/\d{2}[./]\d{2}/.test(line)) continue; // Date (ex: 12.10)
+        if (line.includes(':')) continue; // Heure (ex: 14:00)
 
         // 2. NETTOYAGE
         // On vire tout sauf lettres, points, tirets, espaces
         let cleanName = line.replace(/[^a-zA-Z\s.-]/g, '').trim();
 
-        // 3. LE DÉCOUPEUR (SPLITTER)
-        // Si la ligne contient "Nom A. Nom B." (détecté par point suivi d'espace et majuscule)
-        // Ex: "Paquet C. Salkova D."
+        // 3. LE DÉCOUPEUR (SPLITTER) - C'est ICI qu'on règle "Paquet C. Salkova D."
+        // On cherche un motif : minuscule, point, espace, Majuscule (ex: "t. S")
         if (cleanName.match(/[a-z]\.\s+[A-Z]/)) {
+            // On coupe là où on trouve "point espace"
             const parts = cleanName.split(/\.\s+/);
+            
             if (parts.length >= 2) {
-                // On a trouvé les deux sur la même ligne !
-                const p1 = parts[0] + "."; // On remet le point
-                const p2 = parts[1]; // Le reste
+                // On reconstitue les noms
+                const p1 = parts[0] + "."; 
+                const p2 = parts[1]; 
                 
-                if (!player1Name && p1.length > 3) player1Name = p1.trim();
-                if (!player2Name && p2.length > 3) player2Name = p2.trim();
-                console.log('⚔️ SPLIT DETECTION:', player1Name, 'VS', player2Name);
-                break; // On a trouvé nos deux joueurs, on arrête
+                // Si les morceaux ressemblent à des noms (plus de 3 lettres)
+                if (!player1Name && p1.length > 3) {
+                    player1Name = p1.trim();
+                    console.log('⚔️ SPLIT J1:', player1Name);
+                }
+                if (!player2Name && p2.length > 3) {
+                    player2Name = p2.trim();
+                    console.log('⚔️ SPLIT J2:', player2Name);
+                }
+                if (player1Name && player2Name) break; // On a tout trouvé, on sort
             }
         }
 
         // 4. DETECTION CLASSIQUE (Un joueur par ligne)
         if (cleanName.length > 3 && cleanName.length < 25) {
             const isAllUpper = cleanName === cleanName.toUpperCase();
-            if (!isAllUpper && /[A-Z]/.test(cleanName)) {
+            // Il faut au moins une majuscule et pas que des majuscules (sauf si court)
+            if (/[A-Z]/.test(cleanName) && (!isAllUpper || cleanName.length < 12)) {
                 if (!player1Name) {
                     player1Name = cleanName;
+                    console.log('✅ J1:', player1Name);
                 } else if (!player2Name && !cleanName.includes(player1Name)) {
                     player2Name = cleanName;
+                    console.log('✅ J2:', player2Name);
                 }
             }
         }
