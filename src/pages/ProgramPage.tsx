@@ -8,7 +8,7 @@ import { Match } from '../types';
 import { GodModeTable } from '../components/GodModeTable';
 import { GodModeReportV2 } from '../engine/types';
 import { Save, Calendar, FileEdit, RotateCcw, CheckCircle, Database } from 'lucide-react';
-import { DEMO_MATCHES } from '../data/demoData'; // Assure-toi que le fichier est bien créé
+import { DEMO_MATCHES } from '../data/demoData'; 
 
 export const ProgramPage: React.FC = () => {
   const { matches } = useData();
@@ -17,12 +17,14 @@ export const ProgramPage: React.FC = () => {
   const activeMatches = matches.filter(m => m.status !== 'FINISHED');
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
   const [currentReport, setCurrentReport] = useState<GodModeReportV2 | null>(null);
+  
+  // ✅ CORRECTION ICI : On utilise bien 'saveStatus' partout
   const [saveStatus, setSaveStatus] = useState("");
+  
   const [formKey, setFormKey] = useState(0);
 
-  // --- CHARGER LA DEMO (RANDOM parmi les 6) ---
+  // --- CHARGER LA DEMO ---
   const handleLoadDemo = () => {
-      // Choisi un match au hasard parmi les 6 démos
       const randomIndex = Math.floor(Math.random() * DEMO_MATCHES.length);
       const demo = DEMO_MATCHES[randomIndex]; 
       
@@ -38,10 +40,10 @@ export const ProgramPage: React.FC = () => {
       };
 
       setSelectedMatch(fakeMatch);
-      setCurrentReport(demo as any); // On force le rapport rempli
+      setCurrentReport(demo as any);
       setFormKey(prev => prev + 1);
       
-      saveAnalysis(demo.id, demo); // On sauvegarde
+      saveAnalysis(demo.id, demo);
       alert(`✅ Match démo chargé : ${demo.identity.p1Name} vs ${demo.identity.p2Name}`);
   };
 
@@ -51,7 +53,7 @@ export const ProgramPage: React.FC = () => {
 
   useEffect(() => {
     if (selectedMatch) {
-        if (selectedMatch.id.startsWith('demo_')) return; // Ne pas écraser la démo
+        if (selectedMatch.id.startsWith('demo_')) return;
 
         const saved = getAnalysis(selectedMatch.id);
         if (saved) setCurrentReport(saved);
@@ -65,6 +67,8 @@ export const ProgramPage: React.FC = () => {
   const handleSaveForAnalysis = () => {
     if (!currentReport || !selectedMatch) return;
     saveAnalysis(selectedMatch.id, currentReport);
+    
+    // ✅ Utilisation correcte de saveStatus
     setSaveStatus("✅ Données sauvegardées !");
     setTimeout(() => setSaveStatus(""), 3000);
   };
@@ -115,7 +119,6 @@ export const ProgramPage: React.FC = () => {
             ))}
           </div>
 
-          {/* BOUTON DÉMO */}
           <div className="p-4 border-t border-neutral-800">
               <button onClick={handleLoadDemo} className="w-full bg-purple-900/50 hover:bg-purple-800 text-purple-200 text-xs py-3 rounded border border-purple-700 flex items-center justify-center gap-2 font-bold transition-all">
                   <Database size={16}/> CHARGER SCÉNARIO IA
@@ -137,7 +140,9 @@ export const ProgramPage: React.FC = () => {
                   </div>
                   
                   <div className="flex gap-3 items-center">
-                      <span className="text-green-400 text-xs font-bold animate-pulse">{statusMsg}</span>
+                      {/* ✅ Correction : Utilisation de saveStatus */}
+                      <span className="text-green-400 text-xs font-bold animate-pulse">{saveStatus}</span>
+                      
                       <button onClick={handleReset} className="p-2 text-gray-500 hover:text-white" title="Effacer"><RotateCcw size={18}/></button>
                       <button onClick={handleSaveForAnalysis} className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded-lg font-bold flex gap-2 items-center">
                           <Save size={18}/> SAUVEGARDER
